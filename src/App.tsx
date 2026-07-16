@@ -7,6 +7,7 @@ import { useState } from "react";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { BookViewer } from "./components/BookViewer";
 import { ExportPanel } from "./components/ExportPanel";
+import { PaymentCallback } from "./components/PaymentCallback";
 import { booksData } from "./data";
 import { UserProgress } from "./types";
 
@@ -59,6 +60,9 @@ export default function App() {
           </section>
         </div>
       )}
+      
+      {/* Payment success/cancellation notifications */}
+      <PaymentCallback language={progress?.currentLanguage || "fr"} />
     </div>
   );
 }
