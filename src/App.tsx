@@ -9,6 +9,7 @@ import { BookViewer } from "./components/BookViewer";
 import { ExportPanel } from "./components/ExportPanel";
 import { PaymentCallback } from "./components/PaymentCallback";
 import { PremiumModal } from "./components/PremiumModal";
+import { GlobalSvgSymbols } from "./components/GlobalSvgSymbols";
 import { booksData } from "./data";
 import { UserProgress } from "./types";
 
@@ -106,6 +107,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-warm-cream font-sans text-text-charcoal selection:bg-sun-yellow/30">
+      <GlobalSvgSymbols />
       {!progress || !activeBook ? (
         <WelcomeScreen
           onStart={handleStart}

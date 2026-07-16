@@ -24,6 +24,19 @@ const supabase = createClient(
   supabaseAnonKey || "placeholder-key"
 );
 
+// Simple In-Memory Fallback DB in case Supabase is not fully set up or errors
+interface PremiumUnlockRecord {
+  order_id: string;
+  token_pay?: string;
+  phone: string;
+  child_name: string;
+  status: string;
+  created_at: string;
+}
+
+const memoryDb = new Map<string, PremiumUnlockRecord>(); // Key: order_id
+const tokenToOrderId = new Map<string, string>(); // Key: token_pay -> order_id
+
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", supabaseConfigured: !!supabaseUrl });
@@ -57,7 +70,16 @@ app.post("/api/payment/create", async (req, res) => {
   }
 
   try {
-    // 1. Insert pending entry into Supabase premium_unlocks table
+    // Save to memoryDb first for robust fallback
+    memoryDb.set(orderId, {
+      order_id: orderId,
+      phone: phone,
+      child_name: childName,
+      status: "pending",
+      created_at: new Date().toISOString()
+    });
+
+    // Insert pending entry into Supabase premium_unlocks table
     const { error: insertError } = await supabase
       .from("premium_unlocks")
       .insert([
@@ -71,8 +93,7 @@ app.post("/api/payment/create", async (req, res) => {
       ]);
 
     if (insertError) {
-      console.error("Supabase insert error:", insertError);
-      // We continue anyway so the flow doesn't break for local tests
+      console.error("Supabase insert error (continuing with In-Memory fallback):", insertError.message || insertError);
     }
 
     const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
@@ -96,6 +117,13 @@ app.post("/api/payment/create", async (req, res) => {
       
       // Update with a simulated token
       const simulatedToken = `sim_token_${Math.random().toString(36).substring(2, 11)}`;
+      
+      const record = memoryDb.get(orderId);
+      if (record) {
+        record.token_pay = simulatedToken;
+        tokenToOrderId.set(simulatedToken, orderId);
+      }
+
       await supabase
         .from("premium_unlocks")
         .update({ token_pay: simulatedToken })
@@ -135,15 +163,21 @@ app.post("/api/payment/create", async (req, res) => {
       throw new Error("Money Fusion API response is missing redirect URL ('url' field).");
     }
 
-    // 2. Update entry with the real tokenPay returned by Money Fusion
+    // Sync memoryDb with real tokenPay
     if (tokenPay) {
+      const record = memoryDb.get(orderId);
+      if (record) {
+        record.token_pay = tokenPay;
+        tokenToOrderId.set(tokenPay, orderId);
+      }
+
       const { error: updateError } = await supabase
         .from("premium_unlocks")
         .update({ token_pay: tokenPay })
         .eq("order_id", orderId);
 
       if (updateError) {
-        console.error("Supabase update tokenPay error:", updateError);
+        console.error("Supabase update tokenPay error:", updateError.message || updateError);
       }
     }
 
@@ -178,6 +212,29 @@ app.post("/api/payment/webhook", async (req, res) => {
     return res.status(400).send("Missing token parameter");
   }
 
+  // Update In-Memory fallback database
+  let targetOrderId = tokenToOrderId.get(tokenPay);
+  if (!targetOrderId) {
+    for (const [oId, rec] of memoryDb.entries()) {
+      if (rec.token_pay === tokenPay) {
+        targetOrderId = oId;
+        tokenToOrderId.set(tokenPay, oId);
+        break;
+      }
+    }
+  }
+
+  const incomingStatus = event === "payin.session.completed" ? "paid" : 
+                         (event === "payin.session.cancelled" ? "failed" : "pending");
+
+  if (targetOrderId) {
+    const record = memoryDb.get(targetOrderId);
+    if (record) {
+      record.status = incomingStatus;
+      console.log(`[MemoryDB] Webhook updated order ${targetOrderId} status to: ${incomingStatus}`);
+    }
+  }
+
   try {
     // Look up existing status in database to avoid redundant updates
     const { data: existing, error: selectError } = await supabase
@@ -187,13 +244,11 @@ app.post("/api/payment/webhook", async (req, res) => {
       .single();
 
     if (selectError) {
-      console.warn("Could not retrieve existing payment record for webhook:", selectError.message);
+      console.warn("Could not retrieve existing payment record for webhook from Supabase:", selectError.message);
     }
 
-    const incomingStatus = event === "payin.session.completed" ? "paid" : 
-                           (event === "payin.session.cancelled" ? "failed" : "pending");
-
-    if (existing && existing.status === incomingStatus) {
+    const currentStatus = existing ? existing.status : null;
+    if (currentStatus === incomingStatus) {
       console.log(`Webhook redundant: record already has status '${incomingStatus}'`);
       return res.sendStatus(200);
     }
@@ -205,11 +260,11 @@ app.post("/api/payment/webhook", async (req, res) => {
       .eq("token_pay", tokenPay);
 
     if (updateError) {
-      console.error("Webhook database update failed:", updateError);
-      return res.status(500).send("Database update failed");
+      console.error("Webhook database update failed on Supabase:", updateError.message || updateError);
+    } else {
+      console.log(`Successfully updated Supabase order status for token ${tokenPay} to: ${incomingStatus}`);
     }
 
-    console.log(`Successfully updated order status for token ${tokenPay} to: ${incomingStatus}`);
     return res.sendStatus(200);
 
   } catch (err: any) {
@@ -220,20 +275,34 @@ app.post("/api/payment/webhook", async (req, res) => {
 
 /**
  * 3. GET /api/payment/status/:orderId
- * Fetches current payment status from Supabase.
+ * Fetches current payment status. First checks In-Memory, then Supabase.
  * If status is not paid, queries Money Fusion status verification as a safety net.
  */
 app.get("/api/payment/status/:orderId", async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    const { data: record, error } = await supabase
+    // 1. Check Memory DB first
+    const memRecord = memoryDb.get(orderId);
+    if (memRecord && memRecord.status === "paid") {
+      return res.json({ status: "paid" });
+    }
+
+    // 2. Query Supabase DB
+    let record: any = null;
+    const { data, error } = await supabase
       .from("premium_unlocks")
       .select("*")
       .eq("order_id", orderId)
       .single();
 
-    if (error || !record) {
+    if (!error && data) {
+      record = data;
+    }
+
+    const activeRecord = record || memRecord;
+
+    if (!activeRecord) {
       // If order not found, check if it's a simulated order
       if (orderId.includes("simulated") || orderId.startsWith("sim-")) {
         return res.json({ status: "paid", simulated: true });
@@ -241,14 +310,17 @@ app.get("/api/payment/status/:orderId", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    if (record.status === "paid") {
+    if (activeRecord.status === "paid") {
+      if (memRecord) memRecord.status = "paid";
       return res.json({ status: "paid" });
     }
 
+    const tokenPay = activeRecord.token_pay;
+
     // Filet de sécurité: If pending, query Money Fusion status verification directly
-    if (record.token_pay && !record.token_pay.startsWith("sim_")) {
+    if (tokenPay && !tokenPay.startsWith("sim_")) {
       try {
-        const verifyUrl = `https://www.pay.moneyfusion.net/paiementNotif/${record.token_pay}`;
+        const verifyUrl = `https://www.pay.moneyfusion.net/paiementNotif/${tokenPay}`;
         console.log(`Querying Money Fusion status verify URL: ${verifyUrl}`);
 
         const verifyResponse = await fetch(verifyUrl);
@@ -269,6 +341,9 @@ app.get("/api/payment/status/:orderId", async (req, res) => {
           );
 
           if (isPaid) {
+            // Update local memoryDb
+            if (memRecord) memRecord.status = "paid";
+
             // Update Supabase database
             await supabase
               .from("premium_unlocks")
@@ -282,8 +357,10 @@ app.get("/api/payment/status/:orderId", async (req, res) => {
       } catch (verifyErr: any) {
         console.error("Safety net Money Fusion query failed:", verifyErr.message);
       }
-    } else if (record.token_pay && record.token_pay.startsWith("sim_")) {
+    } else if (tokenPay && tokenPay.startsWith("sim_")) {
       // Simulated checkout automatically completes for easy testing
+      if (memRecord) memRecord.status = "paid";
+
       await supabase
         .from("premium_unlocks")
         .update({ status: "paid" })
@@ -291,7 +368,7 @@ app.get("/api/payment/status/:orderId", async (req, res) => {
       return res.json({ status: "paid", simulated: true });
     }
 
-    return res.json({ status: record.status });
+    return res.json({ status: activeRecord.status });
 
   } catch (err: any) {
     console.error("Error fetching payment status:", err);

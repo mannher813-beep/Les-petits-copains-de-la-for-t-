@@ -44,17 +44,45 @@
   background: #2e7d46;
 }
 
-/* Print styling helpers */
+/* Print styling helpers & A4 page control */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
 @media print {
   .no-print {
     display: none !important;
   }
-  .print-page-break {
-    page-break-after: always;
-    break-after: page;
+  
+  html, body, #root, .min-h-screen {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
   }
-  body {
-    background: white !important;
+
+  .book-print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 15mm 20mm 15mm !important;
+    margin: 0 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: #ffffff !important;
+    page-break-after: always !important;
+    break-after: always !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 

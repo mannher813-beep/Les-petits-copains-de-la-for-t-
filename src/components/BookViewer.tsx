@@ -276,16 +276,19 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   }
 
   return (
-    <div className="min-h-screen warm-organic-dots py-4 px-2 md:px-8 pb-24 font-sans select-none relative">
+    <div className="min-h-screen warm-organic-dots py-2 sm:py-4 px-1 sm:px-4 md:px-8 pb-24 font-sans select-none relative">
       
       {/* Top Header controls */}
-      <header className="no-print max-w-5xl mx-auto flex items-center justify-between mb-4 bg-white/90 backdrop-blur-sm p-4 rounded-2xl border-2 border-warm-border shadow-md">
+      <header className="no-print max-w-5xl mx-auto flex items-center justify-between mb-4 bg-white/90 backdrop-blur-sm p-3 sm:p-4 rounded-2xl border-2 border-warm-border shadow-md">
         <button 
           onClick={onExit}
-          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition border border-red-200 cursor-pointer min-h-[44px]"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition border border-red-200 cursor-pointer min-h-[44px]"
         >
           <ArrowLeft size={18} />
-          {lang === "fr" ? "Quitter l'Atelier" : "Leave Workshop"}
+          <span>
+            {lang === "fr" ? "Quitter" : "Leave"}
+            <span className="hidden xs:inline">{lang === "fr" ? " l'Atelier" : " Workshop"}</span>
+          </span>
         </button>
 
         <div className="flex items-center gap-4">
@@ -335,7 +338,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         
         {/* Printable/Interactive Book Spreads */}
         <div 
-          className="w-full max-w-[210mm] min-h-0 sm:min-h-[296mm] bg-white rounded-2xl shadow-2xl border-4 sm:border-8 md:border-12 border-wood-brown p-4 sm:p-8 md:p-12 flex flex-col justify-between relative overflow-hidden transition-all duration-300 transform-gpu"
+          className="book-print-page w-full max-w-[210mm] min-h-0 sm:min-h-[296mm] bg-white rounded-2xl shadow-2xl border-2 sm:border-8 md:border-12 border-wood-brown p-3 sm:p-8 md:p-12 flex flex-col justify-between relative overflow-hidden transition-all duration-300 transform-gpu"
           style={{ 
             color: "var(--color-text-charcoal)",
             boxShadow: "0 25px 50px -12px rgba(139, 94, 60, 0.35)",

@@ -680,22 +680,52 @@ body{
 
 /* ===================== PAGE A4 ===================== */
 .page{
- width:210mm;height:296mm;background:var(--creme);
- padding:10mm 13mm 7mm;display:flex;flex-direction:column;
+ width:210mm;height:297mm;background:var(--creme);
+ padding:15mm 20mm 12mm;display:flex;flex-direction:column;
  overflow:hidden;position:relative;border-radius:8px;
  box-shadow:0 6px 24px rgba(30,70,40,.25);
  margin-bottom: 25px;
+}
+@media (max-width: 215mm) {
+ .page {
+   width: 100% !important;
+   max-width: 210mm;
+   height: auto !important;
+   aspect-ratio: 210/297;
+   padding: 6% !important;
+   margin-bottom: 15px;
+ }
+ .book {
+   padding: 10px 4px 100px;
+ }
 }
 .page-fit-wrap{display:flex;flex-direction:column;flex:1 1 auto;width:100%;min-height:0;transform-origin:top center}
 .folio{margin-top:auto;text-align:center;font-size:14px;color:#7f9c81;padding-top:2mm}
 
 /* ===================== IMPRESSION ===================== */
-@page{size:A4;margin:0}
+@page{size:A4 portrait;margin:0}
 @media print{
- html,body{background:#fff}
- .book{padding:0;display:block}
- .page{display:flex !important;box-shadow:none;border-radius:0;margin:0;
-   page-break-after:always;break-after:always}
+ html,body{
+   width:210mm !important;
+   height:297mm !important;
+   background:#fff !important;
+ }
+ .book{padding:0 !important;margin:0 !important;width:210mm !important}
+ .page{
+   display:flex !important;
+   width:210mm !important;
+   height:297mm !important;
+   padding:15mm 20mm 12mm !important;
+   box-shadow:none !important;
+   border:none !important;
+   border-radius:0 !important;
+   margin:0 !important;
+   page-break-after:always !important;
+   break-after:always !important;
+   page-break-inside:avoid !important;
+   break-inside:avoid !important;
+   overflow:hidden !important;
+ }
  .no-print{display:none !important}
  .reveal,.sol{display:none !important}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
