@@ -231,9 +231,49 @@ export const BookViewer: React.FC<BookViewerProps> = ({
     }
   };
 
+  const renderDifficultyStars = (difficulty: number = 1) => {
+    const stars = [];
+    for (let i = 0; i < 3; i++) {
+      stars.push(
+        <span 
+          key={i} 
+          className={`text-sm sm:text-base transition-all duration-300 ${i < difficulty ? "text-yellow-500 font-bold" : "text-gray-300 opacity-40"}`}
+        >
+          ★
+        </span>
+      );
+    }
+    return (
+      <div className="flex items-center gap-0.5" title={`Difficulty: ${difficulty}/3`}>
+        {stars}
+      </div>
+    );
+  };
+
   const isMatched = (missionId: number, leftIdx: number) => {
     return matches[missionId] && matches[missionId][leftIdx] !== undefined;
   };
+
+  // Find current chapter or stage for the progress bar
+  let progressText = "";
+  let progressPercentage = 0;
+
+  if (currentPage === 1) {
+    progressText = lang === "fr" ? "Couverture 📖" : "Cover 📖";
+    progressPercentage = 2.5;
+  } else if (currentPage === 2) {
+    progressText = lang === "fr" ? "Présentation de l'Atelier" : "Workshop Introduction";
+    progressPercentage = 5;
+  } else if (currentPage === 40) {
+    progressText = lang === "fr" ? "Diplôme d'Honneur ! 🎓" : "Honorary Diploma! 🎓";
+    progressPercentage = 100;
+  } else if (pageConfig.chapter) {
+    const chapNum = pageConfig.chapter.id; // 1 to 5
+    progressText = lang === "fr" 
+      ? `Chapitre ${chapNum}/5 : ${pageConfig.chapter.titleFr}` 
+      : `Chapter ${chapNum}/5: ${pageConfig.chapter.titleEn}`;
+    progressPercentage = Math.round(5 + ((currentPage - 2) / 38) * 95);
+  }
 
   return (
     <div className="min-h-screen warm-organic-dots py-4 px-2 md:px-8 pb-24 font-sans select-none relative">
@@ -242,7 +282,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       <header className="no-print max-w-5xl mx-auto flex items-center justify-between mb-4 bg-white/90 backdrop-blur-sm p-4 rounded-2xl border-2 border-warm-border shadow-md">
         <button 
           onClick={onExit}
-          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition border border-red-200"
+          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition border border-red-200 cursor-pointer min-h-[44px]"
         >
           <ArrowLeft size={18} />
           {lang === "fr" ? "Quitter l'Atelier" : "Leave Workshop"}
@@ -252,7 +292,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
           {/* Sound toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition"
+            className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
             title={soundEnabled ? "Couper le son" : "Activer le son"}
           >
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
@@ -268,12 +308,30 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         </div>
       </header>
 
+      {/* Chapter Progress Bar */}
+      <div className="max-w-4xl mx-auto mb-4 bg-white/90 backdrop-blur-sm p-3 rounded-2xl border-2 border-warm-border shadow-md no-print">
+        <div className="flex items-center justify-between gap-2 mb-1.5 px-1 flex-wrap">
+          <span className="text-xs sm:text-sm font-bold text-forest flex items-center gap-1.5">
+            <span>🎨</span> {progressText}
+          </span>
+          <span className="text-xs font-mono font-bold text-gray-500 bg-warm-cream px-2 py-0.5 rounded-full border border-warm-border">
+            {lang === "fr" ? "Progression : " : "Progress: "}{progressPercentage}%
+          </span>
+        </div>
+        <div className="w-full bg-warm-linen rounded-full h-3.5 overflow-hidden border border-warm-border p-0.5">
+          <div 
+            className="bg-forest h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
       {/* Main Book Viewer */}
-      <main className="max-w-4xl mx-auto flex flex-col items-center">
+      <main className="max-w-4xl mx-auto flex flex-col items-center w-full">
         
         {/* Printable/Interactive Book Spreads */}
         <div 
-          className="w-[210mm] min-h-[296mm] bg-white rounded-2xl shadow-2xl border-12 border-wood-brown p-8 md:p-12 flex flex-col justify-between relative overflow-hidden transition-all duration-300 transform-gpu"
+          className="w-full max-w-[210mm] min-h-0 sm:min-h-[296mm] bg-white rounded-2xl shadow-2xl border-4 sm:border-8 md:border-12 border-wood-brown p-4 sm:p-8 md:p-12 flex flex-col justify-between relative overflow-hidden transition-all duration-300 transform-gpu"
           style={{ 
             color: "var(--color-text-charcoal)",
             boxShadow: "0 25px 50px -12px rgba(139, 94, 60, 0.35)",
@@ -660,8 +718,11 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                     <div key={mission.id} className="exo flex-1 flex flex-col justify-between p-4">
                       
                       {/* Header */}
-                      <div className="exo-head">
-                        <span className="exo-num">{lang === "fr" ? `Mission ${mission.num}` : `Mission ${mission.num}`}</span>
+                      <div className="exo-head flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="exo-num">{lang === "fr" ? `Mission ${mission.num}` : `Mission ${mission.num}`}</span>
+                          {renderDifficultyStars(mission.difficulty)}
+                        </div>
                         <span className="exo-type">
                           {lang === "fr" ? mission.typeFr : mission.typeEn}
                         </span>
@@ -701,7 +762,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                                     key={choice.id}
                                     type="button"
                                     onClick={() => handleQcmClick(mission.id, choice.id, choice.isCorrect)}
-                                    className={`choice font-medium px-4 py-2 border-2 rounded-xl transition-all shadow-sm ${buttonStyle}`}
+                                    className={`choice font-medium px-4 py-2.5 sm:py-2 border-2 rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px] ${buttonStyle}`}
                                   >
                                     {lang === "fr" ? choice.textFr : choice.textEn}
                                   </button>
@@ -776,7 +837,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                                       type="button"
                                       onClick={() => handleMatchClick(mission.id, i, "left", match.correctPairIndex)}
                                       disabled={done}
-                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-between ${
+                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-between min-h-[44px] cursor-pointer ${
                                         done
                                           ? "bg-green-100 border-green-400 text-green-800 opacity-60"
                                           : active
@@ -806,7 +867,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                                       type="button"
                                       onClick={() => handleMatchClick(mission.id, i, "right", match.correctPairIndex)}
                                       disabled={done}
-                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-start gap-2 ${
+                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-start gap-2 min-h-[44px] cursor-pointer ${
                                         done
                                           ? "bg-green-100 border-green-400 text-green-800 opacity-60"
                                           : "bg-white border-blue-200 text-gray-700 hover:border-blue-400"
@@ -838,19 +899,19 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                         {/* Input Text / Handwritten Type */}
                         {mission.exerciseType === "input-text" && (
-                          <div className="text-center">
+                          <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-3">
                             <input
                               type="text"
                               value={textInputs[mKey] || ""}
                               onChange={(e) => setTextInputs(prev => ({ ...prev, [mKey]: e.target.value }))}
                               placeholder={lang === "fr" ? mission.inputPlaceholderFr : mission.inputPlaceholderEn}
-                              className="case-ecrire min-w-[120mm] h-12 text-center text-2xl font-handwriting border-b-4 border-dashed border-orange-friend focus:outline-none focus:border-green-600 bg-transparent"
+                              className="case-ecrire w-full max-w-[280px] sm:max-w-md h-12 text-center text-xl sm:text-2xl font-handwriting border-b-4 border-dashed border-orange-friend focus:outline-none focus:border-green-600 bg-transparent"
                             />
                             {textInputs[mKey] && (
                               <button 
                                 type="button"
                                 onClick={() => playSound("correct")}
-                                className="ml-3 px-4 py-1 bg-green-50 border border-green-200 rounded-full text-xs font-bold text-forest no-print"
+                                className="px-4 py-2 bg-green-50 border border-green-200 rounded-xl text-xs font-bold text-forest no-print min-h-[44px] cursor-pointer animate-pulse"
                               >
                                 ✔ {lang === "fr" ? "Valider" : "Check"}
                               </button>
@@ -878,7 +939,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                                       }));
                                       playSound("correct");
                                     }}
-                                    className={`px-4 py-2 border-2 rounded-xl text-sm font-bold flex items-center gap-3 transition ${
+                                    className={`px-4 py-2 border-2 rounded-xl text-sm font-bold flex items-center gap-3 transition cursor-pointer min-h-[44px] ${
                                       isChecked
                                         ? "bg-green-50 border-green-500 text-green-800"
                                         : "bg-white border-gray-200 text-gray-700 hover:border-green-300"
@@ -1068,7 +1129,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
           <button
             onClick={() => navigateToPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="w-full sm:w-auto px-6 py-3 bg-wood-brown text-white hover:bg-[#724a2c] rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#5c3e27]"
+            className="w-full sm:w-auto px-6 py-3 bg-wood-brown text-white hover:bg-[#724a2c] rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#5c3e27] min-h-[44px] cursor-pointer"
           >
             <ArrowLeft size={20} />
             {lang === "fr" ? "Précédent" : "Previous"}
@@ -1086,7 +1147,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
           <button
             onClick={() => navigateToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="w-full sm:w-auto px-6 py-3 bg-forest text-white hover:bg-green-700 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#415a3a]"
+            className="w-full sm:w-auto px-6 py-3 bg-forest text-white hover:bg-green-700 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#415a3a] min-h-[44px] cursor-pointer"
           >
             {lang === "fr" ? "Suivant" : "Next"}
             <ArrowRight size={20} />

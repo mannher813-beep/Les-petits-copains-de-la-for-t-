@@ -42,6 +42,7 @@ export interface Mission {
   solEn?: string;
   inputPlaceholderFr?: string;
   inputPlaceholderEn?: string;
+  difficulty?: 1 | 2 | 3;
 }
 
 export interface Chapter {

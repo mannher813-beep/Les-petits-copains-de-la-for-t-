@@ -23,9 +23,37 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   lang
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState("#E98074"); // Default berry pink
   const [isEraser, setIsEraser] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        // Get parent element's width, subtracting padding
+        const parentElement = containerRef.current.parentElement;
+        if (parentElement) {
+          const parentWidth = parentElement.clientWidth - 16; // 16px safety margin
+          if (parentWidth < width) {
+            setScale(parentWidth / width);
+          } else {
+            setScale(1);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    // Use a small timeout to let the DOM settle before measuring
+    const timer = setTimeout(handleResize, 100);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+    };
+  }, [width]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -122,11 +150,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 w-full my-2">
+    <div ref={containerRef} className="flex flex-col items-center gap-2 w-full my-2">
       {/* Canvas Wrapper */}
       <div 
-        className="relative bg-white border-2 border-dashed border-forest-light rounded-xl overflow-hidden shadow-inner touch-none"
-        style={{ width: `${width}px`, height: `${height}px` }}
+        className="relative bg-white border-2 border-dashed border-forest-light rounded-xl overflow-hidden shadow-inner touch-none max-w-full"
+        style={{ width: `${Math.floor(width * scale)}px`, height: `${Math.floor(height * scale)}px` }}
       >
         <canvas
           ref={canvasRef}
@@ -142,9 +170,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       </div>
 
       {/* Drawing Controls */}
-      <div className="flex items-center gap-3 bg-warm-cream px-4 py-2 rounded-full border border-warm-border no-print">
+      <div className="flex flex-wrap justify-center items-center gap-3 bg-warm-cream px-4 py-3 rounded-2xl sm:rounded-full border border-warm-border no-print">
         {/* Colors */}
-        <div className="flex gap-1.5 border-r border-warm-border pr-3">
+        <div className="flex flex-wrap gap-2.5 sm:gap-1.5 border-r border-warm-border pr-3">
           {["#E98074", "#8B5E3C", "#F4D35E", "#5A7D51", "#A8DADC", "#4A443D"].map((c) => (
             <button
               key={c}
@@ -154,42 +182,42 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 setIsEraser(false);
               }}
               style={{ backgroundColor: c }}
-              className={`w-6 h-6 rounded-full border transition-all ${
-                color === c && !isEraser ? "scale-125 border-gray-900 ring-2 ring-white" : "border-gray-300"
+              className={`w-8 h-8 sm:w-6 sm:h-6 rounded-full border transition-all cursor-pointer min-h-[32px] min-w-[32px] sm:min-h-[24px] sm:min-w-[24px] ${
+                color === c && !isEraser ? "scale-110 border-gray-900 ring-2 ring-white" : "border-gray-300"
               }`}
             />
           ))}
         </div>
 
         {/* Tools */}
-        <div className="flex gap-2">
+        <div className="flex gap-2.5 sm:gap-2">
           <button
             type="button"
             onClick={() => setIsEraser(false)}
-            className={`p-1.5 rounded-lg border transition ${
+            className={`p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg border transition cursor-pointer min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center ${
               !isEraser ? "bg-forest text-white border-forest" : "bg-white text-gray-700 border-gray-200 hover:border-forest-light"
             }`}
             title={lang === "fr" ? "Crayon" : "Pencil"}
           >
-            <Edit2 size={16} />
+            <Edit2 size={18} />
           </button>
           <button
             type="button"
             onClick={() => setIsEraser(true)}
-            className={`p-1.5 rounded-lg border transition ${
+            className={`p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg border transition cursor-pointer min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center ${
               isEraser ? "bg-forest text-white border-forest" : "bg-white text-gray-700 border-gray-200 hover:border-forest-light"
             }`}
             title={lang === "fr" ? "Gomme" : "Eraser"}
           >
-            <Eraser size={16} />
+            <Eraser size={18} />
           </button>
           <button
             type="button"
             onClick={clearCanvas}
-            className="p-1.5 rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition"
+            className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition cursor-pointer min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center"
             title={lang === "fr" ? "Effacer tout" : "Clear all"}
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={18} />
           </button>
         </div>
       </div>

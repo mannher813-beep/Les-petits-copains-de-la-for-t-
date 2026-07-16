@@ -39,6 +39,7 @@ export const booksData: BookData[] = [
         missions: [
           {
             id: 101,
+            difficulty: 1,
             num: 1,
             typeFr: "Lecture · les lettres",
             typeEn: "Reading · letters",
@@ -58,6 +59,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 102,
+            difficulty: 2,
             num: 2,
             typeFr: "Lecture · observer les lettres",
             typeEn: "Reading · observing letters",
@@ -86,6 +88,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 103,
+            difficulty: 3,
             num: 3,
             typeFr: "Maths · compter",
             typeEn: "Math · counting",
@@ -105,6 +108,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 104,
+            difficulty: 1,
             num: 4,
             typeFr: "Maths · comparer",
             typeEn: "Math · comparing",
@@ -123,6 +127,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 105,
+            difficulty: 2,
             num: 5,
             typeFr: "Écriture · tracer",
             typeEn: "Writing · tracing",
@@ -137,6 +142,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 106,
+            difficulty: 3,
             num: 6,
             typeFr: "Lecture · majuscules et minuscules",
             typeEn: "Reading · upper and lower case",
@@ -180,6 +186,7 @@ export const booksData: BookData[] = [
         missions: [
           {
             id: 107,
+            difficulty: 1,
             num: 7,
             typeFr: "Logique · labyrinthe",
             typeEn: "Logic · maze",
@@ -192,6 +199,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 108,
+            difficulty: 2,
             num: 8,
             typeFr: "Repérage · la grille",
             typeEn: "Positioning · the grid",
@@ -211,6 +219,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 109,
+            difficulty: 3,
             num: 9,
             typeFr: "Maths · addition",
             typeEn: "Math · addition",
@@ -230,6 +239,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 110,
+            difficulty: 1,
             num: 10,
             typeFr: "Maths · petit problème",
             typeEn: "Math · word problem",
@@ -246,6 +256,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 111,
+            difficulty: 2,
             num: 11,
             typeFr: "Logique · suite de formes",
             typeEn: "Logic · shape pattern",
@@ -265,6 +276,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 112,
+            difficulty: 3,
             num: 12,
             typeFr: "Maths · suite de nombres",
             typeEn: "Math · number pattern",
@@ -284,6 +296,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 113,
+            difficulty: 1,
             num: 13,
             typeFr: "Maths · relier les points",
             typeEn: "Math · connect the dots",
@@ -296,6 +309,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 114,
+            difficulty: 2,
             num: 14,
             typeFr: "Maths · comparer les nombres",
             typeEn: "Math · comparing numbers",
@@ -313,6 +327,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 115,
+            difficulty: 3,
             num: 15,
             typeFr: "Observation · l'intrus",
             typeEn: "Observation · the odd one out",
@@ -333,6 +348,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 116,
+            difficulty: 1,
             num: 16,
             typeFr: "Observation · cherche et trouve",
             typeEn: "Observation · search and find",
@@ -370,6 +386,7 @@ export const booksData: BookData[] = [
         missions: [
           {
             id: 117,
+            difficulty: 2,
             num: 17,
             typeFr: "Lecture · les syllabes",
             typeEn: "Reading · syllables",
@@ -387,6 +404,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 118,
+            difficulty: 3,
             num: 18,
             typeFr: "Lecture · lettre manquante",
             typeEn: "Reading · missing letter",
@@ -403,6 +421,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 119,
+            difficulty: 1,
             num: 19,
             typeFr: "Lecture · vrai ou faux",
             typeEn: "Reading · true or false",
@@ -421,6 +440,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 120,
+            difficulty: 2,
             num: 20,
             typeFr: "Lecture · mots et images",
             typeEn: "Reading · words and pictures",
@@ -439,6 +459,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 121,
+            difficulty: 3,
             num: 21,
             typeFr: "Lecture · phrase en désordre",
             typeEn: "Reading · scrambled sentence",
@@ -458,6 +479,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 122,
+            difficulty: 1,
             num: 22,
             typeFr: "Lecture · retrouver un mot",
             typeEn: "Reading · find a word",
@@ -478,6 +500,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 123,
+            difficulty: 2,
             num: 23,
             typeFr: "Écriture · écrire un mot",
             typeEn: "Writing · write a word",
@@ -492,6 +515,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 124,
+            difficulty: 3,
             num: 24,
             typeFr: "Écriture · compléter une phrase",
             typeEn: "Writing · fill in sentence",
@@ -511,6 +535,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 125,
+            difficulty: 1,
             num: 25,
             typeFr: "Écriture · recopier une phrase",
             typeEn: "Writing · copy a sentence",
@@ -523,6 +548,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 126,
+            difficulty: 2,
             num: 26,
             typeFr: "Créativité · ton mot magique",
             typeEn: "Creativity · your magic word",
@@ -562,6 +588,7 @@ export const booksData: BookData[] = [
         missions: [
           {
             id: 127,
+            difficulty: 3,
             num: 27,
             typeFr: "Maths · soustraction",
             typeEn: "Math · subtraction",
@@ -581,6 +608,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 128,
+            difficulty: 1,
             num: 28,
             typeFr: "Maths · petit problème",
             typeEn: "Math · word problem",
@@ -597,6 +625,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 129,
+            difficulty: 2,
             num: 29,
             typeFr: "Maths · additions à trous",
             typeEn: "Math · missing additions",
@@ -614,6 +643,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 130,
+            difficulty: 3,
             num: 30,
             typeFr: "Maths · reconnaître les formes",
             typeEn: "Math · recognize shapes",
@@ -633,6 +663,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 131,
+            difficulty: 1,
             num: 31,
             typeFr: "Logique · suite de nombres",
             typeEn: "Logic · number pattern",
@@ -652,6 +683,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 132,
+            difficulty: 2,
             num: 32,
             typeFr: "Maths · ranger les nombres",
             typeEn: "Math · sorting numbers",
@@ -668,6 +700,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 133,
+            difficulty: 3,
             num: 33,
             typeFr: "Maths · calcul et coloriage",
             typeEn: "Math · calculate and color",
@@ -689,6 +722,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 134,
+            difficulty: 1,
             num: 34,
             typeFr: "Maths · plus grand, plus petit",
             typeEn: "Math · larger, smaller",
@@ -706,6 +740,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 135,
+            difficulty: 2,
             num: 35,
             typeFr: "Dessin · symétrie",
             typeEn: "Drawing · symmetry",
@@ -718,6 +753,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 136,
+            difficulty: 3,
             num: 36,
             typeFr: "Observation · les 3 différences",
             typeEn: "Observation · 3 differences",
@@ -755,6 +791,7 @@ export const booksData: BookData[] = [
         missions: [
           {
             id: 137,
+            difficulty: 1,
             num: 37,
             typeFr: "Lecture · comprendre un texte",
             typeEn: "Reading · text comprehension",
@@ -771,6 +808,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 138,
+            difficulty: 2,
             num: 38,
             typeFr: "Écriture · ton invitation",
             typeEn: "Writing · your invitation",
@@ -787,6 +825,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 139,
+            difficulty: 3,
             num: 39,
             typeFr: "Maths · le gâteau à partager",
             typeEn: "Math · cake sharing",
@@ -806,6 +845,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 140,
+            difficulty: 1,
             num: 40,
             typeFr: "Logique · les cadeaux",
             typeEn: "Logic · the gifts",
@@ -824,6 +864,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 141,
+            difficulty: 2,
             num: 41,
             typeFr: "Coloriage magique",
             typeEn: "Color by number",
@@ -838,6 +879,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 142,
+            difficulty: 3,
             num: 42,
             typeFr: "Dessin · toi avec les Copains !",
             typeEn: "Drawing · you with Friends!",
@@ -850,6 +892,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 143,
+            difficulty: 1,
             num: 43,
             typeFr: "Mémoire · quiz de l'histoire",
             typeEn: "Memory · story quiz",
@@ -867,6 +910,7 @@ export const booksData: BookData[] = [
           },
           {
             id: 144,
+            difficulty: 2,
             num: 44,
             typeFr: "Écriture · imagine la suite !",
             typeEn: "Writing · imagine the sequel!",
