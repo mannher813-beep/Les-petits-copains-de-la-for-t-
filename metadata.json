@@ -1,0 +1,6 @@
+{
+  "name": "Atelier Les Copains de la Forêt",
+  "description": "Créateur et lecteur interactif de cahiers d'activités éducatifs (Tome 1 & Tome 2, français et anglais) pour enfants de 5 à 7 ans, avec export HTML autonome.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

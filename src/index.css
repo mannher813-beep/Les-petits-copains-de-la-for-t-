@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@400;600;700&family=Fredoka+One&family=Short+Stack&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Fredoka", "Comic Neue", "Comic Sans MS", cursive, sans-serif;
+  --font-handwriting: "Short Stack", cursive, sans-serif;
+  --font-fun: "Fredoka One", sans-serif;
+  --font-serif: "Georgia", "Cambria", serif;
+  
+  --color-forest: #5A7D51;
+  --color-forest-light: #7DA673;
+  --color-wood-brown: #8B5E3C;
+  --color-sun-yellow: #F4D35E;
+  --color-sky-blue: #A8DADC;
+  --color-berry-pink: #E98074;
+  --color-warm-cream: #F7F3E9;
+  --color-warm-linen: #F0EAD6;
+  --color-warm-border: #E2DCC8;
+  --color-text-charcoal: #4A443D;
+  
+  /* Retain mapping so existing element references switch dynamically */
+  --color-orange-friend: #8B5E3C;
+  --color-blue-friend: #A8DADC;
+  --color-yellow-friend: #F4D35E;
+  --color-rose-friend: #E98074;
+  --color-rouge-friend: #E98074;
+  --color-creme-friend: #F7F3E9;
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f8ff;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: #69b06c;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e7d46;
+}
+
+/* Print styling helpers */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+  body {
+    background: white !important;
+  }
+}
+
+/* --- ACTIVITY STYLE CLASS ENGINE --- */
+.exo {
+  border: 3.5px solid var(--color-warm-border);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 6px 15px rgba(139, 94, 60, 0.05);
+}
+
+.exo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.exo-num {
+  background: var(--color-forest);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 4px 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.exo-type {
+  font-size: 12px;
+  color: #7A7265;
+  background: var(--color-warm-cream);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.consigne {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-wood-brown);
+}
+
+.bubble {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--color-warm-cream);
+  border: 2px solid var(--color-warm-border);
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--color-text-charcoal);
+}
+
+.case-ecrire {
+  display: inline-block;
+  border-bottom: 3px dashed var(--color-wood-brown);
+  vertical-align: bottom;
+}
+
+.badge-cercle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 15px auto;
+  border: 5px solid var(--color-sun-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 15px rgba(244, 211, 94, 0.3);
+}
+
+.badge-nom {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: "Georgia", serif;
+  font-style: italic;
+}
+
+.note-histoire {
+  background: var(--color-warm-cream);
+  border: 2px dashed var(--color-warm-border);
+  border-radius: 16px;
+  padding: 12px 18px;
+  font-size: 15px;
+}
+
+.warm-organic-dots {
+  background-color: #F7F3E9;
+  background-image: radial-gradient(#E2DCC8 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
