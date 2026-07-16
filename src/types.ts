@@ -80,4 +80,6 @@ export interface UserProgress {
   currentLanguage: "fr" | "en";
   currentPage: number; // 1 to 40
   completedAnswers: Record<string, boolean | string | string[]>; // tracks solved state for each page's elements
+  isPremium?: boolean;
+  orderId?: string;
 }

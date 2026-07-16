@@ -5,19 +5,24 @@
 
 import React, { useState } from "react";
 import { booksData } from "../data";
+import { Lock, Sparkles } from "lucide-react";
 
 interface WelcomeScreenProps {
   onStart: (childName: string, bookId: number, language: "fr" | "en") => void;
   initialName?: string;
   initialBookId?: number;
   initialLanguage?: "fr" | "en";
+  isPremium?: boolean;
+  onOpenPremiumModal?: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onStart,
   initialName = "",
   initialBookId = 1,
-  initialLanguage = "fr"
+  initialLanguage = "fr",
+  isPremium = false,
+  onOpenPremiumModal
 }) => {
   const [name, setName] = useState(initialName);
   const [selectedBookId, setSelectedBookId] = useState(initialBookId);
@@ -25,6 +30,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedBookId === 2 && !isPremium) {
+      if (onOpenPremiumModal) onOpenPremiumModal();
+      return;
+    }
     const finalName = name.trim() || (lang === "fr" ? "Copain" : "Friend");
     onStart(finalName, selectedBookId, lang);
   };
@@ -47,6 +56,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         {/* Title */}
         <div className="text-center mb-6 sm:mb-8">
+          {isPremium && (
+            <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold text-xs px-4 py-1.5 rounded-full shadow-md animate-pulse mb-3">
+              <Sparkles size={14} />
+              {lang === "fr" ? "🎒 Membre Premium 🌟" : "🎒 Premium Member 🌟"}
+            </div>
+          )}
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif italic text-forest drop-shadow-sm mb-3">
             {lang === "fr" ? "L'Atelier des Copains de la Forêt" : "The Forest Friends Workshop"}
           </h1>
@@ -159,7 +174,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 return (
                   <div
                     key={book.id}
-                    onClick={() => setSelectedBookId(book.id)}
+                    onClick={() => {
+                      if (book.id === 2 && !isPremium) {
+                        if (onOpenPremiumModal) onOpenPremiumModal();
+                      } else {
+                        setSelectedBookId(book.id);
+                      }
+                    }}
                     className={`cursor-pointer rounded-2xl border-4 p-4 bg-white transition relative flex flex-col justify-between min-h-[44px] ${
                       isSelected
                         ? "border-forest ring-4 ring-forest-light/30 shadow-md"
@@ -168,13 +189,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   >
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${tagColor}`}>
+                        <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${tagColor} flex items-center gap-1`}>
                           {lang === "fr" ? `Tome ${book.id}` : `Volume ${book.id}`}
+                          {book.id === 2 && !isPremium && <Lock size={12} />}
                         </span>
                         {isSelected && <span className="text-forest font-bold text-base sm:text-lg">✔</span>}
                       </div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-forest mb-1 text-left">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-forest mb-1 text-left flex items-center gap-1.5 flex-wrap">
                         {title}
+                        {book.id === 2 && !isPremium && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
+                            <Lock size={10} />
+                            {lang === "fr" ? "Premium" : "Premium"}
+                          </span>
+                        )}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 text-left">
                         {description}

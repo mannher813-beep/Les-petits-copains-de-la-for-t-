@@ -300,10 +300,14 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
           {/* Book & Name Info */}
           <div className="text-right hidden sm:block">
-            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">
+            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider flex items-center gap-1 justify-end">
+              {progress.isPremium && <Sparkles size={12} className="text-amber-500 animate-pulse" />}
               {lang === "fr" ? "Copain actif" : "Active friend"}
             </p>
-            <p className="font-fun text-forest font-bold">{childName}</p>
+            <p className="font-fun text-forest font-bold flex items-center gap-1 justify-end">
+              {childName}
+              {progress.isPremium && <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full shadow-sm">🌟 Premium</span>}
+            </p>
           </div>
         </div>
       </header>

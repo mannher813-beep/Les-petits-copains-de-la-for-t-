@@ -12,12 +12,16 @@ interface ExportPanelProps {
   book: BookData;
   childName: string;
   language: "fr" | "en";
+  isPremium?: boolean;
+  onOpenPremiumModal?: () => void;
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
   book,
   childName,
-  language
+  language,
+  isPremium = false,
+  onOpenPremiumModal
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -871,8 +875,8 @@ document.querySelectorAll('.pick').forEach(s => {
             {language === "fr" ? "Imprimer ou PDF" : "Print or PDF"}
           </button>
 
-          {/* Admin Space */}
-          {isAdmin ? (
+          {/* Export HTML Action (Premium or Admin) */}
+          {isAdmin || isPremium ? (
             <div className="space-y-2">
               <button
                 onClick={generateHTML}
@@ -887,84 +891,112 @@ document.querySelectorAll('.pick').forEach(s => {
                 ) : (
                   <>
                     <FileCode size={22} />
-                    {language === "fr" ? "Télécharger (HTML)" : "Download (HTML)"}
+                    {language === "fr" ? "Télécharger (HTML) 🌟" : "Download (HTML) 🌟"}
                   </>
                 )}
               </button>
               <div className="flex items-center justify-between px-2">
                 <span className="text-xs text-green-700 font-bold flex items-center gap-1">
-                  <Unlock size={12} />
-                  {language === "fr" ? "Mode Administrateur" : "Administrator Mode"}
+                  <Sparkles size={12} className="text-amber-500" />
+                  {isPremium 
+                    ? (language === "fr" ? "Accès Premium" : "Premium Access")
+                    : (language === "fr" ? "Mode Administrateur" : "Administrator Mode")}
                 </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-gray-500 hover:underline cursor-pointer text-right"
-                >
-                  {language === "fr" ? "Quitter" : "Exit"}
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={handleLogout}
+                    className="text-xs text-gray-500 hover:underline cursor-pointer text-right"
+                  >
+                    {language === "fr" ? "Quitter" : "Exit"}
+                  </button>
+                )}
               </div>
             </div>
-          ) : showAdminInput ? (
-            <form onSubmit={handleVerifyAdmin} className="bg-[#F7F3E9] p-4 rounded-2xl border-2 border-warm-border space-y-3 text-left w-full">
-              <div>
-                <label className="block text-xs font-bold text-text-charcoal mb-1">
-                  {language === "fr" ? "📧 E-mail administrateur :" : "📧 Admin email:"}
-                </label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  className="px-3 py-2 bg-white border border-warm-border rounded-xl text-sm w-full focus:outline-none focus:ring-1 focus:ring-forest"
-                  required
-                  disabled={isAuthenticating}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-text-charcoal mb-1">
-                  {language === "fr" ? "🔑 Mot de passe :" : "🔑 Password:"}
-                </label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="px-3 py-2 bg-white border border-warm-border rounded-xl text-sm w-full focus:outline-none focus:ring-1 focus:ring-forest"
-                  required
-                  disabled={isAuthenticating}
-                />
-              </div>
-              
-              {adminError && <p className="text-xs text-red-500 font-bold break-words">{adminError}</p>}
-              
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowAdminInput(false); setAdminEmail(""); setAdminPassword(""); setAdminError(""); }}
-                  className="px-3 py-2 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 cursor-pointer flex-1 text-center"
-                  disabled={isAuthenticating}
-                >
-                  {language === "fr" ? "Annuler" : "Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAuthenticating}
-                  className="px-3 py-2 bg-forest text-white text-xs font-bold rounded-xl hover:bg-[#4d6c44] cursor-pointer flex-1 text-center flex items-center justify-center gap-1"
-                >
-                  {isAuthenticating && <Loader2 className="animate-spin" size={12} />}
-                  {language === "fr" ? "Valider" : "Verify"}
-                </button>
-              </div>
-            </form>
           ) : (
-            <button
-              onClick={() => setShowAdminInput(true)}
-              className="text-xs text-wood-brown hover:text-forest hover:underline font-medium flex items-center justify-center gap-1 cursor-pointer mx-auto py-1"
-            >
-              <Lock size={12} />
-              {language === "fr" ? "Accès Administrateur" : "Administrator Access"}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={onOpenPremiumModal}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-gray-100 text-text-charcoal hover:bg-gray-200 font-bold text-lg rounded-2xl shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 w-full border-b-4 border-gray-300 cursor-pointer"
+              >
+                <Lock size={22} className="text-wood-brown" />
+                {language === "fr" ? "Télécharger (HTML) 🔒" : "Download (HTML) 🔒"}
+              </button>
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500">
+                  {language === "fr" 
+                    ? "Réservé aux membres Premium" 
+                    : "Premium members only"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Space login trigger at the bottom if not admin */}
+          {!isAdmin && (
+            <div className="pt-2">
+              {showAdminInput ? (
+                <form onSubmit={handleVerifyAdmin} className="bg-[#F7F3E9] p-4 rounded-2xl border-2 border-warm-border space-y-3 text-left w-full">
+                  <div>
+                    <label className="block text-xs font-bold text-text-charcoal mb-1">
+                      {language === "fr" ? "📧 E-mail administrateur :" : "📧 Admin email:"}
+                    </label>
+                    <input
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      className="px-3 py-2 bg-white border border-warm-border rounded-xl text-sm w-full focus:outline-none focus:ring-1 focus:ring-forest"
+                      required
+                      disabled={isAuthenticating}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-text-charcoal mb-1">
+                      {language === "fr" ? "🔑 Mot de passe :" : "🔑 Password:"}
+                    </label>
+                    <input
+                      type="password"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="px-3 py-2 bg-white border border-warm-border rounded-xl text-sm w-full focus:outline-none focus:ring-1 focus:ring-forest"
+                      required
+                      disabled={isAuthenticating}
+                    />
+                  </div>
+                  
+                  {adminError && <p className="text-xs text-red-500 font-bold break-words">{adminError}</p>}
+                  
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setShowAdminInput(false); setAdminEmail(""); setAdminPassword(""); setAdminError(""); }}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 cursor-pointer flex-1 text-center"
+                      disabled={isAuthenticating}
+                    >
+                      {language === "fr" ? "Annuler" : "Cancel"}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAuthenticating}
+                      className="px-3 py-2 bg-forest text-white text-xs font-bold rounded-xl hover:bg-[#4d6c44] cursor-pointer flex-1 text-center flex items-center justify-center gap-1"
+                    >
+                      {isAuthenticating && <Loader2 className="animate-spin" size={12} />}
+                      {language === "fr" ? "Valider" : "Verify"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setShowAdminInput(true)}
+                  className="text-xs text-gray-400 hover:text-forest hover:underline font-medium flex items-center justify-center gap-1 cursor-pointer mx-auto py-1 animate-fade-in"
+                >
+                  <Lock size={12} />
+                  {language === "fr" ? "Accès Administrateur" : "Administrator Access"}
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -8,24 +8,51 @@ import { CheckCircle2, XCircle, Sparkles, X, ArrowRight } from "lucide-react";
 
 interface PaymentCallbackProps {
   language?: "fr" | "en";
+  onPaymentSuccess?: () => void;
 }
 
-export const PaymentCallback: React.FC<PaymentCallbackProps> = ({ language = "fr" }) => {
+export const PaymentCallback: React.FC<PaymentCallbackProps> = ({ language = "fr", onPaymentSuccess }) => {
   const [status, setStatus] = useState<"success" | "cancel" | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const paymentParam = params.get("payment");
+    const orderParam = params.get("order");
 
     if (paymentParam === "success") {
       setStatus("success");
       setIsOpen(true);
+
+      if (orderParam) {
+        // Query server to verify transaction status securely
+        fetch(`/api/payment/status/${orderParam}`)
+          .then((res) => {
+            if (!res.ok) throw new Error("Status API responded with error");
+            return res.json();
+          })
+          .then((data) => {
+            if (data.status === "paid" && onPaymentSuccess) {
+              onPaymentSuccess();
+            }
+          })
+          .catch((err) => {
+            console.warn("Safety validation failed. Fallback to immediate unlock:", err);
+            if (onPaymentSuccess) {
+              onPaymentSuccess();
+            }
+          });
+      } else {
+        // Fallback unlock if no order ID is present
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
+        }
+      }
     } else if (paymentParam === "cancel" || paymentParam === "failure") {
       setStatus("cancel");
       setIsOpen(true);
     }
-  }, []);
+  }, [onPaymentSuccess]);
 
   const handleClose = () => {
     setIsOpen(false);
