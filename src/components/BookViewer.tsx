@@ -19,6 +19,13 @@ import {
   Undo
 } from "lucide-react";
 
+const getCharacterViewBox = (char: string): string => {
+  const c = char.toLowerCase();
+  if (c === "tom" || c === "darina") return "0 0 130 145";
+  if (c === "zaza" || c === "lana") return "0 0 110 145";
+  return "0 0 120 150"; // leo, nina, etc.
+};
+
 interface BookViewerProps {
   book: BookData;
   progress: UserProgress;
@@ -437,7 +444,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                 <div className="space-y-4">
                   <div className="flex gap-4 items-center bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
                     <div className="w-16 h-16 bg-white border-2 border-orange-300 rounded-full flex items-center justify-center shrink-0">
-                      <svg className="w-12 h-12"><use href="#c-leo" /></svg>
+                      <svg className="w-12 h-12" viewBox="0 0 120 150">
+                        <use href="#c-leo" xlinkHref="#c-leo" />
+                      </svg>
                     </div>
                     <div>
                       <h4 className="font-bold text-orange-800 text-lg">
@@ -453,7 +462,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                   <div className="flex gap-4 items-center bg-slate-50 p-3 rounded-2xl border border-slate-200">
                     <div className="w-16 h-16 bg-white border-2 border-slate-300 rounded-full flex items-center justify-center shrink-0">
-                      <svg className="w-12 h-12"><use href="#c-nina" /></svg>
+                      <svg className="w-12 h-12" viewBox="0 0 120 150">
+                        <use href="#c-nina" xlinkHref="#c-nina" />
+                      </svg>
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-800 text-lg">
@@ -469,7 +480,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                   <div className="flex gap-4 items-center bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
                     <div className="w-16 h-16 bg-white border-2 border-amber-400 rounded-full flex items-center justify-center shrink-0">
-                      <svg className="w-12 h-12"><use href="#c-tom" /></svg>
+                      <svg className="w-12 h-12" viewBox="0 0 130 145">
+                        <use href="#c-tom" xlinkHref="#c-tom" />
+                      </svg>
                     </div>
                     <div>
                       <h4 className="font-bold text-amber-900 text-lg">
@@ -485,7 +498,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                   <div className="flex gap-4 items-center bg-sky-50 p-3 rounded-2xl border border-sky-100">
                     <div className="w-16 h-16 bg-white border-2 border-sky-300 rounded-full flex items-center justify-center shrink-0">
-                      <svg className="w-12 h-12"><use href="#c-zaza" /></svg>
+                      <svg className="w-12 h-12" viewBox="0 0 110 145">
+                        <use href="#c-zaza" xlinkHref="#c-zaza" />
+                      </svg>
                     </div>
                     <div>
                       <h4 className="font-bold text-sky-800 text-lg">
@@ -519,7 +534,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                 {/* Chapter Banner */}
                 <div className="bg-forest text-white rounded-3xl p-4 flex items-center gap-4 shadow-md text-left border-2 border-dashed border-white/40">
                   <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0">
-                    <svg className="w-12 h-12"><use href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} /></svg>
+                    <svg 
+                      className="w-12 h-12" 
+                      viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                    >
+                      <use 
+                        href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                        xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      />
+                    </svg>
                   </div>
                   <div>
                     <span className="text-xs uppercase font-black tracking-widest text-yellow-300">
@@ -551,7 +574,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                       <div className="relative w-full h-full flex items-end justify-center">
                         <svg className="w-24 h-24 absolute left-10 bottom-6"><use href="#d-tree" /></svg>
                         <svg className="w-24 h-32 absolute right-8 bottom-6"><use href="#d-sapin" /></svg>
-                        <svg className="w-32 h-40 z-10"><use href="#c-leo" /></svg>
+                        <svg className="w-32 h-40 z-10" viewBox="0 0 120 150">
+                          <use href="#c-leo" xlinkHref="#c-leo" />
+                        </svg>
                       </div>
                     )}
                     {pageConfig.chapter.id === 2 && (
@@ -561,7 +586,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
                           <path d="M50,180 Q150,130 250,160 T350,110" fill="none" stroke="#e08a2e" strokeWidth="12" strokeLinecap="round"/>
                         </svg>
-                        <svg className="w-28 h-36 z-10 mr-12"><use href="#c-nina" /></svg>
+                        <svg className="w-28 h-36 z-10 mr-12" viewBox="0 0 120 150">
+                          <use href="#c-nina" xlinkHref="#c-nina" />
+                        </svg>
                       </div>
                     )}
                     {pageConfig.chapter.id === 3 && (
@@ -569,8 +596,12 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         <svg className="absolute inset-x-0 bottom-0 h-16 w-full" viewBox="0 0 400 100">
                           <path d="M0,50 Q100,20 200,50 T400,50 L400,100 L0,100 Z" fill="#58b7e8" />
                         </svg>
-                        <svg className="w-24 h-32 absolute left-12 bottom-12"><use href="#c-tom" /></svg>
-                        <svg className="w-24 h-32 absolute right-12 bottom-12"><use href="#c-zaza" /></svg>
+                        <svg className="w-24 h-32 absolute left-12 bottom-12" viewBox="0 0 130 145">
+                          <use href="#c-tom" xlinkHref="#c-tom" />
+                        </svg>
+                        <svg className="w-24 h-32 absolute right-12 bottom-12" viewBox="0 0 110 145">
+                          <use href="#c-zaza" xlinkHref="#c-zaza" />
+                        </svg>
                       </div>
                     )}
                     {pageConfig.chapter.id === 4 && (
@@ -578,7 +609,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         <svg className="w-16 h-16 absolute left-16 bottom-6"><use href="#d-champi" /></svg>
                         <svg className="w-24 h-24 absolute left-24 bottom-6"><use href="#d-champi" /></svg>
                         <svg className="w-20 h-20 absolute right-24 bottom-6"><use href="#d-champi" /></svg>
-                        <svg className="w-24 h-32 z-10"><use href="#c-tom" /></svg>
+                        <svg className="w-24 h-32 z-10" viewBox="0 0 130 145">
+                          <use href="#c-tom" xlinkHref="#c-tom" />
+                        </svg>
                       </div>
                     )}
                     {pageConfig.chapter.id === 5 && (
@@ -592,10 +625,10 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                           <polygon points="260,18 280,18 270,39" fill="#5cae5f"/>
                           <polygon points="330,14 350,14 340,35" fill="#f6a8c4"/>
                         </svg>
-                        <svg className="w-20 h-24"><use href="#c-leo" /></svg>
-                        <svg className="w-16 h-20"><use href="#c-nina" /></svg>
-                        <svg className="w-16 h-20"><use href="#c-tom" /></svg>
-                        <svg className="w-16 h-20"><use href="#c-zaza" /></svg>
+                        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" xlinkHref="#c-leo" /></svg>
+                        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" xlinkHref="#c-nina" /></svg>
+                        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" xlinkHref="#c-tom" /></svg>
+                        <svg className="w-16 h-20" viewBox="0 0 110 145"><use href="#c-zaza" xlinkHref="#c-zaza" /></svg>
                       </div>
                     )}
                   </div>
@@ -607,7 +640,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                 {/* Warm Invitation Bubble */}
                 <div className="bubble max-w-xl mx-auto">
-                  <svg className="w-16 h-20"><use href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} /></svg>
+                  <svg 
+                    className="w-16 h-20 shrink-0" 
+                    viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                  >
+                    <use 
+                      href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                    />
+                  </svg>
                   <p className="text-left leading-snug">
                     <b>{pageConfig.chapter.missions[0]?.character === "leo" ? "Léo" : pageConfig.chapter.missions[0]?.character === "nina" ? "Nina" : pageConfig.chapter.missions[0]?.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : "Lana"} :</b>{" "}
                     {lang === "fr" 
@@ -737,7 +778,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                       {/* Character Bubble speech */}
                       <div className="bubble my-1 py-1">
-                        <svg className="w-12 h-16 shrink-0"><use href={`#c-${mission.character}`} /></svg>
+                        <svg 
+                          className="w-12 h-16 shrink-0" 
+                          viewBox={getCharacterViewBox(mission.character)}
+                        >
+                          <use 
+                            href={`#c-${mission.character}`} 
+                            xlinkHref={`#c-${mission.character}`} 
+                          />
+                        </svg>
                         <p className="text-left text-sm leading-snug">
                           <b className="capitalize">{mission.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : mission.character === "zaza" ? "Lana" : mission.character} :</b>{" "}
                           {lang === "fr" ? mission.bubbleFr : mission.bubbleEn}
@@ -977,7 +1026,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                 {/* Header Band */}
                 <div className="bg-gradient-to-r from-forest to-forest-light text-white rounded-3xl p-4 flex items-center gap-4 shadow-md text-left">
                   <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0">
-                    <svg className="w-12 h-12"><use href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} /></svg>
+                    <svg 
+                      className="w-12 h-12" 
+                      viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                    >
+                      <use 
+                        href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                        xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      />
+                    </svg>
                   </div>
                   <div>
                     <span className="text-xs uppercase font-black tracking-widest text-yellow-300">
@@ -1016,7 +1073,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                 {/* Speech info */}
                 <div className="bubble max-w-xl mx-auto">
-                  <svg className="w-16 h-20"><use href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} /></svg>
+                  <svg 
+                    className="w-16 h-20 shrink-0" 
+                    viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                  >
+                    <use 
+                      href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                    />
+                  </svg>
                   <p className="text-left text-sm leading-snug">
                     <b>{pageConfig.chapter.missions[0]?.character === "leo" ? "Léo" : pageConfig.chapter.missions[0]?.character === "nina" ? "Nina" : pageConfig.chapter.missions[0]?.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : "Lana"} :</b>{" "}
                     {lang === "fr" ? pageConfig.chapter.badgeDescFr : pageConfig.chapter.badgeDescEn}

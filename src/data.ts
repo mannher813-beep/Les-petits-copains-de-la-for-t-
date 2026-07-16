@@ -1802,6 +1802,386 @@ export const booksData: BookData[] = [
   }
 ];
 
+// Helper to customize programmatically generated Books 3, 4, 5, and 6 with unique, themed exercises!
+const customizeBookMissions = (book: BookData, bookId: number): BookData => {
+  let idOffset = 0;
+  let letterTarget = "A";
+  let letterReplacement = "A";
+  let replacements: { [key: string]: string } = {};
+
+  if (bookId === 3) {
+    idOffset = 200; // 101-144 becomes 301-344
+    letterTarget = "A";
+    letterReplacement = "T"; // T for Trésor
+    replacements = {
+      "pont": "chemin du trésor",
+      "ponts": "chemins du trésor",
+      "rivière": "ruisseau magique",
+      "cabane": "grotte secrète",
+      "pomme": "pièce d'or",
+      "pommes": "pièces d'or",
+      "champignon": "cristal précieux",
+      "champignons": "cristaux précieux",
+      "fleur": "émeraude",
+      "fleurs": "émeraudes",
+      "noisette": "rubis",
+      "noisettes": "rubis",
+      "cadeau": "trésor",
+      "cadeaux": "trésors",
+      "Léo": "Léo l'explorateur",
+      "Nina": "Nina l'aventurière",
+      "Darina": "Darina la vigie",
+      "Lana": "Lana l'astronome",
+      "lettre L": "lettre T",
+      "lettre A": "lettre T",
+      "bridge": "treasure path",
+      "bridges": "treasure paths",
+      "river": "magic creek",
+      "treehouse": "secret cave",
+      "apple": "gold coin",
+      "apples": "gold coins",
+      "mushroom": "precious crystal",
+      "mushrooms": "precious crystals",
+      "flower": "emerald",
+      "flowers": "emeralds",
+      "hazelnut": "ruby",
+      "hazelnuts": "rubies",
+      "gift": "treasure",
+      "gifts": "treasures",
+    };
+  } else if (bookId === 4) {
+    idOffset = 200; // 201-244 becomes 401-444
+    letterTarget = "N";
+    letterReplacement = "E"; // E for Étoile
+    replacements = {
+      "cabane": "étoile filante",
+      "cabanes": "étoiles filantes",
+      "plan": "carte céleste",
+      "plans": "cartes célestes",
+      "marteau": "télescope",
+      "marteaux": "télescopes",
+      "bois": "ciel nocturne",
+      "rivière": "voie lactée",
+      "pont": "pont d'étoiles",
+      "pomme": "météorite",
+      "pommes": "météorites",
+      "champignon": "luciole brillante",
+      "champignons": "lucioles brillantes",
+      "fleur": "constellation",
+      "fleurs": "constellations",
+      "noisette": "comète",
+      "noisettes": "comètes",
+      "cadeau": "étoile",
+      "cadeaux": "étoiles",
+      "lettre L": "lettre E",
+      "lettre N": "lettre E",
+      "lettre A": "lettre E",
+      "treehouse": "shooting star",
+      "treehouses": "shooting stars",
+      "plan": "celestial map",
+      "plans": "celestial maps",
+      "hammer": "telescope",
+      "hammers": "telescopes",
+      "wood": "night sky",
+      "river": "milky way",
+      "bridge": "star bridge",
+      "apple": "meteorite",
+      "apples": "meteorites",
+      "mushroom": "glowing firefly",
+      "mushrooms": "glowing fireflies",
+      "flower": "constellation",
+      "flowers": "constellations",
+    };
+  } else if (bookId === 5) {
+    idOffset = 400; // 101-144 becomes 501-544
+    letterTarget = "A";
+    letterReplacement = "P"; // P for Pique-nique
+    replacements = {
+      "pont": "panier de pique-nique",
+      "ponts": "paniers de pique-nique",
+      "rivière": "nappe de pique-nique",
+      "cabane": "gâteau magique",
+      "cabanes": "gâteaux magiques",
+      "pomme": "fraise sucrée",
+      "pommes": "fraises sucrées",
+      "champignon": "framboise",
+      "champignons": "framboises",
+      "fleur": "cerise",
+      "fleurs": "cerises",
+      "noisette": "mûre sauvage",
+      "noisettes": "mûres sauvages",
+      "cadeau": "délice sucré",
+      "cadeaux": "délices sucrés",
+      "lettre L": "lettre P",
+      "lettre A": "lettre P",
+      "bridge": "picnic basket",
+      "bridges": "picnic baskets",
+      "river": "picnic blanket",
+      "treehouse": "magic cake",
+      "treehouses": "magic cakes",
+      "apple": "sweet strawberry",
+      "apples": "sweet strawberries",
+      "mushroom": "raspberry",
+      "mushrooms": "raspberries",
+      "flower": "cherry",
+      "flowers": "cherries",
+    };
+  } else if (bookId === 6) {
+    idOffset = 400; // 201-244 becomes 601-644
+    letterTarget = "N";
+    letterReplacement = "O"; // O for Océan
+    replacements = {
+      "cabane": "sous-marin jaune",
+      "cabanes": "sous-marins jaunes",
+      "plan": "carte marine",
+      "plans": "cartes marines",
+      "marteau": "barre de navigation",
+      "marteaux": "barres de navigation",
+      "bois": "récif de corail",
+      "rivière": "fosse sous-marine",
+      "pont": "sous-marin",
+      "pomme": "perle magique",
+      "pommes": "perles magiques",
+      "champignon": "poisson-clown",
+      "champignons": "poissons-clowns",
+      "fleur": "étoile de mer",
+      "fleurs": "étoiles de mer",
+      "noisette": "coquillage",
+      "noisettes": "coquillages",
+      "cadeau": "perle",
+      "cadeaux": "perles",
+      "lettre L": "lettre O",
+      "lettre N": "lettre O",
+      "lettre A": "lettre O",
+      "treehouse": "yellow submarine",
+      "treehouses": "yellow submarines",
+      "plan": "marine chart",
+      "plans": "marine charts",
+      "hammer": "navigation wheel",
+      "hammers": "navigation wheels",
+      "wood": "coral reef",
+      "river": "ocean trench",
+      "bridge": "submarine",
+      "apple": "magic pearl",
+      "apples": "magic pearls",
+      "mushroom": "clownfish",
+      "mushrooms": "clownfish",
+      "flower": "starfish",
+      "flowers": "starfish",
+    };
+  }
+
+  const replaceText = (text: string | undefined): string => {
+    if (!text) return "";
+    let result = text;
+    Object.keys(replacements).forEach((key) => {
+      const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+      const regex = new RegExp("\\b" + escapedKey + "\\b", "gi");
+      result = result.replace(regex, (match) => {
+        if (match[0] === match[0].toUpperCase()) {
+          return replacements[key].charAt(0).toUpperCase() + replacements[key].slice(1);
+        }
+        return replacements[key];
+      });
+      if (key.length > 4) {
+        const regexLoose = new RegExp(escapedKey, "gi");
+        result = result.replace(regexLoose, (match) => {
+          if (match[0] === match[0].toUpperCase()) {
+            return replacements[key].charAt(0).toUpperCase() + replacements[key].slice(1);
+          }
+          return replacements[key];
+        });
+      }
+    });
+    return result;
+  };
+
+  book.chapters.forEach((chap) => {
+    chap.missions.forEach((m) => {
+      const oldId = m.id;
+      m.id = oldId + idOffset;
+
+      m.typeFr = replaceText(m.typeFr);
+      m.typeEn = replaceText(m.typeEn);
+      m.bubbleFr = replaceText(m.bubbleFr);
+      m.bubbleEn = replaceText(m.bubbleEn);
+      m.consigneFr = replaceText(m.consigneFr);
+      m.consigneEn = replaceText(m.consigneEn);
+      if (m.solutionFr) m.solutionFr = replaceText(m.solutionFr);
+      if (m.solutionEn) m.solutionEn = replaceText(m.solutionEn);
+      if (m.solFr) m.solFr = replaceText(m.solFr);
+      if (m.solEn) m.solEn = replaceText(m.solEn);
+      if (m.inputPlaceholderFr) m.inputPlaceholderFr = replaceText(m.inputPlaceholderFr);
+      if (m.inputPlaceholderEn) m.inputPlaceholderEn = replaceText(m.inputPlaceholderEn);
+
+      if (oldId === 101) {
+        if (bookId === 3) {
+          m.bubbleFr = "Pour commencer notre quête, retrouve la lettre qui commence le mot : Trésor !";
+          m.bubbleEn = "To start our quest, find the letter that starts the word: Treasure!";
+          m.choices = [
+            { id: `${m.id}-a`, textFr: "M", textEn: "M" },
+            { id: `${m.id}-b`, textFr: "T", textEn: "T", isCorrect: true },
+            { id: `${m.id}-c`, textFr: "C", textEn: "C" }
+          ];
+          m.solFr = "C'est le T ! Trésor commence par la lettre T.";
+          m.solEn = "It is T! Treasure starts with the letter T.";
+        } else if (bookId === 5) {
+          m.bubbleFr = "Pour préparer notre goûter, retrouve la lettre qui commence le mot : Pique-nique !";
+          m.bubbleEn = "To prepare our snack, find the letter that starts the word: Picnic!";
+          m.choices = [
+            { id: `${m.id}-a`, textFr: "R", textEn: "R" },
+            { id: `${m.id}-b`, textFr: "P", textEn: "P", isCorrect: true },
+            { id: `${m.id}-c`, textFr: "S", textEn: "S" }
+          ];
+          m.solFr = "C'est le P ! Pique-nique commence par la lettre P.";
+          m.solEn = "It is P! Picnic starts with the letter P.";
+        }
+      } else if (oldId === 102) {
+        if (bookId === 3) {
+          m.bubbleFr = "Des lettres T se cachent sur la carte ! Il y en a 4. Trouve-les toutes !";
+          m.bubbleEn = "Letters T are hiding on the map! There are 4 of them. Find them all!";
+          m.consigneFr = "👉 Sélectionne les 4 lettres T :";
+          m.consigneEn = "👉 Select the 4 letters T:";
+        } else if (bookId === 5) {
+          m.bubbleFr = "Des lettres P se cachent sur notre panier ! Il y en a 4. Trouve-les toutes !";
+          m.bubbleEn = "Letters P are hiding on our basket! There are 4 of them. Find them all!";
+          m.consigneFr = "👉 Sélectionne les 4 lettres P :";
+          m.consigneEn = "👉 Select the 4 letters P:";
+        }
+        if (m.gridItems) {
+          m.gridItems.forEach(gi => {
+            gi.id = gi.id.replace(String(oldId), String(m.id));
+            if (gi.text === letterTarget || (gi.isTarget && gi.text === "A")) {
+              gi.text = letterReplacement;
+            }
+          });
+        }
+      } else if (oldId === 105) {
+        if (bookId === 3) {
+          m.bubbleFr = "Apprends à écrire la lettre de notre carte ! Repasse sur les modèles de lettres T et C.";
+          m.bubbleEn = "Learn to write the letter of our map! Trace the letters T and C.";
+          m.consigneFr = "👉 Dessine les lettres T et C dans la zone d'écriture :";
+          m.consigneEn = "👉 Draw the letters T and C in the writing zone:";
+        } else if (bookId === 5) {
+          m.bubbleFr = "Apprends à écrire la lettre du Panier ! Repasse sur les modèles de lettres P et B.";
+          m.bubbleEn = "Learn to write the letter of the Basket! Trace the letters P and B.";
+          m.consigneFr = "👉 Dessine les lettres P et B dans la zone d'écriture :";
+          m.consigneEn = "👉 Draw the letters P and B in the writing zone:";
+        }
+      } else if (oldId === 106) {
+        if (bookId === 3) {
+          m.matches = [
+            { leftFr: "T (majuscule)", leftEn: "T (uppercase)", rightFr: "t (minuscule)", rightEn: "t (lowercase)", rightIcon: "d-noisette", correctPairIndex: 0 },
+            { leftFr: "C (majuscule)", leftEn: "C (uppercase)", rightFr: "c (minuscule)", rightEn: "c (lowercase)", rightIcon: "d-fleur", correctPairIndex: 1 },
+            { leftFr: "O (majuscule)", leftEn: "O (uppercase)", rightFr: "o (minuscule)", rightEn: "o (lowercase)", rightIcon: "d-pomme", correctPairIndex: 2 },
+            { leftFr: "M (majuscule)", leftEn: "M (uppercase)", rightFr: "m (minuscule)", rightEn: "m (lowercase)", rightIcon: "d-etoile", correctPairIndex: 3 }
+          ];
+        } else if (bookId === 5) {
+          m.matches = [
+            { leftFr: "P (majuscule)", leftEn: "P (uppercase)", rightFr: "p (minuscule)", rightEn: "p (lowercase)", rightIcon: "d-noisette", correctPairIndex: 0 },
+            { leftFr: "B (majuscule)", leftEn: "B (uppercase)", rightFr: "b (minuscule)", rightEn: "b (lowercase)", rightIcon: "d-fleur", correctPairIndex: 1 },
+            { leftFr: "T (majuscule)", leftEn: "T (uppercase)", rightFr: "t (minuscule)", rightEn: "t (lowercase)", rightIcon: "d-pomme", correctPairIndex: 2 },
+            { leftFr: "M (majuscule)", leftEn: "M (uppercase)", rightFr: "m (minuscule)", rightEn: "m (lowercase)", rightIcon: "d-etoile", correctPairIndex: 3 }
+          ];
+        }
+      } else if (oldId === 201) {
+        if (bookId === 4) {
+          m.bubbleFr = "Pour commencer l'observation, retrouve la lettre qui commence le mot : Étoile !";
+          m.bubbleEn = "To start the observation, find the letter that starts the word: Star!";
+          m.choices = [
+            { id: `${m.id}-a`, textFr: "O", textEn: "O" },
+            { id: `${m.id}-b`, textFr: "E", textEn: "E", isCorrect: true },
+            { id: `${m.id}-c`, textFr: "U", textEn: "U" }
+          ];
+          m.solFr = "C'est le E ! Étoile commence par la lettre E.";
+          m.solEn = "It is E! Star starts with the letter E.";
+        } else if (bookId === 6) {
+          m.bubbleFr = "Pour démarrer les moteurs, retrouve la lettre qui commence le mot : Océan !";
+          m.bubbleEn = "To start the engines, find the letter that starts the word: Ocean!";
+          m.choices = [
+            { id: `${m.id}-a`, textFr: "I", textEn: "I" },
+            { id: `${m.id}-b`, textFr: "O", textEn: "O", isCorrect: true },
+            { id: `${m.id}-c`, textFr: "A", textEn: "A" }
+          ];
+          m.solFr = "C'est le O ! Océan commence par la lettre O.";
+          m.solEn = "It is O! Ocean starts with the letter O.";
+        }
+      } else if (oldId === 202) {
+        if (bookId === 4) {
+          m.bubbleFr = "Des lettres E se cachent dans le ciel ! Il y en a 4. Trouve-les toutes !";
+          m.bubbleEn = "Letters E are hiding in the sky! There are 4 of them. Find them all!";
+          m.consigneFr = "👉 Sélectionne les 4 lettres E :";
+          m.consigneEn = "👉 Select the 4 letters E:";
+        } else if (bookId === 6) {
+          m.bubbleFr = "Des lettres O se cachent dans les bulles ! Il y en a 4. Trouve-les toutes !";
+          m.bubbleEn = "Letters O are hiding in the bubbles! There are 4 of them. Find them all!";
+          m.consigneFr = "👉 Sélectionne les 4 lettres O :";
+          m.consigneEn = "👉 Select the 4 letters O:";
+        }
+        if (m.gridItems) {
+          m.gridItems.forEach(gi => {
+            gi.id = gi.id.replace(String(oldId), String(m.id));
+            if (gi.text === letterTarget || (gi.isTarget && gi.text === "N")) {
+              gi.text = letterReplacement;
+            }
+          });
+        }
+      } else if (oldId === 205) {
+        if (bookId === 4) {
+          m.bubbleFr = "Apprends à écrire la lettre de l'Étoile ! Repasse sur les modèles de lettres E et S.";
+          m.bubbleEn = "Learn to write the letter of the Star! Trace the letters E and S.";
+          m.consigneFr = "👉 Dessine les lettres E et S dans la zone d'écriture :";
+          m.consigneEn = "👉 Draw the letters E and S in the writing zone:";
+        } else if (bookId === 6) {
+          m.bubbleFr = "Apprends à écrire la lettre du Sous-marin ! Repasse sur les modèles de lettres O et S.";
+          m.bubbleEn = "Learn to write the letter of the Submarine! Trace the letters O and S.";
+          m.consigneFr = "👉 Dessine les lettres O et S dans la zone d'écriture :";
+          m.consigneEn = "👉 Draw the letters O and S in the writing zone:";
+        }
+      } else if (oldId === 206) {
+        if (bookId === 4) {
+          m.matches = [
+            { leftFr: "E (majuscule)", leftEn: "E (uppercase)", rightFr: "e (minuscule)", rightEn: "e (lowercase)", rightIcon: "d-noisette", correctPairIndex: 0 },
+            { leftFr: "S (majuscule)", leftEn: "S (uppercase)", rightFr: "s (minuscule)", rightEn: "s (lowercase)", rightIcon: "d-fleur", correctPairIndex: 1 },
+            { leftFr: "C (majuscule)", leftEn: "C (uppercase)", rightFr: "c (minuscule)", rightEn: "c (lowercase)", rightIcon: "d-pomme", correctPairIndex: 2 },
+            { leftFr: "L (majuscule)", leftEn: "L (uppercase)", rightFr: "l (minuscule)", rightEn: "l (lowercase)", rightIcon: "d-etoile", correctPairIndex: 3 }
+          ];
+        } else if (bookId === 6) {
+          m.matches = [
+            { leftFr: "O (majuscule)", leftEn: "O (uppercase)", rightFr: "o (minuscule)", rightEn: "o (lowercase)", rightIcon: "d-noisette", correctPairIndex: 0 },
+            { leftFr: "S (majuscule)", leftEn: "S (uppercase)", rightFr: "s (minuscule)", rightEn: "s (lowercase)", rightIcon: "d-fleur", correctPairIndex: 1 },
+            { leftFr: "M (majuscule)", leftEn: "M (uppercase)", rightFr: "m (minuscule)", rightEn: "m (lowercase)", rightIcon: "d-pomme", correctPairIndex: 2 },
+            { leftFr: "P (majuscule)", leftEn: "P (uppercase)", rightFr: "p (minuscule)", rightEn: "p (lowercase)", rightIcon: "d-etoile", correctPairIndex: 3 }
+          ];
+        }
+      }
+
+      if (m.choices) {
+        m.choices.forEach(c => {
+          c.id = c.id.replace(String(oldId), String(m.id));
+          c.textFr = replaceText(c.textFr);
+          c.textEn = replaceText(c.textEn);
+        });
+      }
+      if (m.gridItems) {
+        m.gridItems.forEach(gi => {
+          gi.id = gi.id.replace(String(oldId), String(m.id));
+        });
+      }
+      if (m.matches) {
+        m.matches.forEach(match => {
+          match.leftFr = replaceText(match.leftFr);
+          match.leftEn = replaceText(match.leftEn);
+          match.rightFr = replaceText(match.rightFr);
+          match.rightEn = replaceText(match.rightEn);
+        });
+      }
+    });
+  });
+
+  return book;
+};
+
 // Programmatically generate Book 3 and Book 4 to give children more options!
 const createBook3 = (): BookData => {
   // Deep clone Book 1
@@ -1919,17 +2299,10 @@ const createBook3 = (): BookData => {
       chap.badgeNameEn = data.badgeNameEn;
       chap.badgeDescFr = data.badgeDescFr;
       chap.badgeDescEn = data.badgeDescEn;
-
-      chap.missions.forEach(m => {
-        m.bubbleFr = m.bubbleFr.replace("pont", "chemin du trésor").replace("rivière", "ruisseau").replace("cabane", "grotte secrète");
-        m.bubbleEn = m.bubbleEn.replace("bridge", "treasure path").replace("river", "stream").replace("treehouse", "secret cave");
-        m.consigneFr = m.consigneFr.replace("pont", "chemin du trésor").replace("cabane", "grotte");
-        m.consigneEn = m.consigneEn.replace("bridge", "treasure path").replace("treehouse", "cave");
-      });
     }
   }
 
-  return book;
+  return customizeBookMissions(book, 3);
 };
 
 const createBook4 = (): BookData => {
@@ -2047,17 +2420,10 @@ const createBook4 = (): BookData => {
       chap.badgeNameEn = data.badgeNameEn;
       chap.badgeDescFr = data.badgeDescFr;
       chap.badgeDescEn = data.badgeDescEn;
-
-      chap.missions.forEach(m => {
-        m.bubbleFr = m.bubbleFr.replace("cabane", "étoile filante").replace("plan", "carte céleste").replace("marteau", "télescope");
-        m.bubbleEn = m.bubbleEn.replace("treehouse", "shooting star").replace("plan", "celestial map").replace("hammer", "telescope");
-        m.consigneFr = m.consigneFr.replace("cabane", "étoile").replace("plan", "carte");
-        m.consigneEn = m.consigneEn.replace("treehouse", "star").replace("plan", "map");
-      });
     }
   }
 
-  return book;
+  return customizeBookMissions(book, 4);
 };
 
 const createBook5 = (): BookData => {
@@ -2175,17 +2541,10 @@ const createBook5 = (): BookData => {
       chap.badgeNameEn = data.badgeNameEn;
       chap.badgeDescFr = data.badgeDescFr;
       chap.badgeDescEn = data.badgeDescEn;
-
-      chap.missions.forEach(m => {
-        m.bubbleFr = m.bubbleFr.replace("pont", "panier de fruits").replace("rivière", "nappe").replace("cabane", "gâteau magique");
-        m.bubbleEn = m.bubbleEn.replace("bridge", "fruit basket").replace("river", "blanket").replace("treehouse", "magic cake");
-        m.consigneFr = m.consigneFr.replace("pont", "panier").replace("cabane", "gâteau");
-        m.consigneEn = m.consigneEn.replace("bridge", "basket").replace("treehouse", "cake");
-      });
     }
   }
 
-  return book;
+  return customizeBookMissions(book, 5);
 };
 
 const createBook6 = (): BookData => {
@@ -2303,17 +2662,10 @@ const createBook6 = (): BookData => {
       chap.badgeNameEn = data.badgeNameEn;
       chap.badgeDescFr = data.badgeDescFr;
       chap.badgeDescEn = data.badgeDescEn;
-
-      chap.missions.forEach(m => {
-        m.bubbleFr = m.bubbleFr.replace("cabane", "sous-marin").replace("plan", "carte marine").replace("marteau", "volant de navigation");
-        m.bubbleEn = m.bubbleEn.replace("treehouse", "submarine").replace("plan", "nautical chart").replace("hammer", "steering wheel");
-        m.consigneFr = m.consigneFr.replace("cabane", "sous-marin").replace("plan", "carte");
-        m.consigneEn = m.consigneEn.replace("treehouse", "submarine").replace("plan", "map");
-      });
     }
   }
 
-  return book;
+  return customizeBookMissions(book, 6);
 };
 
 // Append programmatically generated books to booksData

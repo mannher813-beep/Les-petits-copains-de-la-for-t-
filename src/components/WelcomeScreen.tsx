@@ -76,25 +76,33 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <div className="flex justify-center gap-2 sm:gap-4 md:gap-8 mb-6 sm:mb-8 flex-wrap">
           <div className="flex flex-col items-center group">
             <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-orange-100 border-2 border-orange-400 rounded-full flex items-center justify-center shadow-md transform transition group-hover:scale-110">
-              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16"><use href="#c-leo" /></svg>
+              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16" viewBox="0 0 120 150">
+                <use href="#c-leo" xlinkHref="#c-leo" />
+              </svg>
             </div>
             <span className="text-[10px] sm:text-xs font-bold text-orange-700 mt-1">Léo</span>
           </div>
           <div className="flex flex-col items-center group">
             <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-slate-100 border-2 border-slate-400 rounded-full flex items-center justify-center shadow-md transform transition group-hover:scale-110">
-              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16"><use href="#c-nina" /></svg>
+              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16" viewBox="0 0 120 150">
+                <use href="#c-nina" xlinkHref="#c-nina" />
+              </svg>
             </div>
             <span className="text-[10px] sm:text-xs font-bold text-slate-700 mt-1">Nina</span>
           </div>
           <div className="flex flex-col items-center group">
             <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-amber-100 border-2 border-amber-600 rounded-full flex items-center justify-center shadow-md transform transition group-hover:scale-110">
-              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16"><use href="#c-tom" /></svg>
+              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16" viewBox="0 0 130 145">
+                <use href="#c-tom" xlinkHref="#c-tom" />
+              </svg>
             </div>
             <span className="text-[10px] sm:text-xs font-bold text-amber-800 mt-1">{lang === "fr" ? "Darina" : "Darina"}</span>
           </div>
           <div className="flex flex-col items-center group">
             <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-sky-100 border-2 border-sky-400 rounded-full flex items-center justify-center shadow-md transform transition group-hover:scale-110">
-              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16"><use href="#c-zaza" /></svg>
+              <svg className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16" viewBox="0 0 110 145">
+                <use href="#c-zaza" xlinkHref="#c-zaza" />
+              </svg>
             </div>
             <span className="text-[10px] sm:text-xs font-bold text-sky-700 mt-1">{lang === "fr" ? "Lana" : "Lana"}</span>
           </div>
