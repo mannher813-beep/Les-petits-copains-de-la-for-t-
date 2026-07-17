@@ -30,7 +30,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedBookId === 2 && !isPremium) {
+    if (selectedBookId !== 1 && !isPremium) {
       if (onOpenPremiumModal) onOpenPremiumModal();
       return;
     }
@@ -183,7 +183,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   <div
                     key={book.id}
                     onClick={() => {
-                      if (book.id === 2 && !isPremium) {
+                      if (book.id !== 1 && !isPremium) {
                         if (onOpenPremiumModal) onOpenPremiumModal();
                       } else {
                         setSelectedBookId(book.id);
@@ -199,13 +199,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                       <div className="flex justify-between items-center mb-2">
                         <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${tagColor} flex items-center gap-1`}>
                           {lang === "fr" ? `Tome ${book.id}` : `Volume ${book.id}`}
-                          {book.id === 2 && !isPremium && <Lock size={12} />}
+                          {book.id !== 1 && !isPremium && <Lock size={12} />}
                         </span>
                         {isSelected && <span className="text-forest font-bold text-base sm:text-lg">✔</span>}
                       </div>
                       <h3 className="text-base sm:text-lg md:text-xl font-bold text-forest mb-1 text-left flex items-center gap-1.5 flex-wrap">
                         {title}
-                        {book.id === 2 && !isPremium && (
+                        {book.id !== 1 && !isPremium && (
                           <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
                             <Lock size={10} />
                             {lang === "fr" ? "Premium" : "Premium"}

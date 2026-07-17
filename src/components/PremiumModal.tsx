@@ -37,17 +37,51 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
     setError("");
 
     try {
-      const response = await fetch("/api/payment/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          phone: phone.trim(),
-          childName: childName || (language === "fr" ? "Copain" : "Friend"),
-          orderId
-        })
-      });
+      const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || "";
+      const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || "";
+      const useEdgeFunction = !!supabaseUrl && !!supabaseAnonKey;
+
+      let response;
+      const payload = {
+        totalPrice: 1000,
+        article: [{ "Pack Premium (Tomes 2 à 6)": 1000 }],
+        numeroSend: phone.trim(),
+        nomclient: childName || (language === "fr" ? "Copain" : "Friend"),
+        orderId,
+        unlockedBooks: ["2", "3", "4", "5", "6"]
+      };
+
+      if (useEdgeFunction) {
+        const endpoint = `${supabaseUrl}/functions/v1/create-payment`;
+        console.log(`Calling Supabase Edge Function: ${endpoint}`);
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        console.log("Calling local API payment proxy");
+        response = await fetch("/api/payment/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            phone: phone.trim(),
+            childName: payload.nomclient,
+            orderId,
+            totalPrice: payload.totalPrice,
+            article: payload.article,
+            numeroSend: payload.numeroSend,
+            nomclient: payload.nomclient,
+            unlockedBooks: payload.unlockedBooks
+          })
+        });
+      }
 
       if (!response.ok) {
         const errData = await response.json();
@@ -113,10 +147,10 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
             <div className="flex items-start gap-2">
               <span className="text-lg leading-none">📚</span>
               <p>
-                <strong>{language === "fr" ? "Le Tome 2 Complet" : "Full Volume 2"}</strong>:{" "}
+                <strong>{language === "fr" ? "Tous les Tomes (Tomes 2 à 6)" : "All Volumes (Volumes 2 to 6)"}</strong>:{" "}
                 {language === "fr" 
-                  ? "Les 5 chapitres de la cabane dans les arbres débloqués !" 
-                  : "All 5 chapters of the treehouse adventure unlocked!"}
+                  ? "Les aventures complètes et tous les exercices interactifs débloqués d'un coup !" 
+                  : "All complete adventures and interactive exercises unlocked at once!"}
               </p>
             </div>
             <div className="flex items-start gap-2">

@@ -63,76 +63,96 @@ const checkSupabaseTable = async () => {
  * Initiates the Money Fusion payment session
  */
 app.post("/api/payment/create", async (req, res) => {
-  const { phone, childName, orderId } = req.body;
+  const { 
+    phone, 
+    childName, 
+    orderId, 
+    totalPrice, 
+    article, 
+    numeroSend, 
+    nomclient, 
+    unlockedBooks 
+  } = req.body;
 
-  if (!phone || !childName || !orderId) {
-    return res.status(400).json({ error: "Missing required fields: phone, childName, orderId" });
+  const finalPhone = phone || numeroSend;
+  const finalChildName = childName || nomclient;
+  const finalOrderId = orderId;
+  const finalPrice = totalPrice || 1000;
+  const finalArticle = article || [{ "Tome 2 : La cabane dans les arbres": finalPrice }];
+  const booksToUnlock = unlockedBooks || ["2"];
+
+  if (!finalPhone || !finalChildName || !finalOrderId) {
+    return res.status(400).json({ error: "Missing required fields: phone/numeroSend, childName/nomclient, orderId" });
   }
 
   try {
     // Save to memoryDb first for robust fallback
-    memoryDb.set(orderId, {
-      order_id: orderId,
-      phone: phone,
-      child_name: childName,
+    memoryDb.set(finalOrderId, {
+      order_id: finalOrderId,
+      phone: finalPhone,
+      child_name: finalChildName,
       status: "pending",
       created_at: new Date().toISOString()
     });
 
-    // Insert pending entry into Supabase premium_unlocks table
+    // Insert/upsert pending entry into Supabase premium_unlocks table
     const { error: insertError } = await supabase
       .from("premium_unlocks")
-      .insert([
+      .upsert(
         {
-          order_id: orderId,
-          phone: phone,
-          child_name: childName,
+          order_id: finalOrderId,
+          phone: finalPhone,
+          child_name: finalChildName,
           status: "pending",
+          unlocked_books: JSON.stringify(booksToUnlock),
           created_at: new Date().toISOString()
-        }
-      ]);
+        },
+        { onConflict: "order_id" }
+      );
 
     if (insertError) {
       console.error("Supabase insert error (continuing with In-Memory fallback):", insertError.message || insertError);
     }
 
     const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-    const fusionPayUrl = process.env.FUSIONPAY_API_URL;
+    const fusionPayUrl = process.env.FUSIONPAY_API_URL || process.env.MONEYFUSION_API_URL;
 
     // Build standard Money Fusion payment payload
     const paymentData = {
-      totalPrice: 1000, // Price in FCFA
-      article: [{ "Pack Premium - Copains de la Forêt": 1000 }],
-      numeroSend: phone,
-      nomclient: childName,
-      personal_info: [{ orderId }],
-      return_url: `${appUrl}/?payment=success&order=${orderId}`,
+      totalPrice: finalPrice, // Price in FCFA
+      article: finalArticle,
+      personal_Info: [{ userId: 1, orderId: finalOrderId }],
+      numeroSend: finalPhone,
+      nomclient: finalChildName,
+      return_url: `${appUrl}/?payment=success&order=${finalOrderId}`,
       webhook_url: `${appUrl}/api/payment/webhook`
     };
 
     // If FUSIONPAY_API_URL is not set, simulate the payment redirection for a seamless preview
     if (!fusionPayUrl) {
-      console.warn("FUSIONPAY_API_URL environment variable is not set. Simulating Money Fusion checkout.");
-      const simulatedUrl = `${appUrl}/?payment=success&order=${orderId}&simulated=true`;
+      console.warn("FUSIONPAY_API_URL or MONEYFUSION_API_URL is not set. Simulating Money Fusion checkout.");
+      const simulatedUrl = `${appUrl}/?payment=success&order=${finalOrderId}&simulated=true`;
       
       // Update with a simulated token
       const simulatedToken = `sim_token_${Math.random().toString(36).substring(2, 11)}`;
       
-      const record = memoryDb.get(orderId);
+      const record = memoryDb.get(finalOrderId);
       if (record) {
         record.token_pay = simulatedToken;
-        tokenToOrderId.set(simulatedToken, orderId);
+        tokenToOrderId.set(simulatedToken, finalOrderId);
       }
 
       await supabase
         .from("premium_unlocks")
         .update({ token_pay: simulatedToken })
-        .eq("order_id", orderId);
+        .eq("order_id", finalOrderId);
 
       return res.json({
         url: simulatedUrl,
         token: simulatedToken,
-        simulated: true
+        simulated: true,
+        statut: true,
+        message: "paiement en cours (simulé)"
       });
     }
 
@@ -165,16 +185,16 @@ app.post("/api/payment/create", async (req, res) => {
 
     // Sync memoryDb with real tokenPay
     if (tokenPay) {
-      const record = memoryDb.get(orderId);
+      const record = memoryDb.get(finalOrderId);
       if (record) {
         record.token_pay = tokenPay;
-        tokenToOrderId.set(tokenPay, orderId);
+        tokenToOrderId.set(tokenPay, finalOrderId);
       }
 
       const { error: updateError } = await supabase
         .from("premium_unlocks")
         .update({ token_pay: tokenPay })
-        .eq("order_id", orderId);
+        .eq("order_id", finalOrderId);
 
       if (updateError) {
         console.error("Supabase update tokenPay error:", updateError.message || updateError);
@@ -183,7 +203,9 @@ app.post("/api/payment/create", async (req, res) => {
 
     return res.json({
       url: redirectUrl,
-      token: tokenPay
+      token: tokenPay,
+      statut: data.statut ?? true,
+      message: data.message || "paiement en cours"
     });
 
   } catch (err: any) {

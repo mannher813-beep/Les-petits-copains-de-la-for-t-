@@ -52,6 +52,33 @@ export default function App() {
   // Modal Control
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
+  // Automatically check payment status from the backend database when the app mounts
+  useEffect(() => {
+    const savedOrderId = localStorage.getItem("forest_friends_order_id");
+    if (savedOrderId) {
+      fetch(`/api/payment/status/${savedOrderId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Status check failed");
+          return res.json();
+        })
+        .then((data) => {
+          if (data.status === "paid") {
+            setIsPremium(true);
+            localStorage.setItem("forest_friends_is_premium", "true");
+            setProgress((prev) => {
+              if (!prev) return null;
+              const updated = { ...prev, isPremium: true };
+              localStorage.setItem("forest_friends_progress", JSON.stringify(updated));
+              return updated;
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn("Auto status verification failed on mount:", err);
+        });
+    }
+  }, []);
+
   // Synchronize premium updates
   const handlePaymentSuccess = () => {
     console.log("Payment validated! Unlocking Premium Mode.");
