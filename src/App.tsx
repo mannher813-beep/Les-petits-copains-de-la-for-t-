@@ -46,6 +46,9 @@ export default function App() {
     return null;
   });
 
+  // Active View State: defaults to "welcome" so users always land on the home page first
+  const [activeView, setActiveView] = useState<"welcome" | "viewer">("welcome");
+
   // Modal Control
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
@@ -81,23 +84,66 @@ export default function App() {
 
   // Handle initialization of progress from WelcomeScreen
   const handleStart = (name: string, bookId: number, lang: "fr" | "en") => {
-    const newProgress: UserProgress = {
-      childName: name,
-      completionDate: "",
-      currentBookId: bookId,
-      currentLanguage: lang,
-      currentPage: 1,
-      completedAnswers: {},
-      isPremium,
-      orderId
-    };
-    setProgress(newProgress);
-    localStorage.setItem("forest_friends_progress", JSON.stringify(newProgress));
+    let updatedProgress: UserProgress;
+    const saved = localStorage.getItem("forest_friends_progress");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as UserProgress;
+        if (parsed.currentBookId === bookId) {
+          // Keep existing progress for the same book but update name and language
+          updatedProgress = {
+            ...parsed,
+            childName: name,
+            currentLanguage: lang,
+            isPremium,
+            orderId
+          };
+        } else {
+          // New book selected, initialize fresh progress for this book
+          updatedProgress = {
+            childName: name,
+            completionDate: "",
+            currentBookId: bookId,
+            currentLanguage: lang,
+            currentPage: 1,
+            completedAnswers: {},
+            isPremium,
+            orderId
+          };
+        }
+      } catch (e) {
+        updatedProgress = {
+          childName: name,
+          completionDate: "",
+          currentBookId: bookId,
+          currentLanguage: lang,
+          currentPage: 1,
+          completedAnswers: {},
+          isPremium,
+          orderId
+        };
+      }
+    } else {
+      updatedProgress = {
+        childName: name,
+        completionDate: "",
+        currentBookId: bookId,
+        currentLanguage: lang,
+        currentPage: 1,
+        completedAnswers: {},
+        isPremium,
+        orderId
+      };
+    }
+
+    setProgress(updatedProgress);
+    localStorage.setItem("forest_friends_progress", JSON.stringify(updatedProgress));
+    setActiveView("viewer");
   };
 
   // Exit back to welcome screen
   const handleExit = () => {
-    setProgress(null);
+    setActiveView("welcome");
   };
 
   // Retrieve active book
@@ -108,13 +154,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-warm-cream font-sans text-text-charcoal selection:bg-sun-yellow/30">
       <GlobalSvgSymbols />
-      {!progress || !activeBook ? (
+      {activeView === "welcome" || !progress || !activeBook ? (
         <WelcomeScreen
           onStart={handleStart}
           isPremium={isPremium}
           onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
           initialLanguage={progress?.currentLanguage || "fr"}
           initialName={progress?.childName || ""}
+          initialBookId={progress?.currentBookId || 1}
         />
       ) : (
         <div className="animate-fade-in">

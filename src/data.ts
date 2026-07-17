@@ -1807,13 +1807,14 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
   let idOffset = 0;
   let letterTarget = "A";
   let letterReplacement = "A";
-  let replacements: { [key: string]: string } = {};
+  let replacementsFr: { [key: string]: string } = {};
+  let replacementsEn: { [key: string]: string } = {};
 
   if (bookId === 3) {
     idOffset = 200; // 101-144 becomes 301-344
     letterTarget = "A";
     letterReplacement = "T"; // T for Trésor
-    replacements = {
+    replacementsFr = {
       "pont": "chemin du trésor",
       "ponts": "chemins du trésor",
       "rivière": "ruisseau magique",
@@ -1834,6 +1835,8 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       "Lana": "Lana l'astronome",
       "lettre L": "lettre T",
       "lettre A": "lettre T",
+    };
+    replacementsEn = {
       "bridge": "treasure path",
       "bridges": "treasure paths",
       "river": "magic creek",
@@ -1853,7 +1856,7 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
     idOffset = 200; // 201-244 becomes 401-444
     letterTarget = "N";
     letterReplacement = "E"; // E for Étoile
-    replacements = {
+    replacementsFr = {
       "cabane": "étoile filante",
       "cabanes": "étoiles filantes",
       "plan": "carte céleste",
@@ -1876,6 +1879,8 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       "lettre L": "lettre E",
       "lettre N": "lettre E",
       "lettre A": "lettre E",
+    };
+    replacementsEn = {
       "treehouse": "shooting star",
       "treehouses": "shooting stars",
       "plan": "celestial map",
@@ -1896,7 +1901,7 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
     idOffset = 400; // 101-144 becomes 501-544
     letterTarget = "A";
     letterReplacement = "P"; // P for Pique-nique
-    replacements = {
+    replacementsFr = {
       "pont": "panier de pique-nique",
       "ponts": "paniers de pique-nique",
       "rivière": "nappe de pique-nique",
@@ -1914,6 +1919,8 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       "cadeaux": "délices sucrés",
       "lettre L": "lettre P",
       "lettre A": "lettre P",
+    };
+    replacementsEn = {
       "bridge": "picnic basket",
       "bridges": "picnic baskets",
       "river": "picnic blanket",
@@ -1930,7 +1937,7 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
     idOffset = 400; // 201-244 becomes 601-644
     letterTarget = "N";
     letterReplacement = "O"; // O for Océan
-    replacements = {
+    replacementsFr = {
       "cabane": "sous-marin jaune",
       "cabanes": "sous-marins jaunes",
       "plan": "carte marine",
@@ -1953,6 +1960,8 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       "lettre L": "lettre O",
       "lettre N": "lettre O",
       "lettre A": "lettre O",
+    };
+    replacementsEn = {
       "treehouse": "yellow submarine",
       "treehouses": "yellow submarines",
       "plan": "marine chart",
@@ -1971,7 +1980,7 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
     };
   }
 
-  const replaceText = (text: string | undefined): string => {
+  const replaceText = (text: string | undefined, replacements: { [key: string]: string }): string => {
     if (!text) return "";
     let result = text;
     Object.keys(replacements).forEach((key) => {
@@ -2001,18 +2010,18 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       const oldId = m.id;
       m.id = oldId + idOffset;
 
-      m.typeFr = replaceText(m.typeFr);
-      m.typeEn = replaceText(m.typeEn);
-      m.bubbleFr = replaceText(m.bubbleFr);
-      m.bubbleEn = replaceText(m.bubbleEn);
-      m.consigneFr = replaceText(m.consigneFr);
-      m.consigneEn = replaceText(m.consigneEn);
-      if (m.solutionFr) m.solutionFr = replaceText(m.solutionFr);
-      if (m.solutionEn) m.solutionEn = replaceText(m.solutionEn);
-      if (m.solFr) m.solFr = replaceText(m.solFr);
-      if (m.solEn) m.solEn = replaceText(m.solEn);
-      if (m.inputPlaceholderFr) m.inputPlaceholderFr = replaceText(m.inputPlaceholderFr);
-      if (m.inputPlaceholderEn) m.inputPlaceholderEn = replaceText(m.inputPlaceholderEn);
+      m.typeFr = replaceText(m.typeFr, replacementsFr);
+      m.typeEn = replaceText(m.typeEn, replacementsEn);
+      m.bubbleFr = replaceText(m.bubbleFr, replacementsFr);
+      m.bubbleEn = replaceText(m.bubbleEn, replacementsEn);
+      m.consigneFr = replaceText(m.consigneFr, replacementsFr);
+      m.consigneEn = replaceText(m.consigneEn, replacementsEn);
+      if (m.solutionFr) m.solutionFr = replaceText(m.solutionFr, replacementsFr);
+      if (m.solutionEn) m.solutionEn = replaceText(m.solutionEn, replacementsEn);
+      if (m.solFr) m.solFr = replaceText(m.solFr, replacementsFr);
+      if (m.solEn) m.solEn = replaceText(m.solEn, replacementsEn);
+      if (m.inputPlaceholderFr) m.inputPlaceholderFr = replaceText(m.inputPlaceholderFr, replacementsFr);
+      if (m.inputPlaceholderEn) m.inputPlaceholderEn = replaceText(m.inputPlaceholderEn, replacementsEn);
 
       if (oldId === 101) {
         if (bookId === 3) {
@@ -2159,8 +2168,8 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       if (m.choices) {
         m.choices.forEach(c => {
           c.id = c.id.replace(String(oldId), String(m.id));
-          c.textFr = replaceText(c.textFr);
-          c.textEn = replaceText(c.textEn);
+          c.textFr = replaceText(c.textFr, replacementsFr);
+          c.textEn = replaceText(c.textEn, replacementsEn);
         });
       }
       if (m.gridItems) {
@@ -2170,10 +2179,10 @@ const customizeBookMissions = (book: BookData, bookId: number): BookData => {
       }
       if (m.matches) {
         m.matches.forEach(match => {
-          match.leftFr = replaceText(match.leftFr);
-          match.leftEn = replaceText(match.leftEn);
-          match.rightFr = replaceText(match.rightFr);
-          match.rightEn = replaceText(match.rightEn);
+          match.leftFr = replaceText(match.leftFr, replacementsFr);
+          match.leftEn = replaceText(match.leftEn, replacementsEn);
+          match.rightFr = replaceText(match.rightFr, replacementsFr);
+          match.rightEn = replaceText(match.rightEn, replacementsEn);
         });
       }
     });

@@ -26,6 +26,758 @@ const getCharacterViewBox = (char: string): string => {
   return "0 0 120 150"; // leo, nina, etc.
 };
 
+const getStoryInstructionText = (bookId: number, chapId: number, lang: "fr" | "en"): string => {
+  if (bookId === 1) {
+    if (chapId === 1) return lang === "fr" ? "Dis bonjour bien fort à tes nouveaux amis et tourne la page !" : "Say hello loudly to your new friends and turn the page!";
+    if (chapId === 2) return lang === "fr" ? "Fais un clin d'œil complice à Nina pour lui montrer que tu es prêt, puis tourne la page !" : "Wink at Nina to show her you're ready, then turn the page!";
+    if (chapId === 3) return lang === "fr" ? "Récite la formule secrète 'Cui-cui !' avec Lana, puis prépare-toi à lire !" : "Say the secret formula 'Tweet-tweet!' with Lana, then get ready to read!";
+    if (chapId === 4) return lang === "fr" ? "Prépare tes doigts pour compter avec Darina, puis tourne la page !" : "Get your fingers ready to count with Darina, then turn the page!";
+    return lang === "fr" ? "Mets ton plus beau chapeau de fête imaginaire et prépare-toi pour le gâteau !" : "Put on your best imaginary party hat and get ready for the cake!";
+  }
+  if (bookId === 2) {
+    if (chapId === 1) return lang === "fr" ? "Prends ta règle imaginaire et prépare-toi à dessiner les plans de la cabane !" : "Grab your imaginary ruler and get ready to draw the treehouse plans!";
+    if (chapId === 2) return lang === "fr" ? "Fais semblant de scier du bois : 'Cric-crac !' puis tourne la page !" : "Pretend to saw some wood: 'Crick-crack!' then turn the page!";
+    if (chapId === 3) return lang === "fr" ? "Plie une lettre magique en papier dans tes mains, puis tourne la page !" : "Fold a magical paper letter in your hands, then turn the page!";
+    if (chapId === 4) return lang === "fr" ? "Fais semblant de grimper à l'échelle barreau par barreau, puis tourne la page !" : "Pretend to climb the ladder rung by rung, then turn the page!";
+    return lang === "fr" ? "Gonfle un ballon imaginaire très fort et fais-le éclater : 'Pouf !' pour lancer la fête !" : "Blow up an imaginary balloon really big and pop it: 'Pop!' to start the party!";
+  }
+  if (bookId === 3) {
+    if (chapId === 1) return lang === "fr" ? "Ouvre de grands yeux de détective pour déchiffrer la carte secrète !" : "Open your big detective eyes to decode the secret map!";
+    if (chapId === 2) return lang === "fr" ? "Fais de grands bonds de grenouille sur place pour traverser le ruisseau !" : "Take big frog leaps in place to cross the stream!";
+    if (chapId === 3) return lang === "fr" ? "Suis les empreintes de pas invisibles sur le sol de ta chambre !" : "Follow the invisible footprints on your room's floor!";
+    if (chapId === 4) return lang === "fr" ? "Fais semblant d'allumer une lanterne magique pour éclairer la grotte !" : "Pretend to light a magic lantern to light up the cave!";
+    return lang === "fr" ? "Fais tourner la clé en or dans la serrure imaginaire : 'Clic-clac !' pour ouvrir le coffre !" : "Turn the golden key in the imaginary lock: 'Click-clack!' to open the chest!";
+  }
+  if (bookId === 4) {
+    if (chapId === 1) return lang === "fr" ? "Pointe le doigt vers le ciel et cherche l'étoile filante la plus brillante !" : "Point your finger to the sky and search for the brightest shooting star!";
+    if (chapId === 2) return lang === "fr" ? "Fais danser tes doigts comme des lucioles lumineuses autour de toi !" : "Make your fingers dance like glowing fireflies all around you!";
+    if (chapId === 3) return lang === "fr" ? "Chuchote doucement pour ne pas effrayer le brouillard magique du lac !" : "Whisper softly so you don't scare away the lake's magic mist!";
+    if (chapId === 4) return lang === "fr" ? "Frotte tes mains pour réchauffer le cristal de l'étoile tombée au sol !" : "Rub your hands to warm up the crystal of the star that fell to earth!";
+    return lang === "fr" ? "Ferme les yeux très fort, fais ton plus beau vœu pour la forêt, puis tourne la page !" : "Close your eyes tight, make your best wish for the forest, then turn the page!";
+  }
+  if (bookId === 5) {
+    if (chapId === 1) return lang === "fr" ? "Fais semblant de cueillir de délicieuses baies juteuses et mets-les dans ton panier !" : "Pretend to gather delicious juicy berries and put them in your basket!";
+    if (chapId === 2) return lang === "fr" ? "Fais semblant de mélanger la pâte à tarte magique dans un grand bol !" : "Pretend to stir the magic pie batter in a large bowl!";
+    if (chapId === 3) return lang === "fr" ? "Secoue une nappe imaginaire pour l'étendre bien droite sur l'herbe !" : "Shake an imaginary picnic blanket to spread it straight on the grass!";
+    if (chapId === 4) return lang === "fr" ? "Dis bonjour très gentiment au petit hérisson timide qui cache son nez !" : "Say hello very gently to the shy little hedgehog hiding his nose!";
+    return lang === "fr" ? "Fais semblant de croquer dans une délicieuse part de tarte magique !" : "Pretend to take a big bite out of a delicious slice of magic pie!";
+  }
+  if (bookId === 6) {
+    if (chapId === 1) return lang === "fr" ? "Fais tourner tes bras pour faire pédaler le sous-marin jaune sous l'eau !" : "Spin your arms to pedal the yellow submarine underwater!";
+    if (chapId === 2) return lang === "fr" ? "Fais des bulles avec ta bouche : 'Bloup, bloup !' comme un petit poisson !" : "Blow bubbles with your mouth: 'Bloop, bloop!' like a little fish!";
+    if (chapId === 3) return lang === "fr" ? "Tape dans tes mains pour suivre le rythme entraînant de la pieuvre !" : "Clap your hands to follow the catchy rhythm of the octopus!";
+    if (chapId === 4) return lang === "fr" ? "Imagine une perle dorée qui brille au creux de tes mains !" : "Imagine a golden pearl glowing in the palms of your hands!";
+    return lang === "fr" ? "Agite les mains pour saluer les mouettes blanches à la surface !" : "Wave your hands to greet the white seagulls at the surface!";
+  }
+  return "";
+};
+
+const renderChapterCoverIllustration = (bookId: number, chapId: number) => {
+  if (bookId === 1) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-24 h-24 absolute left-10 bottom-6"><use href="#d-tree" /></svg>
+          <svg className="w-24 h-32 absolute right-8 bottom-6"><use href="#d-sapin" /></svg>
+          <svg className="w-32 h-40 z-10" viewBox="0 0 120 150">
+            <use href="#c-leo" xlinkHref="#c-leo" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-24 h-24 absolute left-8 bottom-6"><use href="#d-tree" /></svg>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M50,180 Q150,130 250,160 T350,110" fill="none" stroke="#e08a2e" strokeWidth="12" strokeLinecap="round"/>
+          </svg>
+          <svg className="w-28 h-36 z-10 mr-12" viewBox="0 0 120 150">
+            <use href="#c-nina" xlinkHref="#c-nina" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-x-0 bottom-0 h-16 w-full" viewBox="0 0 400 100">
+            <path d="M0,50 Q100,20 200,50 T400,50 L400,100 L0,100 Z" fill="#58b7e8" />
+          </svg>
+          <svg className="w-24 h-32 absolute left-12 bottom-12" viewBox="0 0 130 145">
+            <use href="#c-tom" xlinkHref="#c-tom" />
+          </svg>
+          <svg className="w-24 h-32 absolute right-12 bottom-12" viewBox="0 0 110 145">
+            <use href="#c-zaza" xlinkHref="#c-zaza" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-16 h-16 absolute left-16 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-24 h-24 absolute left-24 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-20 h-20 absolute right-24 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-24 h-32 z-10" viewBox="0 0 130 145">
+            <use href="#c-tom" xlinkHref="#c-tom" />
+          </svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <svg className="absolute top-0 inset-x-0 w-full h-12" viewBox="0 0 400 60">
+          <path d="M10,10 Q200,40 390,10" fill="none" stroke="#b0790a" strokeWidth="2"/>
+          <polygon points="50,14 70,14 60,35" fill="#e05a4e"/>
+          <polygon points="120,18 140,18 130,39" fill="#ffd23f"/>
+          <polygon points="190,20 210,20 200,41" fill="#58b7e8"/>
+          <polygon points="260,18 280,18 270,39" fill="#5cae5f"/>
+          <polygon points="330,14 350,14 340,35" fill="#f6a8c4"/>
+        </svg>
+        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 2) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-44 h-28 bg-sky-600 border-4 border-white rounded-xl shadow-md p-2 flex flex-col justify-between mb-2">
+            <div className="grid grid-cols-6 gap-1 h-16 opacity-35">
+              {[...Array(12)].map((_, i) => <div key={i} className="border border-white/50" />)}
+            </div>
+            <div className="text-[10px] text-white font-mono text-left font-bold">CABANE PLAN v1.2</div>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-20 h-20 absolute left-8 bottom-6"><use href="#d-sapin" /></svg>
+          <g className="absolute bottom-6 left-28 flex flex-col gap-1">
+            <rect width="70" height="10" fill="#c08552" rx="2" stroke="#5c3d2e" strokeWidth="1"/>
+            <rect width="70" height="10" fill="#d4a373" rx="2" stroke="#5c3d2e" strokeWidth="1" className="ml-2"/>
+            <rect width="70" height="10" fill="#c08552" rx="2" stroke="#5c3d2e" strokeWidth="1" className="ml-1"/>
+          </g>
+          <svg className="w-24 h-30 z-10 ml-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-32 h-20 bg-amber-50 border-2 border-amber-800 rounded-lg shadow p-2 relative transform -rotate-6 mb-4 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-red-600 border-2 border-amber-100 flex items-center justify-center text-white text-[8px] font-bold">♥</div>
+            <div className="absolute inset-0 border-2 border-dashed border-amber-800/20 m-1 rounded" />
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute right-12 top-0 h-full w-12" viewBox="0 0 40 200">
+            <line x1="10" y1="0" x2="10" y2="200" stroke="#a8713f" strokeWidth="4"/>
+            <line x1="30" y1="0" x2="30" y2="200" stroke="#a8713f" strokeWidth="4"/>
+            <line x1="10" y1="40" x2="30" y2="40" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="80" x2="30" y2="80" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="120" x2="30" y2="120" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="160" x2="30" y2="160" stroke="#e0a96d" strokeWidth="6"/>
+          </svg>
+          <svg className="w-24 h-30 z-10 mr-16" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute left-10 top-6 w-8 h-10 bg-red-500 rounded-full opacity-70" />
+          <div className="absolute right-14 top-10 w-6 h-8 bg-yellow-400 rounded-full opacity-70" />
+          <div className="absolute left-1/3 top-2 w-7 h-9 bg-sky-400 rounded-full opacity-70" />
+        </div>
+        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 3) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-40 h-28 bg-[#f5ebd3] border-4 border-[#8b5a2b] rounded-xl shadow-lg p-2 relative transform rotate-2 mb-2">
+            <svg className="w-full h-full" viewBox="0 0 120 80">
+              <path d="M10,40 Q40,20 60,50 T110,30" fill="none" stroke="#8b5a2b" strokeWidth="3" strokeDasharray="4 2"/>
+              <text x="100" y="35" fill="red" fontSize="14" fontWeight="bold">X</text>
+              <circle cx="10" cy="40" r="4" fill="#4e9d58"/>
+              <path d="M30,15 L35,25 L25,25 Z" fill="#4e9d58"/>
+            </svg>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <rect y="120" width="400" height="80" fill="#daf0fd"/>
+            <path d="M0,120 Q100,100 200,120 T400,120 L400,200 L0,200 Z" fill="#58b7e8" opacity="0.7"/>
+            <ellipse cx="80" cy="150" rx="20" ry="10" fill="#9e9e9e" stroke="#616161" strokeWidth="2"/>
+            <ellipse cx="150" cy="135" rx="24" ry="12" fill="#757575" stroke="#424242" strokeWidth="2"/>
+            <ellipse cx="230" cy="160" rx="22" ry="11" fill="#9e9e9e" stroke="#616161" strokeWidth="2"/>
+            <ellipse cx="310" cy="140" rx="20" ry="10" fill="#757575" stroke="#424242" strokeWidth="2"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 mb-8" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-20 h-20 absolute left-6 bottom-4"><use href="#d-tree" /></svg>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g fill="#a16207" opacity="0.7">
+              <circle cx="80" cy="140" r="5"/>
+              <circle cx="74" cy="132" r="2"/>
+              <circle cx="80" cy="130" r="2.5"/>
+              <circle cx="86" cy="132" r="2"/>
+              <circle cx="150" cy="115" r="5"/>
+              <circle cx="144" cy="107" r="2"/>
+              <circle cx="150" cy="105" r="2.5"/>
+              <circle cx="156" cy="107" r="2"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 ml-28" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M60,200 C60,60 340,60 340,200 Z" fill="#424242"/>
+            <path d="M90,200 C90,90 310,90 310,200 Z" fill="#212121"/>
+            <g transform="translate(200, 100) rotate(15) scale(0.8)">
+              <circle cx="0" cy="0" r="14" fill="none" stroke="#ffd23f" strokeWidth="5"/>
+              <line x1="14" y1="0" x2="45" y2="0" stroke="#ffd23f" strokeWidth="6"/>
+              <line x1="35" y1="0" x2="35" y2="12" stroke="#ffd23f" strokeWidth="5"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-24" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <path d="M0,0 L40,0 Q60,100 40,200 L0,200 Z" fill="#8b5a2b"/>
+          <g transform="translate(240, 120)">
+            <rect width="90" height="55" fill="#8d5b28" rx="6" stroke="#4a2f15" strokeWidth="3"/>
+            <rect width="90" height="20" fill="#b0790a" rx="4" stroke="#4a2f15" strokeWidth="2"/>
+            <circle cx="45" cy="28" r="7" fill="#212121"/>
+            <circle cx="20" cy="18" r="8" fill="#ffd23f" opacity="0.9"/>
+            <circle cx="70" cy="16" r="6" fill="#ffd23f" opacity="0.9"/>
+          </g>
+        </svg>
+        <svg className="w-18 h-22 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 4) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end bg-slate-900 rounded-2xl overflow-hidden p-2">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <circle cx="50" cy="40" r="1.5" fill="white"/>
+            <circle cx="150" cy="30" r="2" fill="white"/>
+            <path d="M300,10 L180,80" stroke="#ffd23f" strokeWidth="3" strokeLinecap="round"/>
+            <circle cx="180" cy="80" r="5" fill="#fff7c2"/>
+          </svg>
+          <svg className="w-16 h-20 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g fill="#ffd23f">
+              <circle cx="70" cy="80" r="5"/>
+              <circle cx="150" cy="50" r="4"/>
+              <circle cx="280" cy="90" r="6"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-900 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M0,150 Q100,120 200,155 T400,140 L400,200 L0,200 Z" fill="#e2e8f0" opacity="0.6"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-16" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(200, 90) scale(1.3)">
+              <polygon points="0,-35 10,-10 35,-10 15,5 22,30 0,15 -22,30 -15,5 -35,-10 -10,-10" fill="#ffd23f"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-24" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center bg-slate-900 rounded-2xl overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <g transform="translate(200, 45) scale(0.7)">
+            <polygon points="0,-35 10,-10 35,-10 15,5 22,30 0,15 -22,30 -15,5 -35,-10 -10,-10" fill="#ffd23f"/>
+          </g>
+        </svg>
+        <svg className="w-16 h-20 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 5) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-32 h-24 bg-[#d4a373] border-4 border-[#8b5a2b] rounded-2xl shadow-md p-1.5 relative mb-2 flex flex-col justify-end">
+            <path d="M10,24 C10,-10 110,-10 110,24" fill="none" stroke="#8b5a2b" strokeWidth="4" className="absolute top-0 left-0 right-0 h-12"/>
+            <div className="flex gap-1 justify-center flex-wrap px-2 mb-1 z-10">
+              <circle cx="0" cy="0" r="7" className="bg-red-500 rounded-full w-4 h-4" />
+              <circle cx="0" cy="0" r="7" className="bg-blue-600 rounded-full w-4 h-4" />
+              <circle cx="0" cy="0" r="7" className="bg-red-600 rounded-full w-4 h-4" />
+            </div>
+            <div className="text-[9px] text-[#5c3d2e] font-bold z-10">GOÛTER DES COPAINS</div>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="flex gap-4 items-end mb-4">
+            <div className="w-20 h-24 bg-red-100 border-2 border-red-800 rounded p-1.5 shadow transform -rotate-12 flex flex-col justify-between">
+              <div className="text-[8px] text-red-900 font-serif font-black leading-none">RECETTE TARTE</div>
+              <div className="w-8 h-8 rounded-full bg-yellow-300 mx-auto" />
+            </div>
+            <svg className="w-24 h-16" viewBox="0 0 100 60">
+              <path d="M10,10 Q50,60 90,10 Z" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="3"/>
+              <ellipse cx="62" cy="30" rx="10" ry="7" fill="#d4a373"/>
+            </svg>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <polygon points="50,180 150,100 350,100 280,180" fill="#ef4444"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 ml-40" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-16 h-16 absolute left-12 bottom-4"><use href="#d-tree" /></svg>
+          <svg className="w-28 h-36 z-10" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <svg className="absolute inset-x-0 bottom-4 h-16" viewBox="0 0 400 60">
+          <ellipse cx="200" cy="40" rx="120" ry="20" fill="#e2e8f0"/>
+          <ellipse cx="200" cy="35" rx="30" ry="12" fill="#e0a96d" stroke="#8b5a2b" strokeWidth="2"/>
+        </svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 6) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end bg-sky-950 rounded-2xl overflow-hidden p-2">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(130, 70)">
+              <rect x="20" y="20" width="100" height="50" rx="25" fill="#facc15" stroke="#ca8a04" strokeWidth="4"/>
+              <circle cx="45" cy="45" r="10" fill="#38bdf8"/>
+            </g>
+          </svg>
+          <svg className="w-14 h-18 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-900 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M10,200 L30,130 Q40,110 60,130 T80,200 Z" fill="#ec4899" opacity="0.8"/>
+            <g fill="#f97316" transform="translate(180, 160) scale(0.6)">
+              <polygon points="0,-20 5,-5 20,-5 8,4 12,19 0,10 -12,19 -8,4 -20,-5 -5,-5" />
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <circle cx="200" cy="70" r="30" fill="#a855f7" stroke="#7e22ce" strokeWidth="3"/>
+          </svg>
+          <svg className="w-18 h-22 z-10 ml-44" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(200, 110)">
+              <path d="M-50,0 C-50,40 50,40 50,0 Z" fill="#94a3b8"/>
+              <circle cx="0" cy="5" r="12" fill="#fff"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-28" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center bg-sky-300 rounded-2xl overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <rect y="110" width="400" height="90" fill="#38bdf8"/>
+        </svg>
+        <svg className="w-16 h-20 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+const renderStorySceneIllustration = (bookId: number, chapId: number) => {
+  if (bookId === 1) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <use href="#c-leo" x="150" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="220" y="65" width="50" height="60"/>
+          <use href="#c-tom" x="300" y="70" width="55" height="55"/>
+          <use href="#c-zaza" x="380" y="55" width="50" height="70"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <rect x="220" y="40" width="100" height="70" rx="4" fill="#fdf6e8" stroke="#c07318" strokeWidth="2"/>
+          <path d="M240,90 Q270,60 300,75" fill="none" stroke="#c07318" strokeWidth="2" strokeDasharray="4 3"/>
+          <use href="#c-nina" x="120" y="60" width="60" height="75"/>
+          <use href="#c-leo" x="350" y="50" width="65" height="80"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <path d="M0,110 Q200,90 400,110 T600,110 L600,150 L0,150 Z" fill="#58b7e8"/>
+          <rect x="200" y="90" width="30" height="10" fill="#a8713f" rx="2"/>
+          <rect x="280" y="90" width="30" height="10" fill="#a8713f" rx="2" opacity=".4" stroke="#a8713f" strokeDasharray="3 2"/>
+          <use href="#c-leo" x="100" y="40" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="40" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <use href="#d-champi" x="120" y="80" width="45" height="45"/>
+          <use href="#d-champi" x="180" y="75" width="50" height="50"/>
+          <use href="#c-tom" x="260" y="50" width="65" height="75"/>
+          <use href="#c-nina" x="350" y="60" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <circle cx="200" cy="30" r="8" fill="#ffd23f"/>
+        <circle cx="280" cy="20" r="10" fill="#f6a8c4"/>
+        <circle cx="360" cy="35" r="7" fill="#58b7e8"/>
+        <use href="#c-leo" x="150" y="55" width="60" height="75"/>
+        <use href="#c-tom" x="240" y="65" width="55" height="65"/>
+        <use href="#c-zaza" x="320" y="55" width="55" height="75"/>
+      </g>
+    );
+  }
+
+  if (bookId === 2) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="180" y="30" width="120" height="80" fill="#2563eb" stroke="#fff" strokeWidth="2" rx="4"/>
+          <use href="#c-leo" x="80" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <rect x="200" y="60" width="80" height="12" fill="#d4a373" stroke="#8b5a2b" strokeWidth="1.5" rx="2"/>
+          <use href="#c-nina" x="100" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <rect x="220" y="45" width="80" height="50" rx="3" fill="#fafaf9" stroke="#78350f" strokeWidth="2"/>
+          <circle cx="260" cy="70" r="6" fill="#dc2626"/>
+          <use href="#c-zaza" x="120" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <line x1="250" y1="10" x2="250" y2="150" stroke="#78350f" strokeWidth="4"/>
+          <line x1="280" y1="10" x2="280" y2="150" stroke="#78350f" strokeWidth="4"/>
+          <use href="#c-tom" x="130" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <circle cx="180" cy="40" r="12" fill="#ef4444" opacity="0.8"/>
+        <use href="#c-leo" x="90" y="50" width="60" height="75"/>
+        <use href="#c-nina" x="360" y="55" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 3) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="200" y="35" width="120" height="70" rx="6" fill="#fef3c7" stroke="#78350f" strokeWidth="2.5"/>
+          <text x="290" y="65" fill="#ef4444" fontSize="16" fontWeight="extrabold">X</text>
+          <use href="#c-leo" x="100" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="360" y="50" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M0,115 Q150,95 300,115 T600,115 L600,150 L0,150 Z" fill="#0284c7" opacity="0.7"/>
+          <ellipse cx="230" cy="110" rx="18" ry="8" fill="#a8a29e" stroke="#44403c" strokeWidth="1.5"/>
+          <use href="#c-leo" x="90" y="45" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <circle cx="210" cy="80" r="4" fill="#a16207"/>
+          <circle cx="250" cy="70" r="4" fill="#a16207"/>
+          <use href="#c-tom" x="110" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="350" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M180,110 C180,40 340,40 340,110 Z" fill="#292524"/>
+          <circle cx="260" cy="65" r="8" fill="none" stroke="#fbbf24" strokeWidth="3"/>
+          <use href="#c-zaza" x="90" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="360" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <rect x="210" y="45" width="90" height="55" fill="#78350f" rx="5" stroke="#451a03" strokeWidth="2.5"/>
+        <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="340" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 4) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <path d="M150,15 L320,50" stroke="#fef08a" strokeWidth="2" strokeDasharray="4 4"/>
+          <polygon points="320,50 324,42 334,42 328,48 331,56 322,51 313,56 316,48 310,42 320,42" fill="#fcd34d"/>
+          <use href="#c-leo" x="80" y="45" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="40" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <circle cx="200" cy="50" r="4" fill="#fbbf24" opacity="0.9"/>
+          <use href="#c-nina" x="100" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <ellipse cx="230" cy="65" rx="60" ry="15" fill="#f1f5f9" opacity="0.6"/>
+          <use href="#c-zaza" x="110" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <polygon points="250,30 255,48 272,48 258,58 263,75 250,65 237,75 242,58 228,48 245,48" fill="#fcd34d"/>
+          <use href="#c-tom" x="120" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <polygon points="250,20 254,32 266,32 257,39 260,51 250,44 240,51 243,39 234,32 246,32" fill="#fbbf24" opacity="0.6"/>
+        <use href="#c-leo" x="140" y="50" width="60" height="75"/>
+        <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 5) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="210" y="50" width="80" height="50" rx="10" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2"/>
+          <use href="#c-nina" x="120" y="50" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M210,70 Q250,110 290,70 Z" fill="#94a3b8"/>
+          <use href="#c-tom" x="100" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <polygon points="180,95 240,65 360,65 300,95" fill="#f87171"/>
+          <use href="#c-zaza" x="100" y="45" width="60" height="75"/>
+          <use href="#c-tom" x="340" y="50" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M210,95 C190,70 190,30 220,40" fill="none" stroke="#16a34a" strokeWidth="3"/>
+          <use href="#c-tom" x="120" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <ellipse cx="250" cy="70" rx="40" ry="15" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2"/>
+        <use href="#c-leo" x="130" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="310" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 6) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="210" y="50" width="80" height="40" rx="20" fill="#fbbf24" stroke="#d97706" strokeWidth="2"/>
+          <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="50" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M220,95 Q230,60 210,40" fill="none" stroke="#f43f5e" strokeWidth="4" strokeLinecap="round"/>
+          <use href="#c-nina" x="120" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <circle cx="250" cy="55" r="18" fill="#c084fc"/>
+          <use href="#c-zaza" x="120" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M210,80 Q250,110 290,80 Z" fill="#94a3b8"/>
+          <use href="#c-tom" x="110" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <path d="M210,40 Q217,33 225,40 Q232,33 240,40" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round"/>
+        <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="320" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  return null;
+};
+
+
 interface BookViewerProps {
   book: BookData;
   progress: UserProgress;
@@ -570,67 +1322,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
                   {/* Main scenic render depending on chapter */}
                   <div className="flex-1 flex items-center justify-center">
-                    {pageConfig.chapter.id === 1 && (
-                      <div className="relative w-full h-full flex items-end justify-center">
-                        <svg className="w-24 h-24 absolute left-10 bottom-6"><use href="#d-tree" /></svg>
-                        <svg className="w-24 h-32 absolute right-8 bottom-6"><use href="#d-sapin" /></svg>
-                        <svg className="w-32 h-40 z-10" viewBox="0 0 120 150">
-                          <use href="#c-leo" xlinkHref="#c-leo" />
-                        </svg>
-                      </div>
-                    )}
-                    {pageConfig.chapter.id === 2 && (
-                      <div className="relative w-full h-full flex items-end justify-center">
-                        <svg className="w-24 h-24 absolute left-8 bottom-6"><use href="#d-tree" /></svg>
-                        {/* Winding road */}
-                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
-                          <path d="M50,180 Q150,130 250,160 T350,110" fill="none" stroke="#e08a2e" strokeWidth="12" strokeLinecap="round"/>
-                        </svg>
-                        <svg className="w-28 h-36 z-10 mr-12" viewBox="0 0 120 150">
-                          <use href="#c-nina" xlinkHref="#c-nina" />
-                        </svg>
-                      </div>
-                    )}
-                    {pageConfig.chapter.id === 3 && (
-                      <div className="relative w-full h-full flex items-end justify-center">
-                        <svg className="absolute inset-x-0 bottom-0 h-16 w-full" viewBox="0 0 400 100">
-                          <path d="M0,50 Q100,20 200,50 T400,50 L400,100 L0,100 Z" fill="#58b7e8" />
-                        </svg>
-                        <svg className="w-24 h-32 absolute left-12 bottom-12" viewBox="0 0 130 145">
-                          <use href="#c-tom" xlinkHref="#c-tom" />
-                        </svg>
-                        <svg className="w-24 h-32 absolute right-12 bottom-12" viewBox="0 0 110 145">
-                          <use href="#c-zaza" xlinkHref="#c-zaza" />
-                        </svg>
-                      </div>
-                    )}
-                    {pageConfig.chapter.id === 4 && (
-                      <div className="relative w-full h-full flex items-end justify-center">
-                        <svg className="w-16 h-16 absolute left-16 bottom-6"><use href="#d-champi" /></svg>
-                        <svg className="w-24 h-24 absolute left-24 bottom-6"><use href="#d-champi" /></svg>
-                        <svg className="w-20 h-20 absolute right-24 bottom-6"><use href="#d-champi" /></svg>
-                        <svg className="w-24 h-32 z-10" viewBox="0 0 130 145">
-                          <use href="#c-tom" xlinkHref="#c-tom" />
-                        </svg>
-                      </div>
-                    )}
-                    {pageConfig.chapter.id === 5 && (
-                      <div className="relative w-full h-full flex items-end justify-center gap-2">
-                        {/* Hanging bunting garlands */}
-                        <svg className="absolute top-0 inset-x-0 w-full h-12" viewBox="0 0 400 60">
-                          <path d="M10,10 Q200,40 390,10" fill="none" stroke="#b0790a" strokeWidth="2"/>
-                          <polygon points="50,14 70,14 60,35" fill="#e05a4e"/>
-                          <polygon points="120,18 140,18 130,39" fill="#ffd23f"/>
-                          <polygon points="190,20 210,20 200,41" fill="#58b7e8"/>
-                          <polygon points="260,18 280,18 270,39" fill="#5cae5f"/>
-                          <polygon points="330,14 350,14 340,35" fill="#f6a8c4"/>
-                        </svg>
-                        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" xlinkHref="#c-leo" /></svg>
-                        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" xlinkHref="#c-nina" /></svg>
-                        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" xlinkHref="#c-tom" /></svg>
-                        <svg className="w-16 h-20" viewBox="0 0 110 145"><use href="#c-zaza" xlinkHref="#c-zaza" /></svg>
-                      </div>
-                    )}
+                    {renderChapterCoverIllustration(book.id, pageConfig.chapter.id)}
                   </div>
 
                   <p className="text-xl font-fun text-forest">
@@ -695,63 +1387,14 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                     <use href="#d-nuage" x="50" y="15" width="60" height="30"/>
                     <use href="#d-tree" x="480" y="20" width="70" height="90"/>
                     
-                    {pageConfig.chapter.id === 1 && (
-                      <g>
-                        <use href="#c-leo" x="150" y="50" width="60" height="75"/>
-                        <use href="#c-nina" x="220" y="65" width="50" height="60"/>
-                        <use href="#c-tom" x="300" y="70" width="55" height="55"/>
-                        <use href="#c-zaza" x="380" y="55" width="50" height="70"/>
-                      </g>
-                    )}
-                    {pageConfig.chapter.id === 2 && (
-                      <g>
-                        {/* Map or trails */}
-                        <rect x="220" y="40" width="100" height="70" rx="4" fill="#fdf6e8" stroke="#c07318" strokeWidth="2"/>
-                        <path d="M240,90 Q270,60 300,75" fill="none" stroke="#c07318" strokeWidth="2" strokeDasharray="4 3"/>
-                        <use href="#c-nina" x="120" y="60" width="60" height="75"/>
-                        <use href="#c-leo" x="350" y="50" width="65" height="80"/>
-                      </g>
-                    )}
-                    {pageConfig.chapter.id === 3 && (
-                      <g>
-                        {/* Sliced bridge */}
-                        <path d="M0,110 Q200,90 400,110 T600,110 L600,150 L0,150 Z" fill="#58b7e8"/>
-                        <rect x="200" y="90" width="30" height="10" fill="#a8713f" rx="2"/>
-                        <rect x="280" y="90" width="30" height="10" fill="#a8713f" rx="2" opacity=".4" stroke="#a8713f" strokeDasharray="3 2"/>
-                        <use href="#c-leo" x="100" y="40" width="60" height="75"/>
-                        <use href="#c-zaza" x="380" y="40" width="60" height="75"/>
-                      </g>
-                    )}
-                    {pageConfig.chapter.id === 4 && (
-                      <g>
-                        <use href="#d-champi" x="120" y="80" width="45" height="45"/>
-                        <use href="#d-champi" x="180" y="75" width="50" height="50"/>
-                        <use href="#c-tom" x="260" y="50" width="65" height="75"/>
-                        <use href="#c-nina" x="350" y="60" width="55" height="65"/>
-                      </g>
-                    )}
-                    {pageConfig.chapter.id === 5 && (
-                      <g>
-                        {/* Little lanterns or decorations */}
-                        <circle cx="200" cy="30" r="8" fill="#ffd23f"/>
-                        <circle cx="280" cy="20" r="10" fill="#f6a8c4"/>
-                        <circle cx="360" cy="35" r="7" fill="#58b7e8"/>
-                        <use href="#c-leo" x="150" y="55" width="60" height="75"/>
-                        <use href="#c-tom" x="240" y="65" width="55" height="65"/>
-                        <use href="#c-zaza" x="320" y="55" width="55" height="75"/>
-                      </g>
-                    )}
+                    {renderStorySceneIllustration(book.id, pageConfig.chapter.id)}
                   </svg>
                 </div>
 
                 <div className="note-histoire text-left">
                   <p className="font-bold mb-1">🧭 {lang === "fr" ? "La mission de l'histoire :" : "The story mission:"}</p>
                   <p className="text-sm">
-                    {pageConfig.chapter.id === 1 && (lang === "fr" ? "Dis bonjour bien fort à tes nouveaux amis et tourne la page !" : "Say hello loudly to your new friends and turn the page!")}
-                    {pageConfig.chapter.id === 2 && (lang === "fr" ? "Fais un clin d'œil complice à Nina pour lui montrer que tu es prêt, puis tourne la page !" : "Wink at Nina to show her you're ready, then turn the page!")}
-                    {pageConfig.chapter.id === 3 && (lang === "fr" ? "Récite la formule secrète 'Cui-cui !' avec Lana, puis prépare-toi à lire !" : "Say the secret formula 'Tweet-tweet!' with Lana, then get ready to read!")}
-                    {pageConfig.chapter.id === 4 && (lang === "fr" ? "Prépare tes doigts pour compter avec Darina, puis tourne la page !" : "Get your fingers ready to count with Darina, then turn the page!")}
-                    {pageConfig.chapter.id === 5 && (lang === "fr" ? "Mets ton plus beau chapeau de fête imaginaire et prépare-toi pour le gâteau !" : "Put on your best imaginary party hat and get ready for the cake!")}
+                    {getStoryInstructionText(book.id, pageConfig.chapter.id, lang)}
                   </p>
                 </div>
               </div>
