@@ -35,6 +35,13 @@ export interface Mission {
     text: string;
     isTarget: boolean;
   }[];
+  // Visual illustration for counting/comparing missions (e.g. show 5 apples to count)
+  countIcons?: {
+    icon: string; // symbol id from GlobalSvgSymbols, e.g. "d-pomme"
+    count: number;
+    labelFr?: string;
+    labelEn?: string;
+  }[];
   // For other specialized types
   solutionFr?: string;
   solutionEn?: string;

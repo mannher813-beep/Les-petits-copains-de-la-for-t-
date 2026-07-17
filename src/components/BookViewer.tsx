@@ -1462,6 +1462,28 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         </p>
                       </div>
 
+                      {/* Visual illustration for counting/comparing missions */}
+                      {mission.countIcons && mission.countIcons.length > 0 && (
+                        <div className="my-2 flex flex-wrap items-start justify-center gap-6 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                          {mission.countIcons.map((group, gi) => (
+                            <div key={gi} className="flex flex-col items-center gap-1">
+                              {(group.labelFr || group.labelEn) && (
+                                <span className="text-xs font-semibold text-forest">
+                                  {lang === "fr" ? group.labelFr : group.labelEn}
+                                </span>
+                              )}
+                              <div className="flex flex-wrap gap-1 justify-center max-w-[220px]">
+                                {Array.from({ length: group.count }).map((_, i) => (
+                                  <svg key={i} className="w-7 h-7 shrink-0" viewBox="0 0 100 100">
+                                    <use href={`#${group.icon}`} />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Instruction */}
                       <p className="consigne text-base text-left text-forest mb-2">
                         {lang === "fr" ? mission.consigneFr : mission.consigneEn}

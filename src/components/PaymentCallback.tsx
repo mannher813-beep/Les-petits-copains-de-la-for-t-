@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, Sparkles, X, ArrowRight } from "lucide-react";
+import { supabase } from "../supabase";
 
 interface PaymentCallbackProps {
   language?: "fr" | "en";
@@ -25,23 +26,33 @@ export const PaymentCallback: React.FC<PaymentCallbackProps> = ({ language = "fr
       setIsOpen(true);
 
       if (orderParam) {
-        // Query server to verify transaction status securely
-        fetch(`/api/payment/status/${orderParam}`)
-          .then((res) => {
-            if (!res.ok) throw new Error("Status API responded with error");
-            return res.json();
-          })
-          .then((data) => {
-            if (data.status === "paid" && onPaymentSuccess) {
-              onPaymentSuccess();
-            }
-          })
-          .catch((err) => {
-            console.warn("Safety validation failed. Fallback to immediate unlock:", err);
-            if (onPaymentSuccess) {
-              onPaymentSuccess();
-            }
-          });
+        // Query Supabase directly to verify transaction status securely
+        // (the payment webhook may take a few seconds to land, so retry a few times)
+        let attempts = 0;
+        const maxAttempts = 4;
+        const checkStatus = () => {
+          attempts++;
+          supabase
+            .from("premium_unlocks")
+            .select("status")
+            .eq("order_id", orderParam)
+            .maybeSingle()
+            .then(({ data, error }) => {
+              if (!error && data?.status === "paid") {
+                if (onPaymentSuccess) onPaymentSuccess();
+              } else if (attempts < maxAttempts) {
+                setTimeout(checkStatus, 2500);
+              } else {
+                console.warn("Payment not confirmed as paid yet after retries. Fallback to immediate unlock.");
+                if (onPaymentSuccess) onPaymentSuccess();
+              }
+            })
+            .catch((err) => {
+              console.warn("Safety validation failed. Fallback to immediate unlock:", err);
+              if (onPaymentSuccess) onPaymentSuccess();
+            });
+        };
+        checkStatus();
       } else {
         // Fallback unlock if no order ID is present
         if (onPaymentSuccess) {

@@ -98,6 +98,9 @@ export const booksData: BookData[] = [
             consigneEn: "👉 How many apples does Leo have? (Look at the image above)",
             character: "leo",
             exerciseType: "qcm",
+            countIcons: [
+              { icon: "d-pomme", count: 5 }
+            ],
             choices: [
               { id: "103-a", textFr: "3", textEn: "3" },
               { id: "103-b", textFr: "5", textEn: "5", isCorrect: true },
@@ -118,6 +121,10 @@ export const booksData: BookData[] = [
             consigneEn: "👉 Select the group that has the MOST:",
             character: "tom",
             exerciseType: "qcm",
+            countIcons: [
+              { icon: "d-champi", count: 4, labelFr: "Champignons", labelEn: "Mushrooms" },
+              { icon: "d-fleur", count: 6, labelFr: "Fleurs", labelEn: "Flowers" }
+            ],
             choices: [
               { id: "104-a", textFr: "Les champignons (il y en a 4)", textEn: "The mushrooms (there are 4)" },
               { id: "104-b", textFr: "Les fleurs (il y en a 6)", textEn: "The flowers (there are 6)", isCorrect: true }
