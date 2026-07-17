@@ -38,16 +38,22 @@ serve(async (req) => {
 
     // Map verification status
     // Money Fusion API returns status like "success", "paid" or "completed"
-    const isPaid = verifyData && (
-      verifyData.status === "success" ||
-      verifyData.status === "completed" ||
-      verifyData.status === "paid" ||
-      verifyData.success === true ||
-      verifyData.success === "true" ||
-      JSON.stringify(verifyData).toLowerCase().includes("success") ||
-      JSON.stringify(verifyData).toLowerCase().includes("completed") ||
-      JSON.stringify(verifyData).toLowerCase().includes("paid")
-    );
+    let isPaid = false;
+    if (verifyData) {
+      if (verifyData.data) {
+        isPaid = verifyData.data.statut === "paid" || verifyData.data.status === "paid" || verifyData.data.status === "success" || verifyData.data.status === "completed";
+      } else {
+        isPaid = 
+          verifyData.status === "success" ||
+          verifyData.status === "completed" ||
+          verifyData.status === "paid" ||
+          verifyData.success === true ||
+          verifyData.success === "true" ||
+          JSON.stringify(verifyData).toLowerCase().includes("success") ||
+          JSON.stringify(verifyData).toLowerCase().includes("completed") ||
+          JSON.stringify(verifyData).toLowerCase().includes("paid");
+      }
+    }
 
     const statusValue = isPaid ? "paid" : "pending";
 

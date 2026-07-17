@@ -1,0 +1,2 @@
+[functions.moneyfusion-webhook]
+verify_jwt = false
