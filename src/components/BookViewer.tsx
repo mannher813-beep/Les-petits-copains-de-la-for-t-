@@ -16,7 +16,9 @@ import {
   ArrowRight,
   Sparkles,
   Trophy,
-  Undo
+  Undo,
+  Moon,
+  Sun
 } from "lucide-react";
 
 const getCharacterViewBox = (char: string): string => {
@@ -784,6 +786,8 @@ interface BookViewerProps {
   onChangeProgress: (updater: (prev: UserProgress) => UserProgress) => void;
   onExit: () => void;
   onOpenPremiumModal?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 export const BookViewer: React.FC<BookViewerProps> = ({
@@ -791,7 +795,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   progress,
   onChangeProgress,
   onExit,
-  onOpenPremiumModal
+  onOpenPremiumModal,
+  isDarkMode = false,
+  onToggleDarkMode
 }) => {
   const { childName, currentLanguage: lang, currentPage } = progress;
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -1060,6 +1066,17 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         </button>
 
         <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          {onToggleDarkMode && (
+            <button
+              onClick={onToggleDarkMode}
+              className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title={isDarkMode ? "Mode jour" : "Mode nuit"}
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
+
           {/* Sound toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}

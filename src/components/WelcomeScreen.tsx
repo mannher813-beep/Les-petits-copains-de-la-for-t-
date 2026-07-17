@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { booksData } from "../data";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock, Sparkles, Moon, Sun } from "lucide-react";
 
 interface WelcomeScreenProps {
   onStart: (childName: string, bookId: number, language: "fr" | "en") => void;
@@ -14,6 +14,8 @@ interface WelcomeScreenProps {
   initialLanguage?: "fr" | "en";
   isPremium?: boolean;
   onOpenPremiumModal?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
@@ -22,7 +24,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   initialBookId = 1,
   initialLanguage = "fr",
   isPremium = false,
-  onOpenPremiumModal
+  onOpenPremiumModal,
+  isDarkMode = false,
+  onToggleDarkMode
 }) => {
   const [name, setName] = useState(initialName);
   const [selectedBookId, setSelectedBookId] = useState(initialBookId);
@@ -42,6 +46,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     <div className="min-h-screen bg-warm-cream py-6 sm:py-8 px-2 sm:px-4 flex items-center justify-center font-sans">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl border-4 sm:border-8 md:border-12 border-wood-brown overflow-hidden p-4 sm:p-6 md:p-10 relative">
         
+        {/* Theme Toggle Button */}
+        {onToggleDarkMode && (
+          <button
+            type="button"
+            onClick={onToggleDarkMode}
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-warm-cream hover:bg-warm-linen text-forest border border-warm-border transition shadow-md z-10 cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+            title={isDarkMode ? "Mode jour" : "Mode nuit"}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        )}
+
         {/* Background Decorative SVGs */}
         <div className="absolute top-4 left-4 opacity-10 pointer-events-none">
           <svg className="w-16 h-16 sm:w-24 sm:h-24 text-green-700" fill="currentColor" viewBox="0 0 100 100">

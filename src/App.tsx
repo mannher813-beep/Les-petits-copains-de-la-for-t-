@@ -52,6 +52,19 @@ export default function App() {
   // Modal Control
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
+  // Persistent State for Night/Dark Mode
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem("forest_friends_dark_mode") === "true";
+  });
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("forest_friends_dark_mode", String(next));
+      return next;
+    });
+  };
+
   // Automatically check payment status from the backend database when the app mounts
   useEffect(() => {
     const savedOrderId = localStorage.getItem("forest_friends_order_id");
@@ -179,7 +192,7 @@ export default function App() {
     : null;
 
   return (
-    <div className="min-h-screen bg-warm-cream font-sans text-text-charcoal selection:bg-sun-yellow/30">
+    <div className={`min-h-screen bg-warm-cream font-sans text-text-charcoal selection:bg-sun-yellow/30 ${isDarkMode ? "dark" : ""}`}>
       <GlobalSvgSymbols />
       {activeView === "welcome" || !progress || !activeBook ? (
         <WelcomeScreen
@@ -189,6 +202,8 @@ export default function App() {
           initialLanguage={progress?.currentLanguage || "fr"}
           initialName={progress?.childName || ""}
           initialBookId={progress?.currentBookId || 1}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
         />
       ) : (
         <div className="animate-fade-in">
@@ -199,6 +214,8 @@ export default function App() {
             onChangeProgress={handleProgressChange}
             onExit={handleExit}
             onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
           />
 
           {/* Exporting section at the bottom for printable files */}
