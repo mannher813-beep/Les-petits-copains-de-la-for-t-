@@ -783,13 +783,15 @@ interface BookViewerProps {
   progress: UserProgress;
   onChangeProgress: (updater: (prev: UserProgress) => UserProgress) => void;
   onExit: () => void;
+  onOpenPremiumModal?: () => void;
 }
 
 export const BookViewer: React.FC<BookViewerProps> = ({
   book,
   progress,
   onChangeProgress,
-  onExit
+  onExit,
+  onOpenPremiumModal
 }) => {
   const { childName, currentLanguage: lang, currentPage } = progress;
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -863,6 +865,13 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   const totalPages = 40;
 
   const navigateToPage = (target: number) => {
+    // If Book 1 (Tome 1) and navigating beyond page 11, check premium status
+    if (book.id === 1 && target > 11 && !progress.isPremium) {
+      if (onOpenPremiumModal) {
+        onOpenPremiumModal();
+      }
+      return;
+    }
     playSound("click");
     onChangeProgress(prev => ({
       ...prev,

@@ -198,6 +198,7 @@ export default function App() {
             progress={progress}
             onChangeProgress={handleProgressChange}
             onExit={handleExit}
+            onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
           />
 
           {/* Exporting section at the bottom for printable files */}
