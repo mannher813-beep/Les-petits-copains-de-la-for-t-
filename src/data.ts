@@ -202,7 +202,8 @@ export const booksData: BookData[] = [
             consigneFr: "👉 Utilise la souris ou le doigt pour dessiner le chemin dans le labyrinthe :",
             consigneEn: "👉 Use your mouse or finger to draw the path in the maze:",
             character: "nina",
-            exerciseType: "drawing"
+            exerciseType: "drawing",
+            mazeLayout: 1
           },
           {
             id: 108,
@@ -1115,7 +1116,8 @@ export const booksData: BookData[] = [
             consigneFr: "👉 Trace un chemin continu de Nina jusqu'à la corde :",
             consigneEn: "👉 Trace a continuous path from Nina to the rope:",
             character: "nina",
-            exerciseType: "drawing"
+            exerciseType: "drawing",
+            mazeLayout: 2
           },
           {
             id: 208,

@@ -5,11 +5,13 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { Edit2, Eraser, RotateCcw } from "lucide-react";
+import { MazeBackground } from "./MazeBackground";
 
 interface DrawingCanvasProps {
   width: number;
   height: number;
   backgroundImageId?: string; // Optional SVG to draw over
+  mazeLayout?: 1 | 2; // If set, renders an actual maze to trace behind the canvas
   onSave?: (dataUrl: string) => void;
   savedDataUrl?: string;
   lang: "fr" | "en";
@@ -18,6 +20,7 @@ interface DrawingCanvasProps {
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   width,
   height,
+  mazeLayout,
   onSave,
   savedDataUrl,
   lang
@@ -156,6 +159,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         className="relative bg-white border-2 border-dashed border-forest-light rounded-xl overflow-hidden shadow-inner touch-none max-w-full"
         style={{ width: `${Math.floor(width * scale)}px`, height: `${Math.floor(height * scale)}px` }}
       >
+        {mazeLayout && <MazeBackground width={width} height={height} layout={mazeLayout} />}
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}

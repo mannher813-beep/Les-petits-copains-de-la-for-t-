@@ -1638,6 +1638,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                           <DrawingCanvas
                             width={320}
                             height={150}
+                            mazeLayout={mission.exerciseType === "drawing" ? mission.mazeLayout : undefined}
                             onSave={(url) => setDrawings(prev => ({ ...prev, [mKey]: url }))}
                             savedDataUrl={drawings[mKey]}
                             lang={lang}
