@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from "react";
 import { BookData, UserProgress } from "../types";
 import { DrawingCanvas } from "./DrawingCanvas";
+import { AppleCounter } from "./AppleCounter";
+import { StickerPalette, STICKERS_LIST } from "./StickerPalette";
 import { 
   CheckCircle, 
   HelpCircle, 
@@ -814,6 +816,79 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   const [activeMatch, setActiveMatch] = useState<{ missionId: number; leftIndex: number } | null>(null);
   const [matches, setMatches] = useState<Record<string, Record<number, number>>>({}); // maps left index to right index
 
+  // Track digital stickers placed on the book pages
+  const [placedStickers, setPlacedStickers] = useState<{ id: string; type: string; x: number; y: number; page: number }[]>(() => {
+    try {
+      const saved = localStorage.getItem(`forest_stickers_book_${book.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Track the sticker being actively dragged
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Auto-persist placed stickers in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(`forest_stickers_book_${book.id}`, JSON.stringify(placedStickers));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [placedStickers, book.id]);
+
+  const handleSelectSticker = (stickerId: string) => {
+    playSound("click");
+    setPlacedStickers(prev => [
+      ...prev,
+      {
+        id: `sticker-${Date.now()}-${Math.random()}`,
+        type: stickerId,
+        x: 35 + Math.random() * 30, // center-ish random horizontal %
+        y: 35 + Math.random() * 30, // center-ish random vertical %
+        page: currentPage
+      }
+    ]);
+  };
+
+  const handleDeleteSticker = (stickerId: string) => {
+    playSound("click");
+    setPlacedStickers(prev => prev.filter(st => st.id !== stickerId));
+  };
+
+  const handleClearPageStickers = () => {
+    playSound("click");
+    setPlacedStickers(prev => prev.filter(st => st.page !== currentPage));
+  };
+
+  const handleStickerPointerDown = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    setActiveDragId(id);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleStickerPointerMove = (e: React.PointerEvent, id: string) => {
+    if (activeDragId !== id) return;
+    e.preventDefault();
+    const parent = (e.currentTarget as HTMLElement).closest(".book-print-page");
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
+
+    setPlacedStickers(prev =>
+      prev.map(st => (st.id === id ? { ...st, x, y } : st))
+    );
+  };
+
+  const handleStickerPointerUp = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    setActiveDragId(null);
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    playSound("click");
+  };
+
   // Simple Web Audio API sound player for sweet kid-friendly sound effects
   const playSound = (type: "correct" | "incorrect" | "badge" | "click") => {
     if (!soundEnabled) return;
@@ -945,6 +1020,17 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   };
 
   const pageConfig = getPageConfig(currentPage);
+
+  // Automatically trigger celebration sounds when landing on badge or diploma pages
+  useEffect(() => {
+    const config = getPageConfig(currentPage);
+    if (config.type === "badge" || config.type === "diploma") {
+      const timer = setTimeout(() => {
+        playSound("badge");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
 
   // Handle QCM Option Click
   const handleQcmClick = (missionId: number, optionId: string, isCorrect?: boolean) => {
@@ -1132,6 +1218,54 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         >
           {/* Realistic book crease effect */}
           <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
+
+          {/* Render Placed Stickers */}
+          {placedStickers
+            .filter((st) => st.page === currentPage)
+            .map((st) => {
+              const meta = STICKERS_LIST.find((s) => s.id === st.type);
+              if (!meta) return null;
+              const isDragging = activeDragId === st.id;
+              return (
+                <div
+                  key={st.id}
+                  onPointerDown={(e) => handleStickerPointerDown(e, st.id)}
+                  onPointerMove={(e) => handleStickerPointerMove(e, st.id)}
+                  onPointerUp={(e) => handleStickerPointerUp(e, st.id)}
+                  className={`absolute z-30 select-none cursor-grab active:cursor-grabbing p-1 group touch-none ${
+                    isDragging ? "scale-110 rotate-3" : "hover:scale-105"
+                  } transition-transform duration-100`}
+                  style={{
+                    left: `${st.x}%`,
+                    top: `${st.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  {/* Sticker Graphic */}
+                  {meta.symbolId ? (
+                    <svg className="w-16 h-16 pointer-events-none filter drop-shadow-md">
+                      <use href={`#${meta.symbolId}`} />
+                    </svg>
+                  ) : (
+                    <span className="text-5xl pointer-events-none select-none filter drop-shadow-md">
+                      {meta.emoji}
+                    </span>
+                  )}
+
+                  {/* Tiny delete button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSticker(st.id);
+                    }}
+                    className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black border border-white shadow-md transition opacity-0 group-hover:opacity-100 active:opacity-100 cursor-pointer"
+                    title={lang === "fr" ? "Enlever" : "Delete"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
 
           {/* PAGE RENDER CONTROLLER */}
           <div className="flex-1 flex flex-col justify-between">
@@ -1484,6 +1618,14 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         </div>
                       )}
 
+                      {/* Interactive Apple Counter helper for math counting missions */}
+                      {((mission.id === 3) || (mission.id === 10)) && (
+                        <AppleCounter 
+                          targetCount={mission.id === 3 ? 5 : 7} 
+                          lang={lang} 
+                        />
+                      )}
+
                       {/* Instruction */}
                       <p className="consigne text-base text-left text-forest mb-2">
                         {lang === "fr" ? mission.consigneFr : mission.consigneEn}
@@ -1638,10 +1780,10 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                           <DrawingCanvas
                             width={320}
                             height={150}
-                            mazeLayout={mission.exerciseType === "drawing" ? mission.mazeLayout : undefined}
                             onSave={(url) => setDrawings(prev => ({ ...prev, [mKey]: url }))}
                             savedDataUrl={drawings[mKey]}
                             lang={lang}
+                            mazeLayout={mission.exerciseType === "drawing" ? mission.mazeLayout : undefined}
                           />
                         )}
 
@@ -1917,6 +2059,14 @@ export const BookViewer: React.FC<BookViewerProps> = ({
             <ArrowRight size={20} />
           </button>
         </div>
+
+        {/* Digital Sticker Palette for Kids Customization */}
+        <StickerPalette
+          onSelectSticker={handleSelectSticker}
+          lang={lang}
+          onClearPageStickers={handleClearPageStickers}
+          hasStickersOnPage={placedStickers.some((st) => st.page === currentPage)}
+        />
 
       </main>
     </div>

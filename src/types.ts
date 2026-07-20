@@ -42,6 +42,9 @@ export interface Mission {
     labelFr?: string;
     labelEn?: string;
   }[];
+  // For exerciseType "drawing" missions that are actually a maze to trace:
+  // selects which maze pattern to render as a background in the DrawingCanvas.
+  mazeLayout?: 1 | 2;
   // For other specialized types
   solutionFr?: string;
   solutionEn?: string;
@@ -50,9 +53,6 @@ export interface Mission {
   inputPlaceholderFr?: string;
   inputPlaceholderEn?: string;
   difficulty?: 1 | 2 | 3;
-  // For exerciseType "drawing" missions that are actually a maze to trace:
-  // selects which maze pattern to render as a background in the DrawingCanvas.
-  mazeLayout?: 1 | 2;
 }
 
 export interface Chapter {

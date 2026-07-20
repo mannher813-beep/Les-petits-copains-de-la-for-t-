@@ -6,6 +6,8 @@
 import React, { useState } from "react";
 import { booksData } from "../data";
 import { Lock, Sparkles, Moon, Sun } from "lucide-react";
+import coverEn from "../assets/images/forest_friends_pwa_icon_1784212488830.jpg";
+import coverFr from "../assets/images/forest_friends_pwa_icon_1784283197982.jpg";
 
 interface WelcomeScreenProps {
   onStart: (childName: string, bookId: number, language: "fr" | "en") => void;
@@ -125,122 +127,173 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </div>
 
         {/* Configuration Form */}
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto pb-28">
-          
-          {/* Language Selection */}
-          <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-warm-border shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <span className="font-bold text-sm sm:text-base text-text-charcoal text-left">
-              {lang === "fr" ? "🌍 Choisis ta langue :" : "🌍 Choose your language:"}
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setLang("fr")}
-                className={`flex-1 sm:flex-none px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border-2 transition cursor-pointer min-h-[44px] ${
-                  lang === "fr"
-                    ? "bg-forest text-white border-forest"
-                    : "bg-white text-text-charcoal border-warm-border hover:border-forest-light"
-                }`}
-              >
-                <span>🇫🇷</span> Français
-              </button>
-              <button
-                type="button"
-                onClick={() => setLang("en")}
-                className={`flex-1 sm:flex-none px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border-2 transition cursor-pointer min-h-[44px] ${
-                  lang === "en"
-                    ? "bg-forest text-white border-forest"
-                    : "bg-white text-text-charcoal border-warm-border hover:border-forest-light"
-                }`}
-              >
-                <span>🇬🇧</span> English
-              </button>
-            </div>
-          </div>
-
-          {/* Child's Name Input */}
-          <div className="bg-white p-4 rounded-2xl border-2 border-warm-border shadow-sm">
-            <label className="block font-bold text-sm sm:text-base text-text-charcoal mb-2 text-left">
-              {lang === "fr" ? "✏️ Quel est ton prénom, petit copain ?" : "✏️ What is your name, little friend?"}
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={lang === "fr" ? "Écris ton prénom ici..." : "Write your name here..."}
-              maxLength={22}
-              className="w-full px-4 py-3 rounded-xl border-2 border-warm-border text-base sm:text-lg focus:outline-none focus:border-forest font-handwriting min-h-[44px]"
-            />
-          </div>
-
-          {/* Book Selection */}
-          <div className="space-y-3">
-            <label className="block font-bold text-sm sm:text-base text-text-charcoal text-left px-2">
-              {lang === "fr" ? "📚 Choisis ton aventure :" : "📚 Choose your adventure:"}
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4 md:gap-6">
-              {booksData.map((book) => {
-                const isSelected = selectedBookId === book.id;
-                // Alternate colors for Tome tags
-                const tagColors = [
-                  "bg-green-100 text-green-700",
-                  "bg-orange-100 text-orange-700",
-                  "bg-sky-100 text-sky-700",
-                  "bg-purple-100 text-purple-700"
-                ];
-                const tagColor = tagColors[(book.id - 1) % tagColors.length];
-                
-                // Book Title and description based on current language
-                const title = lang === "fr" ? book.titleFr : book.titleEn;
-                const description = lang === "fr" ? book.descriptionFr : book.descriptionEn;
-                const emojis = book.themeEmojis || ["📖", "🌟", "✨"];
-
-                return (
-                  <div
-                    key={book.id}
-                    onClick={() => {
-                      if (book.id !== 1 && !isPremium) {
-                        if (onOpenPremiumModal) onOpenPremiumModal();
-                      } else {
-                        setSelectedBookId(book.id);
-                      }
-                    }}
-                    className={`cursor-pointer rounded-2xl border-4 p-4 bg-white transition relative flex flex-col justify-between min-h-[44px] ${
-                      isSelected
-                        ? "border-forest ring-4 ring-forest-light/30 shadow-md"
-                        : "border-transparent hover:border-warm-border shadow-sm"
+        <form onSubmit={handleSubmit} className="pb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto">
+            {/* Left Column: Input and Selection Controls */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Language Selection */}
+              <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-warm-border shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <span className="font-bold text-sm sm:text-base text-text-charcoal text-left">
+                  {lang === "fr" ? "🌍 Choisis ta langue :" : "🌍 Choose your language:"}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLang("fr")}
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border-2 transition cursor-pointer min-h-[44px] ${
+                      lang === "fr"
+                        ? "bg-forest text-white border-forest"
+                        : "bg-white text-text-charcoal border-warm-border hover:border-forest-light"
                     }`}
                   >
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${tagColor} flex items-center gap-1`}>
-                          {lang === "fr" ? `Tome ${book.id}` : `Volume ${book.id}`}
-                          {book.id !== 1 && !isPremium && <Lock size={12} />}
-                        </span>
-                        {isSelected && <span className="text-forest font-bold text-base sm:text-lg">✔</span>}
+                    <span>🇫🇷</span> Français
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLang("en")}
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border-2 transition cursor-pointer min-h-[44px] ${
+                      lang === "en"
+                        ? "bg-forest text-white border-forest"
+                        : "bg-white text-text-charcoal border-warm-border hover:border-forest-light"
+                    }`}
+                  >
+                    <span>🇬🇧</span> English
+                  </button>
+                </div>
+              </div>
+
+              {/* Child's Name Input */}
+              <div className="bg-white p-4 rounded-2xl border-2 border-warm-border shadow-sm">
+                <label className="block font-bold text-sm sm:text-base text-text-charcoal mb-2 text-left">
+                  {lang === "fr" ? "✏️ Quel est ton prénom, petit copain ?" : "✏️ What is your name, little friend?"}
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={lang === "fr" ? "Écris ton prénom ici..." : "Write your name here..."}
+                  maxLength={22}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-warm-border text-base sm:text-lg focus:outline-none focus:border-forest font-handwriting min-h-[44px]"
+                />
+              </div>
+
+              {/* Book Selection */}
+              <div className="space-y-3">
+                <label className="block font-bold text-sm sm:text-base text-text-charcoal text-left px-2">
+                  {lang === "fr" ? "📚 Choisis ton aventure :" : "📚 Choose your adventure:"}
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4 md:gap-6">
+                  {booksData.map((book) => {
+                    const isSelected = selectedBookId === book.id;
+                    // Alternate colors for Tome tags
+                    const tagColors = [
+                      "bg-green-100 text-green-700",
+                      "bg-orange-100 text-orange-700",
+                      "bg-sky-100 text-sky-700",
+                      "bg-purple-100 text-purple-700"
+                    ];
+                    const tagColor = tagColors[(book.id - 1) % tagColors.length];
+                    
+                    // Book Title and description based on current language
+                    const title = lang === "fr" ? book.titleFr : book.titleEn;
+                    const description = lang === "fr" ? book.descriptionFr : book.descriptionEn;
+                    const emojis = book.themeEmojis || ["📖", "🌟", "✨"];
+
+                    return (
+                      <div
+                        key={book.id}
+                        onClick={() => {
+                          if (book.id !== 1 && !isPremium) {
+                            if (onOpenPremiumModal) onOpenPremiumModal();
+                          } else {
+                            setSelectedBookId(book.id);
+                          }
+                        }}
+                        className={`cursor-pointer rounded-2xl border-4 p-4 bg-white transition relative flex flex-col justify-between min-h-[44px] ${
+                          isSelected
+                            ? "border-forest ring-4 ring-forest-light/30 shadow-md"
+                            : "border-transparent hover:border-warm-border shadow-sm"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${tagColor} flex items-center gap-1`}>
+                              {lang === "fr" ? `Tome ${book.id}` : `Volume ${book.id}`}
+                              {book.id !== 1 && !isPremium && <Lock size={12} />}
+                            </span>
+                            {isSelected && <span className="text-forest font-bold text-base sm:text-lg">✔</span>}
+                          </div>
+                          <h3 className="text-base sm:text-lg md:text-xl font-bold text-forest mb-1 text-left flex items-center gap-1.5 flex-wrap">
+                            {title}
+                            {book.id !== 1 && !isPremium && (
+                              <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
+                                <Lock size={10} />
+                                {lang === "fr" ? "Premium" : "Premium"}
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 text-left">
+                            {description}
+                          </p>
+                        </div>
+                        <div className="mt-3 flex gap-1 justify-center">
+                          {emojis.map((emoji, idx) => (
+                            <span key={idx} className="text-sm sm:text-lg">{emoji}</span>
+                          ))}
+                        </div>
                       </div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-forest mb-1 text-left flex items-center gap-1.5 flex-wrap">
-                        {title}
-                        {book.id !== 1 && !isPremium && (
-                          <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
-                            <Lock size={10} />
-                            {lang === "fr" ? "Premium" : "Premium"}
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 text-left">
-                        {description}
-                      </p>
-                    </div>
-                    <div className="mt-3 flex gap-1 justify-center">
-                      {emojis.map((emoji, idx) => (
-                        <span key={idx} className="text-sm sm:text-lg">{emoji}</span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
+
+            {/* Right Column: Live Book Mockup */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-start pt-2">
+              <div className="w-full max-w-[340px] bg-white rounded-3xl p-4 border-2 border-warm-border shadow-md text-center">
+                <p className="font-fun font-bold text-forest text-sm sm:text-base mb-2">
+                  {lang === "fr" ? "📖 Ton vrai cahier d'activités !" : "📖 Your real activity book!"}
+                </p>
+                <p className="text-[11px] text-gray-500 mb-4 leading-tight">
+                  {lang === "fr"
+                    ? "Voici la couverture officielle imprimable avec ton prénom écrit dessus !"
+                    : "Here is the official printable cover with your name written on it!"}
+                </p>
+                
+                {/* 3D Book Cover Cover Mockup */}
+                <div className="relative aspect-[1/1.5] w-full bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-wood-brown/40 group transition-all duration-300 hover:rotate-1">
+                  {/* Real-book spine & gradient effects */}
+                  <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/25 via-black/5 to-transparent z-10" />
+                  <div className="absolute inset-y-0 left-3 w-1 bg-white/15 z-10" />
+                  
+                  {/* Cover Image based on current language */}
+                  <img
+                    src={lang === "fr" ? coverFr : coverEn}
+                    alt="Cahier de la Forêt"
+                    className="w-full h-full object-cover select-none pointer-events-none"
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Kids Name overlay on the underline */}
+                  <div
+                    className="absolute text-center select-none pointer-events-none font-handwriting text-[#1d4ed8] font-black drop-shadow-sm leading-none flex items-center justify-center text-ellipsis overflow-hidden whitespace-nowrap"
+                    style={{
+                      bottom: "4.8%",
+                      left: lang === "fr" ? "35%" : "44%",
+                      right: "8%",
+                      height: "6%",
+                      fontSize: "clamp(12px, 3.5vw, 18px)",
+                      fontFamily: '"Short Stack", cursive, sans-serif'
+                    }}
+                  >
+                    {name.trim() || "______"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Floating Submit Button */}
