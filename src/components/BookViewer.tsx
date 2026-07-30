@@ -8,6 +8,8 @@ import { BookData, UserProgress } from "../types";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { AppleCounter } from "./AppleCounter";
 import { StickerPalette, STICKERS_LIST } from "./StickerPalette";
+import coverEn from "../assets/images/forest_friends_pwa_icon_1784212488830.jpg";
+import coverFr from "../assets/images/forest_friends_pwa_icon_1784283197982.jpg";
 import { 
   CheckCircle, 
   HelpCircle, 
@@ -942,6 +944,17 @@ export const BookViewer: React.FC<BookViewerProps> = ({
     }
   };
 
+  // Automatically trigger celebration sounds when landing on badge or diploma pages
+  useEffect(() => {
+    const config = getPageConfig(currentPage);
+    if (config.type === "badge" || config.type === "diploma") {
+      const timer = setTimeout(() => {
+        playSound("badge");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
+
   // Helper to get total pages
   const totalPages = 40;
 
@@ -1020,17 +1033,6 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   };
 
   const pageConfig = getPageConfig(currentPage);
-
-  // Automatically trigger celebration sounds when landing on badge or diploma pages
-  useEffect(() => {
-    const config = getPageConfig(currentPage);
-    if (config.type === "badge" || config.type === "diploma") {
-      const timer = setTimeout(() => {
-        playSound("badge");
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [currentPage]);
 
   // Handle QCM Option Click
   const handleQcmClick = (missionId: number, optionId: string, isCorrect?: boolean) => {
@@ -1272,9 +1274,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
             
             {/* 1. COVER PAGE */}
             {pageConfig.type === "cover" && (
-              <div className="flex flex-col items-center justify-between h-full text-center py-6">
+              <div className="flex flex-col items-center justify-between h-full text-center py-2 sm:py-6">
                 <div>
-                  <p className="text-xs tracking-widest text-[#8c7b60] font-bold uppercase mb-2">
+                  <p className="text-xs tracking-widest text-[#8c7b60] font-bold uppercase mb-1">
                     {lang === "fr" ? "🌟 CAHIER D'ACTIVITÉS ÉDUCATIF 🌟" : "🌟 EDUCATIONAL ACTIVITY BOOK 🌟"}
                   </p>
                   <p className="text-sm font-bold text-forest-light">
@@ -1282,50 +1284,33 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                   </p>
                 </div>
 
-                {/* Big central customized vector cover */}
-                <div className="w-full max-w-lg my-6 bg-white border-4 border-dashed border-forest-light rounded-3xl p-6 shadow-md relative overflow-hidden">
-                  <h1 className="text-4xl md:text-5xl font-serif italic text-forest leading-tight mb-2">
-                    {book.id === 1 
-                      ? (lang === "fr" ? "La Rencontre" : "The Meeting") 
-                      : (lang === "fr" ? "La Cabane dans les Arbres" : "The Treehouse")}
-                  </h1>
-                  <p className="text-lg font-handwriting text-wood-brown font-bold mb-4">
-                    {lang === "fr" ? "Les Copains de la Forêt" : "The Forest Friends"}
-                  </p>
-
-                  {/* Group vector scenic placeholder */}
-                  <svg className="w-full h-48 mx-auto filter drop-shadow-sm" viewBox="0 0 400 200">
-                    <rect width="400" height="150" fill="#d2f1fc" rx="10"/>
-                    <rect y="120" width="400" height="80" fill="#bfe3a8" rx="10"/>
-                    <use href="#d-soleil" x="20" y="15" width="45" height="45"/>
-                    <use href="#d-tree" x="320" y="40" width="60" height="90"/>
-                    <use href="#d-sapin" x="30" y="55" width="55" height="85"/>
-                    
-                    {/* Render different items per Tome */}
-                    {book.id === 1 ? (
-                      <g>
-                        <use href="#c-leo" x="120" y="80" width="65" height="80"/>
-                        <use href="#c-nina" x="185" y="90" width="55" height="70"/>
-                      </g>
-                    ) : (
-                      <g>
-                        {/* Treehouse graphic */}
-                        <rect x="150" y="50" width="90" height="70" rx="4" fill="#a8713f" stroke="#fff" strokeWidth="2"/>
-                        <polygon points="140,50 195,15 250,50" fill="#e05a4e" stroke="#fff" strokeWidth="2"/>
-                        <use href="#c-leo" x="90" y="80" width="65" height="80"/>
-                        <use href="#c-nina" x="250" y="90" width="55" height="70"/>
-                      </g>
-                    )}
-                  </svg>
-
-                  {/* Personalized text */}
-                  <div className="mt-6 bg-white/95 py-3 px-6 rounded-2xl border-2 border-dashed border-forest-light inline-block shadow-inner">
-                    <p className="text-xs text-gray-500 font-bold uppercase mb-1">
-                      {lang === "fr" ? "Ce cahier t'appartient !" : "This book belongs to you!"}
-                    </p>
-                    <p className="text-2xl font-handwriting text-forest font-bold px-4">
-                      {childName}
-                    </p>
+                {/* Real physical high-quality notebook cover */}
+                <div className="w-full max-w-[360px] my-4 bg-white rounded-3xl shadow-2xl relative overflow-hidden aspect-[1/1.5] border-4 border-wood-brown self-center">
+                  {/* Real-book spine & gradient shadow effects */}
+                  <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/25 via-black/5 to-transparent z-10" />
+                  <div className="absolute inset-y-0 left-3 w-1 bg-white/15 z-10" />
+                  
+                  {/* Cover Image based on current language */}
+                  <img
+                    src={lang === "fr" ? coverFr : coverEn}
+                    alt="Cahier de la Forêt"
+                    className="w-full h-full object-cover select-none pointer-events-none"
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Kids Name overlay on the underline */}
+                  <div
+                    className="absolute text-center select-none pointer-events-none font-handwriting text-[#1d4ed8] font-black drop-shadow-sm leading-none flex items-center justify-center text-ellipsis overflow-hidden whitespace-nowrap"
+                    style={{
+                      bottom: "4.8%",
+                      left: lang === "fr" ? "35%" : "44%",
+                      right: "8%",
+                      height: "6%",
+                      fontSize: "clamp(12px, 3.5vw, 19px)",
+                      fontFamily: '"Short Stack", cursive, sans-serif'
+                    }}
+                  >
+                    {childName || "______"}
                   </div>
                 </div>
 
@@ -1596,27 +1581,10 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                         </p>
                       </div>
 
-                      {/* Visual illustration for counting/comparing missions */}
-                      {mission.countIcons && mission.countIcons.length > 0 && (
-                        <div className="my-2 flex flex-wrap items-start justify-center gap-6 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                          {mission.countIcons.map((group, gi) => (
-                            <div key={gi} className="flex flex-col items-center gap-1">
-                              {(group.labelFr || group.labelEn) && (
-                                <span className="text-xs font-semibold text-forest">
-                                  {lang === "fr" ? group.labelFr : group.labelEn}
-                                </span>
-                              )}
-                              <div className="flex flex-wrap gap-1 justify-center max-w-[220px]">
-                                {Array.from({ length: group.count }).map((_, i) => (
-                                  <svg key={i} className="w-7 h-7 shrink-0" viewBox="0 0 100 100">
-                                    <use href={`#${group.icon}`} />
-                                  </svg>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {/* Instruction */}
+                      <p className="consigne text-base text-left text-forest mb-2">
+                        {lang === "fr" ? mission.consigneFr : mission.consigneEn}
+                      </p>
 
                       {/* Interactive Apple Counter helper for math counting missions */}
                       {((mission.id === 3) || (mission.id === 10)) && (
@@ -1625,11 +1593,6 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                           lang={lang} 
                         />
                       )}
-
-                      {/* Instruction */}
-                      <p className="consigne text-base text-left text-forest mb-2">
-                        {lang === "fr" ? mission.consigneFr : mission.consigneEn}
-                      </p>
 
                       {/* Exercise controls based on type */}
                       <div className="flex-1 flex flex-col justify-center">
@@ -1783,7 +1746,6 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                             onSave={(url) => setDrawings(prev => ({ ...prev, [mKey]: url }))}
                             savedDataUrl={drawings[mKey]}
                             lang={lang}
-                            mazeLayout={mission.exerciseType === "drawing" ? mission.mazeLayout : undefined}
                           />
                         )}
 

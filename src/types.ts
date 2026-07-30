@@ -35,16 +35,6 @@ export interface Mission {
     text: string;
     isTarget: boolean;
   }[];
-  // Visual illustration for counting/comparing missions (e.g. show 5 apples to count)
-  countIcons?: {
-    icon: string; // symbol id from GlobalSvgSymbols, e.g. "d-pomme"
-    count: number;
-    labelFr?: string;
-    labelEn?: string;
-  }[];
-  // For exerciseType "drawing" missions that are actually a maze to trace:
-  // selects which maze pattern to render as a background in the DrawingCanvas.
-  mazeLayout?: 1 | 2;
   // For other specialized types
   solutionFr?: string;
   solutionEn?: string;
