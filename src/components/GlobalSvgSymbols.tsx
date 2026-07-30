@@ -4,81 +4,26 @@
  */
 
 import React from "react";
+import leoImg from "../assets/images/characters/leo-renard.png";
+import ninaImg from "../assets/images/characters/nina-souris.png";
+import darinaImg from "../assets/images/characters/darina-herisson.png";
+import lanaImg from "../assets/images/characters/lana-oiseau.png";
 
 export const GlobalSvgSymbols: React.FC = () => {
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
       <defs>
         <symbol id="c-leo" viewBox="0 0 120 150">
-          <path d="M84 120 Q116 118 108 88 Q124 118 92 140 Z" fill="#d97428"/>
-          <ellipse cx="60" cy="112" rx="26" ry="30" fill="#f0913f"/>
-          <ellipse cx="60" cy="118" rx="15" ry="20" fill="#fff3e2"/>
-          <ellipse cx="37" cy="108" rx="7" ry="13" fill="#e8813a" transform="rotate(18 37 108)"/>
-          <ellipse cx="83" cy="108" rx="7" ry="13" fill="#e8813a" transform="rotate(-18 83 108)"/>
-          <ellipse cx="48" cy="141" rx="9" ry="6" fill="#d97428"/>
-          <ellipse cx="72" cy="141" rx="9" ry="6" fill="#d97428"/>
-          <polygon points="32,36 22,4 54,24" fill="#e8813a"/>
-          <polygon points="88,36 98,4 66,24" fill="#e8813a"/>
-          <polygon points="34,28 29,12 46,22" fill="#fff3e2"/>
-          <polygon points="86,28 91,12 74,22" fill="#fff3e2"/>
-          <circle cx="60" cy="48" r="31" fill="#f0913f"/>
-          <ellipse cx="60" cy="60" rx="17" ry="12" fill="#fff3e2"/>
-          <ellipse cx="60" cy="55" rx="5" ry="4" fill="#5a3620"/>
-          <path d="M52 65 Q60 71 68 65" stroke="#5a3620" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <circle cx="47" cy="43" r="4.5" fill="#3a2415"/><circle cx="73" cy="43" r="4.5" fill="#3a2415"/>
-          <circle cx="48.5" cy="41.5" r="1.6" fill="#fff"/><circle cx="74.5" cy="41.5" r="1.6" fill="#fff"/>
-          <circle cx="37" cy="55" r="4" fill="#f8bd8e"/><circle cx="83" cy="55" r="4" fill="#f8bd8e"/>
+          <image href={leoImg} x="0" y="0" width="120" height="150" preserveAspectRatio="xMidYMax meet" />
         </symbol>
         <symbol id="c-nina" viewBox="0 0 120 150">
-          <path d="M80 128 Q110 126 106 104 Q118 130 86 142" fill="none" stroke="#a7aebc" strokeWidth="5" strokeLinecap="round"/>
-          <ellipse cx="60" cy="114" rx="23" ry="27" fill="#a7aebc"/>
-          <ellipse cx="60" cy="120" rx="13" ry="17" fill="#e9edf4"/>
-          <ellipse cx="40" cy="110" rx="6" ry="11" fill="#99a1b0" transform="rotate(20 40 110)"/>
-          <ellipse cx="80" cy="110" rx="6" ry="11" fill="#99a1b0" transform="rotate(-20 80 110)"/>
-          <ellipse cx="50" cy="140" rx="8" ry="5" fill="#8f97a6"/>
-          <ellipse cx="70" cy="140" rx="8" ry="5" fill="#8f97a6"/>
-          <circle cx="30" cy="27" r="17" fill="#a7aebc"/><circle cx="90" cy="27" r="17" fill="#a7aebc"/>
-          <circle cx="30" cy="27" r="9" fill="#f6b8c8"/><circle cx="90" cy="27" r="9" fill="#f6b8c8"/>
-          <circle cx="60" cy="56" r="28" fill="#b3bac7"/>
-          <ellipse cx="60" cy="67" rx="14" ry="9" fill="#f0f3f8"/>
-          <circle cx="60" cy="61" r="3.8" fill="#e2708f"/>
-          <path d="M54 71 Q60 75 66 71" stroke="#5a5a6a" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-          <circle cx="49" cy="51" r="4" fill="#33333f"/><circle cx="71" cy="51" r="4" fill="#33333f"/>
-          <circle cx="50.4" cy="49.6" r="1.4" fill="#fff"/><circle cx="72.4" cy="49.6" r="1.4" fill="#fff"/>
-          <path d="M40 64 L24 60 M40 68 L25 70" stroke="#8f97a6" strokeWidth="1.6"/>
-          <path d="M80 64 L96 60 M80 68 L95 70" stroke="#8f97a6" strokeWidth="1.6"/>
-          <circle cx="41" cy="62" r="3.5" fill="#f2c4d0"/><circle cx="79" cy="62" r="3.5" fill="#f2c4d0"/>
+          <image href={ninaImg} x="0" y="0" width="120" height="150" preserveAspectRatio="xMidYMax meet" />
         </symbol>
         <symbol id="c-tom" viewBox="0 0 130 145">
-          <g fill="#7a5230">
-            <polygon points="65,2 54,32 80,30"/><polygon points="32,8 34,40 58,28"/>
-            <polygon points="98,8 96,40 72,28"/><polygon points="10,30 24,54 42,32"/>
-            <polygon points="120,30 106,54 88,32"/><polygon points="2,60 24,72 24,46"/>
-            <polygon points="128,60 106,72 106,46"/><polygon points="6,88 28,88 18,66"/>
-            <polygon points="124,88 102,88 112,66"/>
-          </g>
-          <circle cx="65" cy="66" r="43" fill="#8a5f38"/>
-          <ellipse cx="65" cy="82" rx="28" ry="26" fill="#eccfa2"/>
-          <circle cx="53" cy="74" r="4.2" fill="#3a2b18"/><circle cx="77" cy="74" r="4.2" fill="#3a2b18"/>
-          <circle cx="54.4" cy="72.6" r="1.5" fill="#fff"/><circle cx="78.4" cy="72.6" r="1.5" fill="#fff"/>
-          <circle cx="65" cy="88" r="5" fill="#4a3120"/>
-          <path d="M57 96 Q65 102 73 96" stroke="#4a3120" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <circle cx="44" cy="86" r="4" fill="#e5b287"/><circle cx="86" cy="86" r="4" fill="#e5b287"/>
-          <ellipse cx="48" cy="132" rx="9" ry="6" fill="#6b4726"/>
-          <ellipse cx="82" cy="132" rx="9" ry="6" fill="#6b4726"/>
+          <image href={darinaImg} x="0" y="0" width="130" height="145" preserveAspectRatio="xMidYMax meet" />
         </symbol>
         <symbol id="c-zaza" viewBox="0 0 110 145">
-          <polygon points="22,96 2,110 20,112 6,126 26,120" fill="#3f97cc"/>
-          <path d="M48 12 Q44 0 36 4 M55 10 Q55 -2 47 0 M62 12 Q66 0 74 4" stroke="#3f97cc" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-          <circle cx="55" cy="70" r="35" fill="#56b1e6"/>
-          <ellipse cx="55" cy="86" rx="21" ry="16" fill="#ffd95e"/>
-          <ellipse cx="30" cy="76" rx="11" ry="19" fill="#3f97cc" transform="rotate(18 30 76)"/>
-          <ellipse cx="84" cy="56" rx="10" ry="17" fill="#ffd95e" transform="rotate(-42 84 56)"/>
-          <circle cx="45" cy="58" r="4.5" fill="#243447"/><circle cx="66" cy="58" r="4.5" fill="#243447"/>
-          <circle cx="46.4" cy="56.6" r="1.6" fill="#fff"/><circle cx="67.4" cy="56.6" r="1.6" fill="#fff"/>
-          <polygon points="55,64 67,71 55,78 43,71" fill="#f7a531"/>
-          <path d="M47 108 L47 126 M63 108 L63 126" stroke="#f7a531" strokeWidth="3.5" strokeLinecap="round"/>
-          <path d="M40 128 L47 126 L54 128 M56 128 L63 126 L70 128" stroke="#f7a531" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+          <image href={lanaImg} x="0" y="0" width="110" height="145" preserveAspectRatio="xMidYMax meet" />
         </symbol>
         <symbol id="d-tree" viewBox="0 0 100 130">
           <rect x="44" y="78" width="13" height="48" rx="5" fill="#8a5a33"/>
