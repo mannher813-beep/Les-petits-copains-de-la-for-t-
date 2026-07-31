@@ -4,14 +4,9 @@
  */
 
 import { useState, useEffect } from "react";
-import { WelcomeScreen } from "./components/WelcomeScreen";
-import { BookViewer } from "./components/BookViewer";
-import { ExportPanel } from "./components/ExportPanel";
-import { PaymentCallback } from "./components/PaymentCallback";
-import { PremiumModal } from "./components/PremiumModal";
 import { GlobalSvgSymbols } from "./components/GlobalSvgSymbols";
 
-// New Multi-Tome Components
+// Multi-Tome / Défi-Suivi Components
 import { Navigation } from "./components/Navigation";
 import { ChildProfilesList } from "./components/ChildProfilesList";
 import { ChildProfileNew } from "./components/ChildProfileNew";
@@ -23,8 +18,6 @@ import { DefiChapterView } from "./components/DefiChapterView";
 import { CertificatReussite } from "./components/CertificatReussite";
 import { AdminDashboard } from "./components/AdminDashboard";
 
-import { booksData } from "./data";
-import { UserProgress } from "./types";
 import { Enfant, Tome } from "./types/multiTome";
 import { multiTomeService, DEFAULT_ENFANTS } from "./services/multiTomeService";
 
@@ -44,7 +37,7 @@ export default function App() {
         console.warn("Could not parse saved active child", e);
       }
     }
-    return DEFAULT_ENFANTS[0];
+    return DEFAULT_ENFANTS[0] ?? null;
   });
 
   // Language state
@@ -52,38 +45,6 @@ export default function App() {
 
   // Admin login status
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
-
-  // Premium Status & Order ID
-  const [isPremium, setIsPremium] = useState<boolean>(() => {
-    return localStorage.getItem("forest_friends_is_premium") === "true";
-  });
-
-  const [orderId] = useState<string>(() => {
-    const saved = localStorage.getItem("forest_friends_order_id");
-    if (saved) return saved;
-    const generated = `order_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem("forest_friends_order_id", generated);
-    return generated;
-  });
-
-  // User progress for interactive book
-  const [progress, setProgress] = useState<UserProgress | null>(() => {
-    const saved = localStorage.getItem("forest_friends_progress");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as UserProgress;
-        parsed.isPremium = localStorage.getItem("forest_friends_is_premium") === "true";
-        parsed.orderId = localStorage.getItem("forest_friends_order_id") || undefined;
-        return parsed;
-      } catch (e) {
-        console.warn("Could not parse saved progress:", e);
-      }
-    }
-    return null;
-  });
-
-  const [isBookViewerActive, setIsBookViewerActive] = useState<boolean>(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState<boolean>(false);
 
   // Dark Mode
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -117,64 +78,6 @@ export default function App() {
     setActiveEnfant(enfant);
     localStorage.setItem("forest_active_enfant", JSON.stringify(enfant));
   };
-
-  // Automatically check payment status from the backend database when the app mounts
-  useEffect(() => {
-    const savedOrderId = localStorage.getItem("forest_friends_order_id");
-    if (savedOrderId) {
-      fetch(`/api/payment/status/${savedOrderId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Status check failed");
-          return res.json();
-        })
-        .then((data) => {
-          if (data.status === "paid") {
-            setIsPremium(true);
-            localStorage.setItem("forest_friends_is_premium", "true");
-          }
-        })
-        .catch(() => {});
-    }
-  }, []);
-
-  const handlePaymentSuccess = () => {
-    setIsPremium(true);
-    localStorage.setItem("forest_friends_is_premium", "true");
-  };
-
-  const handleProgressChange = (
-    updater: UserProgress | ((prev: UserProgress) => UserProgress)
-  ) => {
-    setProgress((prev) => {
-      if (!prev) return null;
-      const updated = typeof updater === "function" ? updater(prev) : updater;
-      updated.isPremium = isPremium;
-      updated.orderId = orderId;
-      localStorage.setItem("forest_friends_progress", JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleStartBook = (name: string, bookId: number, language: "fr" | "en") => {
-    setLang(language);
-    const updatedProgress: UserProgress = {
-      childName: name,
-      completionDate: "",
-      currentBookId: bookId,
-      currentLanguage: language,
-      currentPage: 1,
-      completedAnswers: {},
-      isPremium,
-      orderId
-    };
-    setProgress(updatedProgress);
-    localStorage.setItem("forest_friends_progress", JSON.stringify(updatedProgress));
-    setIsBookViewerActive(true);
-  };
-
-  const activeBook = progress
-    ? booksData.find((b) => b.id === progress.currentBookId) || booksData[0]
-    : booksData[0];
 
   // Helper parser for dynamic routes
   const isDefiRoute = currentPath.startsWith("/defi/");
@@ -306,62 +209,24 @@ export default function App() {
           );
         })()}
 
-        {/* 10. HOME / WELCOME SCREEN / BOOK VIEWER */}
+        {/* 10. HOME — Child Parcours (défi-suivi), or profile creation if no child yet */}
         {(currentPath === "/" || currentPath === "/welcome") && (
-          <div>
-            {!isBookViewerActive || !progress ? (
-              <WelcomeScreen
-                onStart={handleStartBook}
-                isPremium={isPremium}
-                onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
-                initialLanguage={lang}
-                initialName={activeEnfant?.pseudo || progress?.childName || ""}
-                initialBookId={progress?.currentBookId || 1}
-                isDarkMode={isDarkMode}
-                onToggleDarkMode={toggleDarkMode}
-              />
-            ) : (
-              <div className="animate-fade-in">
-                <BookViewer
-                  book={activeBook}
-                  progress={progress}
-                  onChangeProgress={handleProgressChange}
-                  onExit={() => setIsBookViewerActive(false)}
-                  onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
-                  isDarkMode={isDarkMode}
-                  onToggleDarkMode={toggleDarkMode}
-                />
-
-                <section className="no-print pb-16">
-                  <ExportPanel
-                    book={activeBook}
-                    childName={progress.childName}
-                    language={progress.currentLanguage}
-                    isPremium={isPremium}
-                    onOpenPremiumModal={() => setIsPremiumModalOpen(true)}
-                  />
-                </section>
-              </div>
-            )}
-          </div>
+          activeEnfant ? (
+            <ChildParcours
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChildProfileNew
+              onNavigate={navigateTo}
+              onChildCreated={(newEnfant) => handleSelectEnfant(newEnfant)}
+              lang={lang}
+            />
+          )
         )}
 
       </main>
-
-      {/* Premium Upgrade Modal */}
-      <PremiumModal
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-        childName={activeEnfant?.pseudo || progress?.childName || "Copain"}
-        language={lang}
-        orderId={orderId}
-      />
-
-      {/* Payment success callback */}
-      <PaymentCallback
-        language={lang}
-        onPaymentSuccess={handlePaymentSuccess}
-      />
     </div>
   );
 }

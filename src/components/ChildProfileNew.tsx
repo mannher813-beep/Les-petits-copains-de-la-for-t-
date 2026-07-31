@@ -42,6 +42,13 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
       code_livre: codeLivre.trim() || undefined
     });
 
+    setIsSaving(false);
+
+    if (!newEnfant) {
+      // Supabase write failed — do not navigate away, let the parent retry.
+      return;
+    }
+
     onChildCreated(newEnfant);
     onNavigate(`/enfant/${newEnfant.id}/parcours`);
   };

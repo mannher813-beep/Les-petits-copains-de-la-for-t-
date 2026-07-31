@@ -1,7 +1,7 @@
 {
   "name": "L'Atelier des Copains de la Forêt",
   "short_name": "Copains Forêt",
-  "description": "Livre d'activités interactif et imprimable pour les enfants de 5 à 7 ans.",
+  "description": "Suivi des défis et aventures pour les enfants de 5 à 7 ans, en complément du cahier imprimé.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fffbf4",
