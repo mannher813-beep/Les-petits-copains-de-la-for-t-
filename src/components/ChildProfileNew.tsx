@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Enfant, TrancheAge } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
-import { ArrowLeft, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Check, Camera, Upload } from "lucide-react";
+import { compressImageFile } from "../utils/imageUtils";
 
 interface ChildProfileNewProps {
   onNavigate: (path: string) => void;
@@ -27,8 +28,22 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
   const [pseudo, setPseudo] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState("leo");
   const [trancheAge, setTrancheAge] = useState<TrancheAge>("5-6");
-  const [codeLivre, setCodeLivre] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [customPhoto, setCustomPhoto] = useState<string | null>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImageFile(file, 256, 256);
+      setCustomPhoto(compressed);
+      setSelectedAvatar(compressed);
+    } catch (err) {
+      console.error("Error processing photo:", err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +53,7 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
     const newEnfant = await multiTomeService.saveEnfant({
       pseudo: pseudo.trim(),
       avatar: selectedAvatar,
-      tranche_age: trancheAge,
-      code_livre: codeLivre.trim() || undefined
+      tranche_age: trancheAge
     });
 
     setIsSaving(false);
@@ -105,8 +119,8 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
             <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 text-left">
               {lang === "fr" ? "🎂 Tranche d'âge (pour le classement équitable) :" : "🎂 Age group (for fair leaderboard):"}
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              {(["5-6", "6-7", "7-8"] as TrancheAge[]).map((age) => (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {(["3-4", "5-6", "6-7", "7-8", "9-10"] as TrancheAge[]).map((age) => (
                 <button
                   key={age}
                   type="button"
@@ -126,10 +140,55 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
 
           {/* Avatar Selector */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 text-left">
-              {lang === "fr" ? "🎭 Choisi la mascotte préférée :" : "🎭 Pick a favorite mascot:"}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 text-left">
+                {lang === "fr" ? "🎭 Choisis un avatar ou ta photo :" : "🎭 Pick an avatar or your photo:"}
+              </label>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Custom Photo Tile */}
+              <div
+                onClick={() => {
+                  if (customPhoto) {
+                    setSelectedAvatar(customPhoto);
+                  } else {
+                    fileInputRef.current?.click();
+                  }
+                }}
+                className={`cursor-pointer rounded-2xl border-2 p-3 text-center transition flex flex-col items-center justify-center relative ${
+                  selectedAvatar === customPhoto && customPhoto
+                    ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 font-bold ring-2 ring-emerald-500"
+                    : "border-dashed border-emerald-400 bg-emerald-50/50 dark:bg-gray-700 hover:border-emerald-500"
+                }`}
+              >
+                {customPhoto ? (
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500 mb-1">
+                    <img src={customPhoto} alt="Ma photo" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
+                    <Camera size={20} />
+                  </div>
+                )}
+                <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
+                  {customPhoto ? (lang === "fr" ? "Ma photo" : "My photo") : (lang === "fr" ? "+ Ma photo" : "+ Upload photo")}
+                </span>
+                {selectedAvatar === customPhoto && customPhoto && (
+                  <div className="absolute top-2 right-2 bg-emerald-600 text-white rounded-full p-0.5 shadow-xs">
+                    <Check size={12} />
+                  </div>
+                )}
+              </div>
+
               {AVATARS.map((av) => {
                 const isSelected = selectedAvatar === av.id;
                 return (
@@ -155,20 +214,6 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
                 );
               })}
             </div>
-          </div>
-
-          {/* Optional Book Code */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1 text-left">
-              {lang === "fr" ? "🔑 Code du livre imprimé (optionnel) :" : "🔑 Printed book code (optional):"}
-            </label>
-            <input
-              type="text"
-              value={codeLivre}
-              onChange={(e) => setCodeLivre(e.target.value)}
-              placeholder="ex: CODE-TOME1-2026"
-              className="w-full px-4 py-2.5 rounded-xl border border-warm-border text-sm dark:bg-gray-700 dark:text-white"
-            />
           </div>
 
           {/* Submit Button */}

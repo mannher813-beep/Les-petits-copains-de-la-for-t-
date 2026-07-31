@@ -1,27 +1,32 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { useState, useEffect } from "react";
 import { GlobalSvgSymbols } from "./components/GlobalSvgSymbols";
 
-// Multi-Tome / Défi-Suivi Components
+// Components
+import { SplashScreen } from "./components/SplashScreen";
 import { Navigation } from "./components/Navigation";
-import { ChildProfilesList } from "./components/ChildProfilesList";
+import { LandingView } from "./components/LandingView";
+import { WelcomeScreen } from "./components/WelcomeScreen";
+import { ChoisisTonProfilView } from "./components/ChoisisTonProfilView";
+import { QRScannerView } from "./components/QRScannerView";
 import { ChildProfileNew } from "./components/ChildProfileNew";
 import { ChildParcours } from "./components/ChildParcours";
 import { ChildBadges } from "./components/ChildBadges";
 import { ChildMotsMagiques } from "./components/ChildMotsMagiques";
 import { ChildClassement } from "./components/ChildClassement";
 import { DefiChapterView } from "./components/DefiChapterView";
+import { MaProgressionView } from "./components/MaProgressionView";
 import { CertificatReussite } from "./components/CertificatReussite";
+import { MonProfilView } from "./components/MonProfilView";
 import { AdminDashboard } from "./components/AdminDashboard";
 
-import { Enfant, Tome } from "./types/multiTome";
-import { multiTomeService, DEFAULT_ENFANTS } from "./services/multiTomeService";
+import { Enfant } from "./types/multiTome";
+import { multiTomeService } from "./services/multiTomeService";
+import { Language } from "./i18n/translations";
 
 export default function App() {
+  // Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+
   // Current Path URL routing
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || "/";
@@ -37,19 +42,46 @@ export default function App() {
         console.warn("Could not parse saved active child", e);
       }
     }
-    return DEFAULT_ENFANTS[0] ?? null;
+    return null;
   });
 
-  // Language state
-  const [lang, setLang] = useState<"fr" | "en">("fr");
+  useEffect(() => {
+    // Synchronize active child with available real profiles
+    multiTomeService.getEnfantsByParent().then((enfants) => {
+      if (enfants.length > 0) {
+        if (!activeEnfant || !enfants.some((e) => e.id === activeEnfant.id)) {
+          setActiveEnfant(enfants[0]);
+          localStorage.setItem("forest_active_enfant", JSON.stringify(enfants[0]));
+        }
+      } else {
+        if (activeEnfant) {
+          setActiveEnfant(null);
+          localStorage.removeItem("forest_active_enfant");
+        }
+      }
+    });
+  }, []);
+
+  // Language state (fr, en, es, de, it, pt)
+  const [lang, setLang] = useState<Language>("fr");
 
   // Admin login status
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
 
-  // Dark Mode
+  // Dark Mode (defaults to light/white theme)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("forest_friends_dark_mode") === "true";
   });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
+    }
+  }, [isDarkMode]);
 
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => {
@@ -79,34 +111,57 @@ export default function App() {
     localStorage.setItem("forest_active_enfant", JSON.stringify(enfant));
   };
 
-  // Helper parser for dynamic routes
+  // Helper parsers for dynamic routes
   const isDefiRoute = currentPath.startsWith("/defi/");
-  const isParcoursRoute = currentPath.includes("/parcours");
-  const isBadgesRoute = currentPath.includes("/badges");
-  const isMotsRoute = currentPath.includes("/mots-magiques");
-  const isClassementRoute = currentPath.includes("/classement");
+  const isParcoursRoute = currentPath.startsWith("/parcours");
+  const isBadgesRoute = currentPath.startsWith("/badges");
+  const isMotsRoute = currentPath.startsWith("/mots-magiques");
+  const isClassementRoute = currentPath.startsWith("/classement");
   const isCertificatRoute = currentPath.startsWith("/certificat/");
+  const isProgressionRoute = currentPath === "/progression";
+  const isScanRoute = currentPath === "/scan";
+  const isProfilRoute = currentPath === "/profil";
+  const isLandingRoute = currentPath === "/landing";
 
   return (
-    <div className={`min-h-screen bg-warm-cream dark:bg-gray-900 font-sans text-text-charcoal dark:text-gray-100 selection:bg-sun-yellow/30 ${isDarkMode ? "dark" : ""}`}>
+    <div className={`min-h-screen bg-white dark:bg-gray-900 font-sans text-gray-800 dark:text-gray-100 ${isDarkMode ? "dark" : ""}`}>
       <GlobalSvgSymbols />
 
-      {/* Global Navigation Bar */}
-      <Navigation
-        currentPath={currentPath}
-        onNavigate={navigateTo}
-        activeEnfant={activeEnfant}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={toggleDarkMode}
-        lang={lang}
-        onToggleLang={() => setLang((prev) => (prev === "fr" ? "en" : "fr"))}
-        isAdminLoggedIn={isAdminLoggedIn}
-      />
+      {/* 1. SPLASH SCREEN INTRO */}
+      {showSplash && (
+        <SplashScreen
+          onFinish={() => setShowSplash(false)}
+          lang={lang}
+        />
+      )}
 
-      {/* ROUTING VIEW LOGIC */}
-      <main className="pb-16">
-        
-        {/* 1. ADMIN PANEL */}
+      {/* Global Navigation Bar (Hidden on raw landing view if desired, or shown universally) */}
+      {!isLandingRoute && (
+        <Navigation
+          currentPath={currentPath}
+          onNavigate={navigateTo}
+          activeEnfant={activeEnfant}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+          lang={lang}
+          onSelectLang={(l) => setLang(l)}
+          isAdminLoggedIn={isAdminLoggedIn}
+        />
+      )}
+
+      {/* ROUTING MAIN VIEW */}
+      <main className={isLandingRoute ? "" : "pt-2"}>
+        {/* 1. LANDING SCREEN (Screen 1) */}
+        {isLandingRoute && (
+          <LandingView
+            onNavigate={navigateTo}
+            lang={lang}
+            onSelectLang={setLang}
+            onContinueWithoutAccount={() => navigateTo("/parcours")}
+          />
+        )}
+
+        {/* 2. ADMIN PANEL */}
         {currentPath.startsWith("/admin") && (
           <AdminDashboard
             onNavigate={navigateTo}
@@ -116,9 +171,18 @@ export default function App() {
           />
         )}
 
-        {/* 2. PARENT FAMILY HUB: CHILDREN LIST */}
-        {currentPath === "/compte/enfants" && (
-          <ChildProfilesList
+        {/* 3. QR SCANNER VIEW (Screen 3) */}
+        {isScanRoute && (
+          <QRScannerView
+            onNavigate={navigateTo}
+            lang={lang}
+            activeEnfantId={activeEnfant?.id}
+          />
+        )}
+
+        {/* 4. CHOISIS TON PROFIL (Screen 2 & /compte/enfants) */}
+        {(currentPath === "/compte/enfants" || currentPath === "/profil/choisir") && (
+          <ChoisisTonProfilView
             onNavigate={navigateTo}
             onSelectEnfant={handleSelectEnfant}
             activeEnfantId={activeEnfant?.id}
@@ -126,52 +190,109 @@ export default function App() {
           />
         )}
 
-        {/* 3. NEW CHILD PROFILE */}
+        {/* 5. NEW CHILD PROFILE */}
         {currentPath === "/compte/enfants/nouveau" && (
           <ChildProfileNew
             onNavigate={navigateTo}
-            onChildCreated={(newEnfant) => handleSelectEnfant(newEnfant)}
+            onChildCreated={(newEnfant) => {
+              handleSelectEnfant(newEnfant);
+              navigateTo("/parcours");
+            }}
             lang={lang}
           />
         )}
 
-        {/* 4. CHILD ADVENTURE PARCOURS */}
-        {isParcoursRoute && activeEnfant && (
-          <ChildParcours
-            enfant={activeEnfant}
-            onNavigate={navigateTo}
-            lang={lang}
-          />
+        {/* 6. CHILD ADVENTURE PARCOURS (Screen 4) */}
+        {isParcoursRoute && (
+          activeEnfant ? (
+            <ChildParcours
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChoisisTonProfilView
+              onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
+              lang={lang}
+            />
+          )
         )}
 
-        {/* 5. CHILD BADGES & MEDALS */}
-        {isBadgesRoute && activeEnfant && (
-          <ChildBadges
-            enfant={activeEnfant}
-            onNavigate={navigateTo}
-            lang={lang}
-          />
+        {/* 7. MA PROGRESSION (Screen 7) */}
+        {isProgressionRoute && (
+          activeEnfant ? (
+            <MaProgressionView
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChoisisTonProfilView
+              onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
+              lang={lang}
+            />
+          )
         )}
 
-        {/* 6. CHILD MAGIC WORDS */}
-        {isMotsRoute && activeEnfant && (
-          <ChildMotsMagiques
-            enfant={activeEnfant}
-            onNavigate={navigateTo}
-            lang={lang}
-          />
+        {/* 8. CHILD BADGES & MEDALS */}
+        {isBadgesRoute && (
+          activeEnfant ? (
+            <ChildBadges
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChoisisTonProfilView
+              onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
+              lang={lang}
+            />
+          )
         )}
 
-        {/* 7. CHILD LEADERBOARD / CLASSEMENT */}
-        {isClassementRoute && activeEnfant && (
-          <ChildClassement
-            enfant={activeEnfant}
-            onNavigate={navigateTo}
-            lang={lang}
-          />
+        {/* 9. CHILD MAGIC WORDS */}
+        {isMotsRoute && (
+          activeEnfant ? (
+            <ChildMotsMagiques
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChoisisTonProfilView
+              onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
+              lang={lang}
+            />
+          )
         )}
 
-        {/* 8. SCANNABLE DEFI CHALLENGE VIEW */}
+        {/* 10. CHILD LEADERBOARD / CLASSEMENT (Screen 8) */}
+        {isClassementRoute && (
+          activeEnfant ? (
+            <ChildClassement
+              enfant={activeEnfant}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          ) : (
+            <ChoisisTonProfilView
+              onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
+              lang={lang}
+            />
+          )
+        )}
+
+        {/* 11. SCANNABLE DEFI CHALLENGE VIEW (Screen 5 & Screen 6) */}
         {isDefiRoute && (() => {
           const parts = currentPath.split("/").filter(Boolean); // ["defi", "tome-slug", "chapitre-slug"]
           const tomeSlug = parts[1] || "tome-1";
@@ -188,45 +309,49 @@ export default function App() {
           );
         })()}
 
-        {/* 9. CERTIFICATE VIEW */}
+        {/* 12. CERTIFICATE VIEW (Screen 9) */}
         {isCertificatRoute && (() => {
           const parts = currentPath.split("/").filter(Boolean); // ["certificat", "tome-slug", "enfant-id"]
           const tomeSlug = parts[1] || "tome-1";
-          const dummyTome: Tome = {
-            id: "t1",
-            slug: tomeSlug,
-            titre: tomeSlug === "tome-2" ? "Tome 2 : La Cabane dans les Arbres" : "Tome 1 : La Rencontre",
-            couleur_theme: "#3f9142",
-            ordre: 1,
-            publie: true
-          };
+          const enfantId = parts[2] || activeEnfant?.id || "enfant-1";
           return (
             <CertificatReussite
-              enfant={activeEnfant || DEFAULT_ENFANTS[0]}
-              tome={dummyTome}
+              tomeSlug={tomeSlug}
+              enfantId={enfantId}
+              enfantName={activeEnfant?.pseudo || "Léo"}
+              enfantAvatar={activeEnfant?.avatar || "leo"}
               onNavigate={navigateTo}
               lang={lang}
             />
           );
         })()}
 
-        {/* 10. HOME — Child Parcours (défi-suivi), or profile creation if no child yet */}
-        {(currentPath === "/" || currentPath === "/welcome") && (
+        {/* 13. MON PROFIL (Screen 10) */}
+        {isProfilRoute && (
           activeEnfant ? (
-            <ChildParcours
+            <MonProfilView
               enfant={activeEnfant}
               onNavigate={navigateTo}
               lang={lang}
             />
           ) : (
-            <ChildProfileNew
+            <ChoisisTonProfilView
               onNavigate={navigateTo}
-              onChildCreated={(newEnfant) => handleSelectEnfant(newEnfant)}
+              onSelectEnfant={handleSelectEnfant}
+              activeEnfantId={undefined}
               lang={lang}
             />
           )
         )}
 
+        {/* 14. DEFAULT HOME SCREEN */}
+        {currentPath === "/" && (
+          <WelcomeScreen
+            onNavigate={navigateTo}
+            activeEnfant={activeEnfant}
+            lang={lang}
+          />
+        )}
       </main>
     </div>
   );

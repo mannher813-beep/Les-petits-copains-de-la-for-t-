@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Enfant, Progression, Chapitre } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
-import { ArrowLeft, BookOpen, Sparkles, Key } from "lucide-react";
+import { ArrowLeft, BookOpen, Sparkles, Key, Volume2 } from "lucide-react";
 
 interface ChildMotsMagiquesProps {
   enfant: Enfant;
@@ -16,6 +16,7 @@ export const ChildMotsMagiques: React.FC<ChildMotsMagiquesProps> = ({
 }) => {
   const [motsCollectes, setMotsCollectes] = useState<{ mot: string; chapitreTitre: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [speakingWord, setSpeakingWord] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -42,6 +43,21 @@ export const ChildMotsMagiques: React.FC<ChildMotsMagiquesProps> = ({
     }
     load();
   }, [enfant.id]);
+
+  const speakWord = (mot: string) => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    setSpeakingWord(mot);
+
+    const utterance = new SpeechSynthesisUtterance(mot);
+    utterance.lang = lang === "fr" ? "fr-FR" : "en-US";
+    utterance.rate = 0.85;
+
+    utterance.onend = () => setSpeakingWord(null);
+    utterance.onerror = () => setSpeakingWord(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
@@ -100,20 +116,37 @@ export const ChildMotsMagiques: React.FC<ChildMotsMagiquesProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {motsCollectes.map((item, idx) => (
-            <div
-              key={idx}
-              className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-700/50 shadow-md text-center hover:scale-105 transition"
-            >
-              <div className="text-2xl mb-1">✨</div>
-              <div className="text-xl font-handwriting font-extrabold text-forest dark:text-forest-light tracking-widest mb-1">
-                {item.mot}
+          {motsCollectes.map((item, idx) => {
+            const isSpeaking = speakingWord === item.mot;
+            return (
+              <div
+                key={idx}
+                className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-700/50 shadow-md text-center hover:scale-105 transition flex flex-col justify-between items-center"
+              >
+                <div className="text-2xl mb-1">✨</div>
+                <div className="text-xl font-handwriting font-extrabold text-forest dark:text-forest-light tracking-widest mb-1">
+                  {item.mot}
+                </div>
+                <div className="text-[10px] text-gray-400 dark:text-gray-400 line-clamp-1 mb-3">
+                  {item.chapitreTitre}
+                </div>
+
+                {/* Speech Synthesis Listen Button */}
+                <button
+                  onClick={() => speakWord(item.mot)}
+                  className={`w-full py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs font-extrabold transition cursor-pointer ${
+                    isSpeaking
+                      ? "bg-amber-400 text-amber-950 scale-105 shadow-md animate-pulse"
+                      : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900"
+                  }`}
+                  title={lang === "fr" ? "Écouter la prononciation" : "Listen to pronunciation"}
+                >
+                  <Volume2 className={`w-4 h-4 ${isSpeaking ? "animate-bounce" : ""}`} />
+                  <span>{isSpeaking ? (lang === "fr" ? "Lecture..." : "Speaking...") : (lang === "fr" ? "Écouter" : "Listen")}</span>
+                </button>
               </div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-400 line-clamp-1">
-                {item.chapitreTitre}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

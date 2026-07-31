@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
+import { Home, Compass, QrCode, Trophy, User, Moon, Sun, Globe, Settings, ShieldCheck, Volume2, VolumeX, Music } from "lucide-react";
 import { Enfant } from "../types/multiTome";
-import { Lock, Sun, Moon, Sparkles, Trophy, Map, Users, Settings } from "lucide-react";
+import { Language, getTranslation } from "../i18n/translations";
+import { getMascot } from "../types/mascots";
+import { AnimatedMascot } from "./AnimatedMascot";
+import { soundManager } from "../utils/audioCelebration";
 
 interface NavigationProps {
   currentPath: string;
@@ -8,9 +12,9 @@ interface NavigationProps {
   activeEnfant: Enfant | null;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  lang: "fr" | "en";
-  onToggleLang: () => void;
-  isAdminLoggedIn: boolean;
+  lang: Language;
+  onSelectLang: (lang: Language) => void;
+  isAdminLoggedIn?: boolean;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -20,148 +24,229 @@ export const Navigation: React.FC<NavigationProps> = ({
   isDarkMode,
   onToggleDarkMode,
   lang,
-  onToggleLang,
+  onSelectLang,
   isAdminLoggedIn
 }) => {
+  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [isMuted, setIsMuted] = useState(soundManager.isMuted);
+  const [isBGMOn, setIsBGMOn] = useState(soundManager.isBGMPlaying);
+  const mascot = activeEnfant ? getMascot(activeEnfant.avatar) : getMascot("leo");
+
+  const toggleSound = () => {
+    const nextMute = !isMuted;
+    setIsMuted(nextMute);
+    soundManager.setMuted(nextMute);
+  };
+
+  const toggleBGM = () => {
+    soundManager.toggleAmbientBGM();
+    setIsBGMOn(soundManager.isBGMPlaying);
+  };
+
+  const handleNavClick = (path: string) => {
+    soundManager.playTapSound();
+    onNavigate(path);
+  };
+
+  const languages: Array<{ code: Language; flag: string; name: string }> = [
+    { code: "fr", flag: "🇫🇷", name: "Français" },
+    { code: "en", flag: "🇺🇸", name: "English" },
+    { code: "es", flag: "🇪🇸", name: "Español" },
+    { code: "de", flag: "🇩🇪", name: "Deutsch" },
+    { code: "it", flag: "🇮🇹", name: "Italiano" },
+    { code: "pt", flag: "🇵🇹", name: "Português" }
+  ];
+
+  // Helper for active navigation
+  const isActive = (path: string) => {
+    if (path === "/" && currentPath === "/") return true;
+    if (path !== "/" && currentPath.startsWith(path)) return true;
+    return false;
+  };
+
   return (
-    <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b-2 border-warm-border dark:border-gray-800 sticky top-0 z-50 transition-colors shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2 flex-wrap">
-        
-        {/* Brand Logo & Name */}
-        <div
-          onClick={() => onNavigate("/")}
-          className="flex items-center gap-2.5 cursor-pointer group select-none"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-forest text-white flex items-center justify-center font-black text-xl shadow-md group-hover:scale-105 transition-transform">
-            🌿
-          </div>
-          <div>
-            <h1 className="font-fun font-bold text-forest dark:text-forest-light text-lg sm:text-xl leading-none">
-              Les Copains de la Forêt
-            </h1>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">
-              {lang === "fr" ? "Cahiers & Suivi Enfant" : "Activity & Progress App"}
-            </p>
-          </div>
-        </div>
-
-        {/* Primary Navigation Links */}
-        <nav className="flex items-center gap-1 sm:gap-2 flex-wrap text-xs sm:text-sm font-bold">
-          
-          <button
-            onClick={() => onNavigate("/")}
-            className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-              currentPath === "/" || currentPath === "/welcome"
-                ? "bg-forest/10 text-forest dark:bg-forest/30 dark:text-white font-extrabold"
-                : "text-gray-700 dark:text-gray-200 hover:bg-warm-border/50"
-            }`}
-          >
-            <span>🏠</span> {lang === "fr" ? "Accueil" : "Home"}
-          </button>
-
+    <>
+      {/* TOP HEADER BAR */}
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-amber-200/50 dark:border-gray-800 px-4 py-2.5 transition-colors">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          {/* Active Child Profile Badge */}
           <button
             onClick={() => onNavigate("/compte/enfants")}
-            className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-              currentPath.startsWith("/compte")
-                ? "bg-forest/10 text-forest dark:bg-forest/30 dark:text-white font-extrabold"
-                : "text-gray-700 dark:text-gray-200 hover:bg-warm-border/50"
-            }`}
+            className="flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-full px-3 py-1 hover:bg-emerald-100 transition-all text-left shadow-sm cursor-pointer"
           >
-            <Users size={16} /> {lang === "fr" ? "Mes Enfants" : "Children"}
-          </button>
-
-          {activeEnfant ? (
-            <>
-              <button
-                onClick={() => onNavigate(`/enfant/${activeEnfant.id}/parcours`)}
-                className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-                  currentPath.includes("/parcours")
-                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 font-extrabold shadow-sm"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-warm-border/50"
-                }`}
-              >
-                <Map size={16} /> {lang === "fr" ? "Parcours" : "Path"}
-              </button>
-
-              <button
-                onClick={() => onNavigate(`/enfant/${activeEnfant.id}/classement`)}
-                className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-                  currentPath.includes("/classement")
-                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 font-extrabold shadow-sm"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-warm-border/50"
-                }`}
-              >
-                <Trophy size={16} /> {lang === "fr" ? "Classement" : "Leaderboard"}
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => onNavigate("/compte/enfants/nouveau")}
-              className="px-3 py-2 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-bold flex items-center gap-1.5 hover:bg-amber-200 transition min-h-[38px]"
-            >
-              <Sparkles size={16} /> {lang === "fr" ? "Créer un profil" : "New Profile"}
-            </button>
-          )}
-
-          <button
-            onClick={() => onNavigate("/admin")}
-            className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-              currentPath.startsWith("/admin")
-                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-extrabold"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            <Settings size={16} /> {isAdminLoggedIn ? (lang === "fr" ? "Admin (Connecté)" : "Admin") : "Admin"}
-          </button>
-        </nav>
-
-        {/* Control Badges: Child Selector, Language & Theme Toggle */}
-        <div className="flex items-center gap-2">
-          
-          {/* Active Child Badge */}
-          {activeEnfant && (
-            <div
-              onClick={() => onNavigate("/compte/enfants")}
-              className="flex items-center gap-1.5 bg-forest/10 dark:bg-forest/30 border border-forest/30 px-2.5 py-1 rounded-full cursor-pointer hover:bg-forest/20 transition"
-              title={lang === "fr" ? "Changer de profil enfant" : "Switch child profile"}
-            >
-              <span className="text-base">
-                {activeEnfant.avatar === "leo"
-                  ? "🦊"
-                  : activeEnfant.avatar === "nina"
-                  ? "🐭"
-                  : activeEnfant.avatar === "darina"
-                  ? "🦔"
-                  : activeEnfant.avatar === "lana"
-                  ? "🐦"
-                  : "🌟"}
-              </span>
-              <span className="font-bold text-xs text-forest dark:text-forest-light max-w-[80px] truncate">
-                {activeEnfant.pseudo}
-              </span>
+            <div className="w-8 h-8 rounded-full bg-amber-100 p-0.5 border border-amber-300 flex items-center justify-center overflow-hidden">
+              <AnimatedMascot mascot={mascot} size="sm" showQuoteOnClick={false} />
             </div>
-          )}
-
-          {/* Lang Toggle */}
-          <button
-            onClick={onToggleLang}
-            className="px-2.5 py-1.5 rounded-xl border border-warm-border dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold hover:bg-warm-border/50 transition cursor-pointer min-h-[36px]"
-            title={lang === "fr" ? "Passer en anglais" : "Switch to French"}
-          >
-            {lang === "fr" ? "🇫🇷 FR" : "🇬🇧 EN"}
+            <div className="leading-tight">
+              <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate max-w-[100px]">
+                {activeEnfant ? activeEnfant.pseudo : "Mon Profil"}
+              </div>
+              <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                {activeEnfant ? `Âge: ${activeEnfant.tranche_age} ans` : "Sélectionner"}
+              </div>
+            </div>
           </button>
 
-          {/* Dark Mode Toggle */}
+          {/* Right Action Icons */}
+          <div className="flex items-center gap-1.5">
+            {/* Ambient BGM Music Toggle */}
+            <button
+              onClick={toggleBGM}
+              className={`p-2 rounded-full border transition-transform cursor-pointer hover:scale-105 ${
+                isBGMOn
+                  ? "bg-amber-300 text-amber-950 border-amber-400 animate-pulse shadow-xs"
+                  : "bg-amber-50 dark:bg-gray-800 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-gray-700"
+              }`}
+              title={isBGMOn ? "Couper la musique de fond" : "Activer la musique de fond"}
+            >
+              <Music className="w-4 h-4" />
+            </button>
+
+            {/* Sound Effects Toggle */}
+            <button
+              onClick={toggleSound}
+              className={`p-2 rounded-full border transition-transform cursor-pointer hover:scale-105 ${
+                isMuted
+                  ? "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-300"
+                  : "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300"
+              }`}
+              title={isMuted ? "Activer les bruitages" : "Couper les bruitages"}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  soundManager.playTapSound();
+                  setShowLangPicker(!showLangPicker);
+                }}
+                className="flex items-center gap-1 bg-amber-50 dark:bg-gray-800 border border-amber-200 dark:border-gray-700 text-amber-900 dark:text-amber-200 px-2 py-1.5 rounded-full text-xs font-bold shadow-xs hover:scale-105 transition-transform cursor-pointer"
+                title="Langue"
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="uppercase">{lang}</span>
+              </button>
+
+              {showLangPicker && (
+                <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
+                  {languages.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => {
+                        soundManager.playTapSound();
+                        onSelectLang(l.code);
+                        setShowLangPicker(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-left hover:bg-emerald-50 dark:hover:bg-gray-700 ${
+                        lang === l.code ? "bg-emerald-100/60 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 font-bold" : "text-gray-700 dark:text-gray-200"
+                      }`}
+                    >
+                      <span className="text-base">{l.flag}</span>
+                      <span>{l.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => {
+                soundManager.playTapSound();
+                onToggleDarkMode();
+              }}
+              className="p-2 rounded-full bg-amber-50 dark:bg-gray-800 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-gray-700 hover:scale-105 transition-transform cursor-pointer"
+              title={isDarkMode ? getTranslation(lang, "lightMode") : getTranslation(lang, "darkMode")}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-emerald-700" />}
+            </button>
+
+            {/* Admin Shortcut if logged in or URL /admin */}
+            {(isAdminLoggedIn || currentPath.startsWith("/admin")) && (
+              <button
+                onClick={() => handleNavClick("/admin")}
+                className="p-2 rounded-full bg-purple-100 text-purple-800 border border-purple-300 hover:scale-105 transition-transform cursor-pointer"
+                title="Admin Dashboard"
+              >
+                <ShieldCheck className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-emerald-100 dark:border-gray-800 shadow-2xl pb-safe">
+        <div className="max-w-md mx-auto flex items-center justify-around px-2 py-2">
+          {/* 1. Accueil */}
           <button
-            onClick={onToggleDarkMode}
-            className="p-2 rounded-xl border border-warm-border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-yellow-400 hover:bg-warm-border/50 transition cursor-pointer min-h-[36px] flex items-center justify-center"
-            title={lang === "fr" ? "Changer de mode clair/sombre" : "Toggle theme"}
+            onClick={() => handleNavClick("/")}
+            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              isActive("/") && currentPath === "/"
+                ? "text-emerald-600 dark:text-emerald-400 font-bold scale-105"
+                : "text-gray-500 dark:text-gray-400 hover:text-emerald-600"
+            }`}
           >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            <Home className="w-5 h-5" />
+            <span className="text-[10px]">{getTranslation(lang, "navHome")}</span>
+          </button>
+
+          {/* 2. Parcours */}
+          <button
+            onClick={() => handleNavClick("/parcours")}
+            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              isActive("/parcours")
+                ? "text-emerald-600 dark:text-emerald-400 font-bold scale-105"
+                : "text-gray-500 dark:text-gray-400 hover:text-emerald-600"
+            }`}
+          >
+            <Compass className="w-5 h-5" />
+            <span className="text-[10px]">{getTranslation(lang, "navParcours")}</span>
+          </button>
+
+          {/* 3. SCANNER - Center Elevated Floating Action Button */}
+          <div className="-mt-7 relative group">
+            <button
+              onClick={() => handleNavClick("/scan")}
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-400 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 border-4 border-white dark:border-gray-900 active:scale-95 transition-all hover:rotate-6 cursor-pointer"
+              title={getTranslation(lang, "scanQrBtn")}
+            >
+              <QrCode className="w-7 h-7" />
+            </button>
+            <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 tracking-tight whitespace-nowrap bg-amber-200/80 dark:bg-emerald-950 px-2 py-0.5 rounded-full shadow-xs">
+              {getTranslation(lang, "scanTitle")}
+            </span>
+          </div>
+
+          {/* 4. Classement */}
+          <button
+            onClick={() => handleNavClick("/classement")}
+            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              isActive("/classement")
+                ? "text-emerald-600 dark:text-emerald-400 font-bold scale-105"
+                : "text-gray-500 dark:text-gray-400 hover:text-emerald-600"
+            }`}
+          >
+            <Trophy className="w-5 h-5" />
+            <span className="text-[10px]">{getTranslation(lang, "navClassement")}</span>
+          </button>
+
+          {/* 5. Profil */}
+          <button
+            onClick={() => handleNavClick("/profil")}
+            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              isActive("/profil")
+                ? "text-emerald-600 dark:text-emerald-400 font-bold scale-105"
+                : "text-gray-500 dark:text-gray-400 hover:text-emerald-600"
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[10px]">{getTranslation(lang, "navProfil")}</span>
           </button>
         </div>
-
-      </div>
-    </header>
+      </nav>
+    </>
   );
 };

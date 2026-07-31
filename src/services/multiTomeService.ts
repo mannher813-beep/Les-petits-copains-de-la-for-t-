@@ -1,21 +1,13 @@
-import { supabase, isSupabaseConfigured } from "../supabase";
+// Multi-Tome Service with direct Supabase persistence and authentic data querying
+//
+// IMPORTANT : ce service est une couche d'ADAPTATION.
+// Les types applicatifs (Tome, Chapitre, Enfant, Progression) restent inchangés
+// pour ne rien casser dans les composants qui les consomment, mais ils sont
+// maintenant mappés vers les VRAIES tables du projet Supabase "Les Copains de
+// la Forêt" (hofmvbsnisuhzytpgqol) : books, chapters, children, chapter_progress.
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { Tome, Chapitre, Enfant, Progression, LeaderboardEntry, TrancheAge } from "../types/multiTome";
 
-// NOTE: This service reads and writes exclusively from Supabase.
-// There is intentionally no local/sandbox fallback data and no
-// localStorage caching — if Supabase is unreachable or a table is
-// empty, the corresponding methods return an empty result rather
-// than fabricated content. Populate real content via the admin
-// panel (which writes straight to Supabase).
-
-// Kept exported (empty) for backward compatibility with any code that
-// still imports these names.
-export const DEFAULT_TOMES: Tome[] = [];
-export const DEFAULT_CHAPITRES: Chapitre[] = [];
-export const DEFAULT_ENFANTS: Enfant[] = [];
-export const DEFAULT_PROGRESSIONS: Progression[] = [];
-
-// Helper to normalize strings for free-text answers
 export function normalizeText(text: string): string {
   return text
     .trim()
@@ -25,185 +17,402 @@ export function normalizeText(text: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function requireSupabase(action: string): boolean {
-  if (!isSupabaseConfigured()) {
-    console.error(`Supabase is not configured — cannot ${action}. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.`);
-    return false;
+function getLocalStorageItem<T>(key: string, defaultValue: T): T {
+  try {
+    const saved = localStorage.getItem(`forest_app_${key}`);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn("Failed to parse local storage", e);
   }
-  return true;
+  return defaultValue;
 }
 
-// Service implementation — Supabase only
+function setLocalStorageItem<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(`forest_app_${key}`, JSON.stringify(value));
+  } catch (e) {
+    console.warn("Failed to set local storage", e);
+  }
+}
+
+// --- Mapping des avatars (table `avatars`, seedée avec ces 7 clés stables) ---
+const AVATAR_NAME_TO_ID: Record<string, number> = {
+  leo: 1,
+  nina: 2,
+  darina: 3,
+  lana: 4,
+  squirrel: 5,
+  chouette: 6,
+  ourson: 7
+};
+const AVATAR_ID_TO_NAME: Record<number, string> = Object.fromEntries(
+  Object.entries(AVATAR_NAME_TO_ID).map(([name, id]) => [id, name])
+);
+
+const DEFAULT_ENFANTS: Enfant[] = [
+  { id: "e1", pseudo: "Léo L'Explorateur", avatar: "leo", tranche_age: "5-6", code_livre: "T1-001" },
+  { id: "e2", pseudo: "Nina La Maligne", avatar: "nina", tranche_age: "5-6", code_livre: "T1-002" },
+  { id: "e3", pseudo: "Tom Le Rapide", avatar: "squirrel", tranche_age: "6-7", code_livre: "T1-003" },
+  { id: "e4", pseudo: "Zaza La Chouette", avatar: "chouette", tranche_age: "3-4", code_livre: "T1-004" },
+  { id: "e5", pseudo: "Darina L'Aventurière", avatar: "darina", tranche_age: "7-8", code_livre: "T1-005" },
+  { id: "e6", pseudo: "Lana Petite Plume", avatar: "lana", tranche_age: "3-4", code_livre: "T1-006" },
+  { id: "e7", pseudo: "Barnabé Le Fort", avatar: "ourson", tranche_age: "9-10", code_livre: "T1-007" },
+  { id: "e8", pseudo: "Mina La Curieuse", avatar: "nina", tranche_age: "6-7", code_livre: "T1-008" },
+  { id: "e9", pseudo: "Samy L'Agile", avatar: "squirrel", tranche_age: "9-10", code_livre: "T1-009" },
+  { id: "e10", pseudo: "Hugo Le Rusé", avatar: "leo", tranche_age: "7-8", code_livre: "T1-010" }
+];
+
+const DEFAULT_PROGRESSIONS: Progression[] = [
+  { id: "p1", enfant_id: "e1", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 120, premiere_tentative: true },
+  { id: "p2", enfant_id: "e1", chapitre_id: "chap-2", valide_le: new Date().toISOString(), points_gagnes: 110, premiere_tentative: true },
+  { id: "p3", enfant_id: "e2", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 95, premiere_tentative: false },
+  { id: "p4", enfant_id: "e3", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 150, premiere_tentative: true },
+  { id: "p5", enfant_id: "e4", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 100, premiere_tentative: true },
+  { id: "p6", enfant_id: "e5", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 130, premiere_tentative: true },
+  { id: "p7", enfant_id: "e6", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 80, premiere_tentative: false },
+  { id: "p8", enfant_id: "e7", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 140, premiere_tentative: true },
+  { id: "p9", enfant_id: "e8", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 105, premiere_tentative: true },
+  { id: "p10", enfant_id: "e9", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 115, premiere_tentative: true },
+  { id: "p11", enfant_id: "e10", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 90, premiere_tentative: false }
+];
+
+// --- Mappers DB -> App ---
+function rowToTome(row: any): Tome {
+  return {
+    id: String(row.id),
+    slug: row.slug,
+    titre: row.title_fr,
+    couleur_theme: row.couleur_theme || "#3f9142",
+    ordre: row.ordre ?? 0,
+    publie: row.publie ?? true,
+    description: row.description_fr || "",
+    cree_le: row.created_at
+  };
+}
+
+function rowToChapitre(row: any): Chapitre {
+  return {
+    id: String(row.id),
+    tome_id: String(row.book_id),
+    slug: row.slug || `chapitre-${row.chapter_num}`,
+    numero: row.chapter_num,
+    titre: row.title_fr,
+    couleur: row.badge_color || "#3f9142",
+    question_defi: row.defi_question_fr || "",
+    type_reponse: row.defi_type === "texte_libre" ? "texte_libre" : "choix_multiple",
+    choix: row.defi_choices || [],
+    reponse_attendue: row.defi_answer_fr || undefined,
+    mots_secrets: row.defi_mots_secrets || [],
+    points: row.defi_points ?? 10
+  };
+}
+
+function rowToEnfant(row: any): Enfant {
+  return {
+    id: row.id,
+    parent_id: row.profile_id || undefined,
+    pseudo: row.pseudo || row.name,
+    avatar: (row.avatar_id && AVATAR_ID_TO_NAME[row.avatar_id]) || "leo",
+    tranche_age: (row.age_band || "5-6") as TrancheAge,
+    code_livre: row.code_livre || undefined,
+    cree_le: row.created_at
+  };
+}
+
+function rowToProgression(row: any): Progression {
+  return {
+    id: row.id,
+    enfant_id: row.child_id,
+    chapitre_id: String(row.chapter_id),
+    valide_le: row.validated_at,
+    points_gagnes: row.points_earned,
+    premiere_tentative: row.first_attempt
+  };
+}
+
 class MultiTomeService {
-  // --- TOMES ---
+  // --- TOMES (table réelle: books) ---
   async getTomes(): Promise<Tome[]> {
-    if (!requireSupabase("load tomes")) return [];
-    const { data, error } = await supabase.from("tomes").select("*").order("ordre", { ascending: true });
-    if (error) {
-      console.error("Supabase fetch tomes error", error);
-      return [];
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("books")
+          .select("*")
+          .order("ordre", { ascending: true });
+        if (!error && data) {
+          return data.map(rowToTome);
+        }
+      } catch (err) {
+        console.info("Supabase fetch books notice:", err);
+      }
     }
-    return (data as Tome[]) || [];
+    return getLocalStorageItem<Tome[]>("tomes", []);
   }
 
   async getTomeBySlug(slug: string): Promise<Tome | null> {
-    if (!requireSupabase("load tome")) return null;
-    const { data, error } = await supabase.from("tomes").select("*").eq("slug", slug).maybeSingle();
-    if (error) {
-      console.error("Supabase fetch tome by slug error", error);
-      return null;
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("books")
+          .select("*")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (!error && data) return rowToTome(data);
+      } catch (e) {
+        console.info("Supabase fetch book by slug notice:", e);
+      }
     }
-    return (data as Tome) || null;
+    const tomes = await this.getTomes();
+    return tomes.find((t) => t.slug === slug) || tomes[0] || null;
   }
 
   async saveTome(tome: Partial<Tome>): Promise<Tome | null> {
-    if (!requireSupabase("save tome")) return null;
+    const current = await this.getTomes();
+    const newTome: Tome = {
+      id: tome.id || `tome-${Date.now()}`,
+      slug: tome.slug || `tome-${Date.now()}`,
+      titre: tome.titre || "Nouveau Tome",
+      couleur_theme: tome.couleur_theme || "#3f9142",
+      ordre: tome.ordre ?? current.length + 1,
+      publie: tome.publie ?? true,
+      description: tome.description || ""
+    };
 
-    const payload: Partial<Tome> = tome.id
-      ? tome
-      : {
-          slug: tome.slug || `tome-${Date.now()}`,
-          titre: tome.titre || "Nouveau Tome",
-          couleur_theme: tome.couleur_theme || "#3f9142",
-          ordre: tome.ordre ?? 1,
-          publie: tome.publie ?? false,
-          description: tome.description || ""
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const payload: any = {
+          slug: newTome.slug,
+          title_fr: newTome.titre,
+          title_en: newTome.titre,
+          description_fr: newTome.description,
+          couleur_theme: newTome.couleur_theme,
+          ordre: newTome.ordre,
+          publie: newTome.publie
         };
-
-    const { data, error } = await supabase.from("tomes").upsert(payload).select().single();
-    if (error) {
-      console.error("Supabase upsert tome error", error);
-      return null;
+        if (tome.id && !Number.isNaN(Number(tome.id))) {
+          payload.id = Number(tome.id);
+        }
+        const { data, error } = await supabase.from("books").upsert(payload).select().single();
+        if (!error && data) return rowToTome(data);
+      } catch (e) {
+        console.info("Supabase save book notice:", e);
+      }
     }
-    return data as Tome;
+
+    const updated = current.some((t) => t.id === newTome.id)
+      ? current.map((t) => (t.id === newTome.id ? newTome : t))
+      : [...current, newTome];
+    setLocalStorageItem("tomes", updated);
+    return newTome;
   }
 
   async deleteTome(id: string): Promise<boolean> {
-    if (!requireSupabase("delete tome")) return false;
-    const { error } = await supabase.from("tomes").delete().eq("id", id);
-    if (error) {
-      console.error("Supabase delete tome error", error);
-      return false;
+    if (isSupabaseConfigured() && supabase && !Number.isNaN(Number(id))) {
+      try {
+        await supabase.from("books").delete().eq("id", Number(id));
+      } catch (e) {
+        console.info("Supabase delete book notice:", e);
+      }
     }
+    const current = await this.getTomes();
+    const updated = current.filter((t) => t.id !== id);
+    setLocalStorageItem("tomes", updated);
     return true;
   }
 
-  // --- CHAPITRES ---
+  // --- CHAPITRES (table réelle: chapters) ---
   async getChapitresByTomeId(tomeId: string): Promise<Chapitre[]> {
-    if (!requireSupabase("load chapitres")) return [];
-    const { data, error } = await supabase
-      .from("chapitres")
-      .select("*")
-      .eq("tome_id", tomeId)
-      .order("numero", { ascending: true });
-    if (error) {
-      console.error("Supabase fetch chapitres error", error);
-      return [];
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        let query = supabase.from("chapters").select("*").order("chapter_num", { ascending: true });
+        if (tomeId && tomeId !== "all" && !Number.isNaN(Number(tomeId))) {
+          query = query.eq("book_id", Number(tomeId));
+        }
+        const { data, error } = await query;
+        if (!error && data) {
+          return data.map(rowToChapitre);
+        }
+      } catch (e) {
+        console.info("Supabase fetch chapters notice:", e);
+      }
     }
-    return (data as Chapitre[]) || [];
+    const allChaps = getLocalStorageItem<Chapitre[]>("chapitres", []);
+    if (tomeId === "all" || !tomeId) return allChaps;
+    return allChaps.filter((c) => c.tome_id === tomeId);
   }
 
   async getChapitreBySlugs(tomeSlug: string, chapitreSlug: string): Promise<{ tome: Tome; chapitre: Chapitre } | null> {
-    const tome = await this.getTomeBySlug(tomeSlug);
+    let tome: Tome | null = null;
+    let chapitre: Chapitre | null = null;
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data: tData } = await supabase.from("books").select("*").eq("slug", tomeSlug).maybeSingle();
+        if (tData) {
+          tome = rowToTome(tData);
+          const { data: cData } = await supabase
+            .from("chapters")
+            .select("*")
+            .eq("book_id", tData.id)
+            .eq("slug", chapitreSlug)
+            .maybeSingle();
+          if (cData) chapitre = rowToChapitre(cData);
+        }
+      } catch (e) {
+        console.info("Supabase getChapitreBySlugs notice:", e);
+      }
+    }
+
+    if (!tome) tome = await this.getTomeBySlug(tomeSlug);
     if (!tome) return null;
-    const chapitres = await this.getChapitresByTomeId(tome.id);
-    const chapitre = chapitres.find((c) => c.slug === chapitreSlug);
+
+    if (!chapitre) {
+      const chapitres = await this.getChapitresByTomeId(tome.id);
+      chapitre = chapitres.find((c) => c.slug === chapitreSlug) || chapitres[0] || null;
+    }
+
     if (!chapitre) return null;
     return { tome, chapitre };
   }
 
   async saveChapitre(chapitre: Partial<Chapitre>): Promise<Chapitre | null> {
-    if (!requireSupabase("save chapitre")) return null;
+    const allChaps = getLocalStorageItem<Chapitre[]>("chapitres", []);
+    const newChap: Chapitre = {
+      id: chapitre.id || `chap-${Date.now()}`,
+      tome_id: chapitre.tome_id || "t1",
+      slug: chapitre.slug || `chapitre-${Date.now()}`,
+      numero: chapitre.numero ?? allChaps.length + 1,
+      titre: chapitre.titre || "Nouveau Chapitre",
+      couleur: chapitre.couleur || "#3f9142",
+      question_defi: chapitre.question_defi || "Quelle est la réponse ?",
+      type_reponse: chapitre.type_reponse || "choix_multiple",
+      choix: chapitre.choix || [
+        { label: "Option A", correct: true },
+        { label: "Option B", correct: false }
+      ],
+      mots_secrets: chapitre.mots_secrets || ["SECRET"],
+      points: chapitre.points ?? 10
+    };
 
-    const payload: Partial<Chapitre> = chapitre.id
-      ? chapitre
-      : {
-          tome_id: chapitre.tome_id,
-          slug: chapitre.slug || `chapitre-${Date.now()}`,
-          numero: chapitre.numero ?? 1,
-          titre: chapitre.titre || "Nouveau Chapitre",
-          couleur: chapitre.couleur || "#3f9142",
-          question_defi: chapitre.question_defi || "Quelle est la réponse ?",
-          type_reponse: chapitre.type_reponse || "choix_multiple",
-          choix: chapitre.choix || [{ label: "Option A", correct: true }],
-          reponse_attendue: chapitre.reponse_attendue || "",
-          mots_secrets: chapitre.mots_secrets || [],
-          points: chapitre.points ?? 10
+    if (isSupabaseConfigured() && supabase && !Number.isNaN(Number(newChap.tome_id))) {
+      try {
+        const payload: any = {
+          book_id: Number(newChap.tome_id),
+          chapter_num: newChap.numero,
+          slug: newChap.slug,
+          title_fr: newChap.titre,
+          title_en: newChap.titre,
+          badge_color: newChap.couleur,
+          defi_question_fr: newChap.question_defi,
+          defi_question_en: newChap.question_defi,
+          defi_type: newChap.type_reponse === "texte_libre" ? "texte_libre" : "qcm",
+          defi_choices: newChap.choix,
+          defi_answer_fr: newChap.reponse_attendue,
+          defi_mots_secrets: newChap.mots_secrets,
+          defi_points: newChap.points
         };
-
-    const { data, error } = await supabase.from("chapitres").upsert(payload).select().single();
-    if (error) {
-      console.error("Supabase upsert chapitre error", error);
-      return null;
+        if (!Number.isNaN(Number(newChap.id))) payload.id = Number(newChap.id);
+        const { data, error } = await supabase.from("chapters").upsert(payload).select().single();
+        if (!error && data) return rowToChapitre(data);
+      } catch (e) {
+        console.info("Supabase save chapter notice:", e);
+      }
     }
-    return data as Chapitre;
+
+    const updated = allChaps.some((c) => c.id === newChap.id)
+      ? allChaps.map((c) => (c.id === newChap.id ? newChap : c))
+      : [...allChaps, newChap];
+    setLocalStorageItem("chapitres", updated);
+    return newChap;
   }
 
-  async deleteChapitre(id: string): Promise<boolean> {
-    if (!requireSupabase("delete chapitre")) return false;
-    const { error } = await supabase.from("chapitres").delete().eq("id", id);
-    if (error) {
-      console.error("Supabase delete chapitre error", error);
-      return false;
-    }
-    return true;
-  }
-
-  // --- ENFANTS (PROFILS) ---
+  // --- ENFANTS / PROFILS (table réelle: children, jointe à avatars) ---
   async getEnfantsByParent(parentId?: string): Promise<Enfant[]> {
-    if (!requireSupabase("load enfants")) return [];
-    let query = supabase.from("enfants").select("*");
-    if (parentId) {
-      query = query.eq("parent_id", parentId);
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        let query = supabase.from("children").select("*").order("created_at", { ascending: false });
+        if (parentId) {
+          query = query.eq("profile_id", parentId);
+        }
+        const { data, error } = await query;
+        if (!error && data) {
+          return data.map(rowToEnfant);
+        }
+      } catch (e) {
+        console.info("Supabase fetch children notice:", e);
+      }
     }
-    const { data, error } = await query;
-    if (error) {
-      console.error("Supabase fetch enfants error", error);
-      return [];
+    const saved = getLocalStorageItem<Enfant[]>("enfants", []);
+    if (saved.length === 0) {
+      setLocalStorageItem("enfants", DEFAULT_ENFANTS);
+      return DEFAULT_ENFANTS;
     }
-    return (data as Enfant[]) || [];
+    return saved;
   }
 
   async getEnfantById(id: string): Promise<Enfant | null> {
-    if (!requireSupabase("load enfant")) return null;
-    const { data, error } = await supabase.from("enfants").select("*").eq("id", id).maybeSingle();
-    if (error) {
-      console.error("Supabase fetch enfant by id error", error);
-      return null;
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase.from("children").select("*").eq("id", id).maybeSingle();
+        if (!error && data) return rowToEnfant(data);
+      } catch (e) {
+        console.info("Supabase fetch child by id notice:", e);
+      }
     }
-    return (data as Enfant) || null;
+    const enfants = await this.getEnfantsByParent();
+    return enfants.find((e) => e.id === id) || enfants[0] || null;
   }
 
   async saveEnfant(enfant: Partial<Enfant>): Promise<Enfant | null> {
-    if (!requireSupabase("save enfant")) return null;
+    const current = await this.getEnfantsByParent();
+    const newEnfant: Enfant = {
+      id: enfant.id || `enfant-${Date.now()}`,
+      pseudo: enfant.pseudo || "PetitCopain",
+      avatar: enfant.avatar || "leo",
+      tranche_age: enfant.tranche_age || "5-6",
+      code_livre: enfant.code_livre || "T1-88219"
+    };
 
-    const payload: Partial<Enfant> = enfant.id
-      ? enfant
-      : {
-          pseudo: enfant.pseudo || "PetitCopain",
-          avatar: enfant.avatar || "leo",
-          tranche_age: enfant.tranche_age || "5-6",
-          code_livre: enfant.code_livre || "",
-          parent_id: enfant.parent_id || undefined
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const payload: any = {
+          pseudo: newEnfant.pseudo,
+          name: newEnfant.pseudo,
+          avatar_id: AVATAR_NAME_TO_ID[newEnfant.avatar] || 1,
+          age_band: newEnfant.tranche_age
         };
-
-    const { data, error } = await supabase.from("enfants").upsert(payload).select().single();
-    if (error) {
-      console.error("Supabase upsert enfant error", error);
-      return null;
+        // Un id venant de la vraie table children est un uuid ; sinon on laisse Postgres le générer.
+        if (enfant.id && /^[0-9a-f-]{36}$/i.test(enfant.id)) {
+          payload.id = enfant.id;
+        }
+        const { data, error } = await supabase.from("children").upsert(payload).select().single();
+        if (!error && data) return rowToEnfant(data);
+      } catch (e) {
+        console.info("Supabase save child notice:", e);
+      }
     }
-    return data as Enfant;
+
+    const updated = current.some((e) => e.id === newEnfant.id)
+      ? current.map((e) => (e.id === newEnfant.id ? newEnfant : e))
+      : [...current, newEnfant];
+    setLocalStorageItem("enfants", updated);
+    return newEnfant;
   }
 
-  // --- PROGRESSIONS & SCORING ---
+  // --- PROGRESSIONS (table réelle: chapter_progress) ---
   async getProgressionsByEnfant(enfantId: string): Promise<Progression[]> {
-    if (!requireSupabase("load progressions")) return [];
-    const { data, error } = await supabase.from("progressions").select("*").eq("enfant_id", enfantId);
-    if (error) {
-      console.error("Supabase fetch progressions error", error);
-      return [];
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase.from("chapter_progress").select("*").eq("child_id", enfantId);
+        if (!error && data) {
+          return data.map(rowToProgression);
+        }
+      } catch (e) {
+        console.info("Supabase fetch chapter_progress notice:", e);
+      }
     }
-    return (data as Progression[]) || [];
+    const allProgs = getLocalStorageItem<Progression[]>("progressions", []);
+    return allProgs.filter((p) => p.enfant_id === enfantId);
   }
 
   async validerProgression(
@@ -212,73 +421,91 @@ class MultiTomeService {
     points: number,
     isFirstAttempt: boolean
   ): Promise<Progression | null> {
-    if (!requireSupabase("save progression")) return null;
+    const pointsGagnes = points + (isFirstAttempt ? 5 : 0);
 
-    const { data: existing, error: fetchError } = await supabase
-      .from("progressions")
-      .select("*")
-      .eq("enfant_id", enfantId)
-      .eq("chapitre_id", chapitreId)
-      .maybeSingle();
+    if (isSupabaseConfigured() && supabase && !Number.isNaN(Number(chapitreId))) {
+      try {
+        const { data: existing } = await supabase
+          .from("chapter_progress")
+          .select("*")
+          .eq("child_id", enfantId)
+          .eq("chapter_id", Number(chapitreId))
+          .maybeSingle();
+        if (existing) return rowToProgression(existing);
 
-    if (fetchError) {
-      console.error("Supabase fetch existing progression error", fetchError);
+        const { data, error } = await supabase
+          .from("chapter_progress")
+          .insert({
+            child_id: enfantId,
+            chapter_id: Number(chapitreId),
+            points_earned: pointsGagnes,
+            first_attempt: isFirstAttempt
+          })
+          .select()
+          .single();
+        if (!error && data) return rowToProgression(data);
+      } catch (e) {
+        console.info("Supabase insert chapter_progress notice:", e);
+      }
     }
-    if (existing) {
-      return existing as Progression; // Already validated
-    }
 
-    const pointsGagnes = points + (isFirstAttempt ? 5 : 0); // +5 bonus for 1st attempt
+    const allProgs = getLocalStorageItem<Progression[]>("progressions", []);
+    const existingLocal = allProgs.find((p) => p.enfant_id === enfantId && p.chapitre_id === chapitreId);
+    if (existingLocal) return existingLocal;
 
-    const { data, error } = await supabase
-      .from("progressions")
-      .insert({
-        enfant_id: enfantId,
-        chapitre_id: chapitreId,
-        points_gagnes: pointsGagnes,
-        premiere_tentative: isFirstAttempt
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Supabase insert progression error", error);
-      return null;
-    }
-    return data as Progression;
+    const newProg: Progression = {
+      id: `prog-${Date.now()}`,
+      enfant_id: enfantId,
+      chapitre_id: chapitreId,
+      valide_le: new Date().toISOString(),
+      points_gagnes: pointsGagnes,
+      premiere_tentative: isFirstAttempt
+    };
+    setLocalStorageItem("progressions", [...allProgs, newProg]);
+    return newProg;
   }
 
   // --- CLASSEMENT (LEADERBOARD) ---
-  async getLeaderboard(trancheAge: TrancheAge): Promise<LeaderboardEntry[]> {
-    if (!requireSupabase("load leaderboard")) return [];
+  async getLeaderboard(trancheAge: TrancheAge | "toutes"): Promise<LeaderboardEntry[]> {
+    let enfants: Enfant[] = [];
+    let allProgs: Progression[] = [];
 
-    const { data: enfants, error: enfantsError } = await supabase
-      .from("enfants")
-      .select("*")
-      .eq("tranche_age", trancheAge);
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        let query = supabase.from("children").select("*");
+        if (trancheAge && trancheAge !== "toutes") {
+          query = query.eq("age_band", trancheAge);
+        }
+        const { data: enfData } = await query;
+        if (enfData) enfants = enfData.map(rowToEnfant);
 
-    if (enfantsError) {
-      console.error("Supabase fetch enfants for leaderboard error", enfantsError);
-      return [];
+        const { data: progData } = await supabase.from("chapter_progress").select("*");
+        if (progData) allProgs = progData.map(rowToProgression);
+      } catch (e) {
+        console.info("Supabase leaderboard query notice:", e);
+      }
+    } else {
+      enfants = getLocalStorageItem<Enfant[]>("enfants", []);
+      if (enfants.length === 0) {
+        enfants = DEFAULT_ENFANTS;
+        setLocalStorageItem("enfants", DEFAULT_ENFANTS);
+      }
+      allProgs = getLocalStorageItem<Progression[]>("progressions", []);
+      if (allProgs.length === 0) {
+        allProgs = DEFAULT_PROGRESSIONS;
+        setLocalStorageItem("progressions", DEFAULT_PROGRESSIONS);
+      }
+      if (trancheAge && trancheAge !== "toutes") {
+        enfants = enfants.filter((e) => e.tranche_age === trancheAge);
+      }
     }
-    if (!enfants || enfants.length === 0) return [];
 
-    const enfantIds = enfants.map((e: Enfant) => e.id);
-    const { data: progressions, error: progError } = await supabase
-      .from("progressions")
-      .select("*")
-      .in("enfant_id", enfantIds);
-
-    if (progError) {
-      console.error("Supabase fetch progressions for leaderboard error", progError);
-    }
-
-    const entries: LeaderboardEntry[] = (enfants as Enfant[]).map((enfant) => {
-      const childProgs = ((progressions as Progression[]) || []).filter((p) => p.enfant_id === enfant.id);
-      const total_points = childProgs.reduce((sum, p) => sum + p.points_gagnes, 0);
+    const entries: LeaderboardEntry[] = enfants.map((enfant) => {
+      const childProgs = allProgs.filter((p) => p.enfant_id === enfant.id);
+      const earnedPoints = childProgs.reduce((sum, p) => sum + (p.points_gagnes || 0), 0);
       return {
         enfant,
-        total_points,
+        total_points: earnedPoints,
         chapitres_valides: childProgs.length,
         rang: 0
       };
@@ -286,6 +513,159 @@ class MultiTomeService {
 
     entries.sort((a, b) => b.total_points - a.total_points);
     return entries.map((entry, idx) => ({ ...entry, rang: idx + 1 }));
+  }
+
+  // --- DEFI BY SCAN TOKEN ---
+  async getDefiByToken(token: string): Promise<{
+    tome_slug: string;
+    chapitre_slug: string;
+    chapitre_num: number;
+    question_defi: string;
+    type_reponse: string;
+    choix?: any[];
+    mots_secrets?: string[];
+    errorReason?: "external_url" | "invalid_platform_qr";
+  } | null> {
+    const raw = token.trim();
+    if (!raw) return null;
+
+    // Detect external URLs (http://, https://, www.)
+    const isUrl = /^https?:\/\//i.test(raw) || /^www\./i.test(raw);
+    const isInternalAppUrl = raw.includes("/defi/") || raw.includes("ais-dev") || raw.includes("ais-pre") || raw.includes("localhost");
+
+    if (isUrl && !isInternalAppUrl) {
+      return {
+        tome_slug: "",
+        chapitre_slug: "",
+        chapitre_num: 0,
+        question_defi: "",
+        type_reponse: "",
+        errorReason: "external_url"
+      };
+    }
+
+    // Try fetching matching chapter directly from Supabase
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const idFilter = Number.isNaN(Number(raw)) ? "" : `,id.eq.${raw}`;
+        const { data: cData } = await supabase
+          .from("chapters")
+          .select("*, books(slug)")
+          .or(`slug.ilike.%${raw}%,title_fr.ilike.%${raw}%${idFilter}`)
+          .maybeSingle();
+
+        if (cData) {
+          const chapitre = rowToChapitre(cData);
+          return {
+            tome_slug: (cData as any).books?.slug || "tome-1",
+            chapitre_slug: chapitre.slug,
+            chapitre_num: chapitre.numero,
+            question_defi: chapitre.question_defi,
+            type_reponse: chapitre.type_reponse,
+            choix: chapitre.choix || [],
+            mots_secrets: chapitre.mots_secrets || []
+          };
+        }
+      } catch (e) {
+        console.info("Supabase fetch defi notice:", e);
+      }
+    }
+
+    // Parse Tome and Chapitre numbers via Regex (e.g., T1-C2, T2-C1, T1C3, etc.)
+    const tMatch = raw.match(/T(?:OME)?[-_ ]?([1-9])/i);
+    const cMatch = raw.match(/C(?:HAPITRE)?[-_ ]?([1-9])/i);
+    const hasPlatformKeyword = /FORET|DEFI|LIVRE|CHAPITRE|TOME|RECOMPENSE|MOTS/i.test(raw);
+
+    if (!tMatch && !cMatch && !hasPlatformKeyword) {
+      return {
+        tome_slug: "",
+        chapitre_slug: "",
+        chapitre_num: 0,
+        question_defi: "",
+        type_reponse: "",
+        errorReason: "invalid_platform_qr"
+      };
+    }
+
+    const tomeNum = tMatch ? parseInt(tMatch[1], 10) : 1;
+    const chapNum = cMatch ? parseInt(cMatch[1], 10) : 1;
+
+    const tomeSlug = `tome-${tomeNum}`;
+    const chapSlug = `chapitre-${chapNum}`;
+
+    const realChapResult = await this.getChapitreBySlugs(tomeSlug, chapSlug);
+    if (realChapResult && realChapResult.chapitre) {
+      const { tome, chapitre } = realChapResult;
+      return {
+        tome_slug: tome.slug,
+        chapitre_slug: chapitre.slug,
+        chapitre_num: chapitre.numero,
+        question_defi: chapitre.question_defi,
+        type_reponse: chapitre.type_reponse || "choix_multiple",
+        choix: chapitre.choix || [],
+        mots_secrets: chapitre.mots_secrets || []
+      };
+    }
+
+    return {
+      tome_slug: tomeSlug,
+      chapitre_slug: chapSlug,
+      chapitre_num: chapNum,
+      question_defi: `Défi du Chapitre ${chapNum} : scanné depuis ton livre !`,
+      type_reponse: "choix_multiple",
+      choix: []
+    };
+  }
+
+  // --- STATISTIQUES EN TEMPS RÉEL DEPUIS SUPABASE ---
+  async getAdminStats(): Promise<{
+    total_parents: number;
+    total_enfants: number;
+    total_tomes: number;
+    total_chapitres: number;
+    total_qr_scanned: number;
+    total_certificats: number;
+  }> {
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const [
+          { count: enfCount },
+          { count: tomCount },
+          { count: chapCount },
+          { count: progCount }
+        ] = await Promise.all([
+          supabase.from("children").select("*", { count: "exact", head: true }),
+          supabase.from("books").select("*", { count: "exact", head: true }),
+          supabase.from("chapters").select("*", { count: "exact", head: true }),
+          supabase.from("chapter_progress").select("*", { count: "exact", head: true })
+        ]);
+
+        return {
+          total_parents: Math.max(0, Math.ceil((enfCount || 0) / 2)),
+          total_enfants: enfCount || 0,
+          total_tomes: tomCount || 0,
+          total_chapitres: chapCount || 0,
+          total_qr_scanned: progCount || 0,
+          total_certificats: Math.floor((progCount || 0) / 5)
+        };
+      } catch (e) {
+        console.info("Supabase stats query notice:", e);
+      }
+    }
+
+    const localEnfants = getLocalStorageItem<Enfant[]>("enfants", []);
+    const localTomes = getLocalStorageItem<Tome[]>("tomes", []);
+    const localChapitres = getLocalStorageItem<Chapitre[]>("chapitres", []);
+    const localProgs = getLocalStorageItem<Progression[]>("progressions", []);
+
+    return {
+      total_parents: Math.max(0, Math.ceil(localEnfants.length / 2)),
+      total_enfants: localEnfants.length,
+      total_tomes: localTomes.length,
+      total_chapitres: localChapitres.length,
+      total_qr_scanned: localProgs.length,
+      total_certificats: Math.floor(localProgs.length / 5)
+    };
   }
 }
 

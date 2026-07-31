@@ -1,6 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@400;600;700&family=Fredoka+One&family=Short+Stack&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+html, body, #root {
+  background-color: #ffffff !important;
+  color: #1f2937;
+  min-height: 100vh;
+}
+
+html.dark, html.dark body, html.dark #root {
+  background-color: #111827 !important;
+  color: #f3f4f6;
+}
+
 @theme {
   --font-sans: "Fredoka", "Comic Neue", "Comic Sans MS", cursive, sans-serif;
   --font-handwriting: "Short Stack", cursive, sans-serif;

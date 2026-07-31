@@ -1,114 +1,127 @@
 import React from "react";
-import { Enfant, Tome } from "../types/multiTome";
-import { Sparkles, Download, ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Share2, Download, Award, Sparkles, Star } from "lucide-react";
+import { Language } from "../i18n/translations";
+import { getMascot } from "../types/mascots";
 
 interface CertificatReussiteProps {
-  enfant: Enfant;
-  tome: Tome;
+  tomeSlug: string;
+  enfantId: string;
+  enfantName?: string;
+  enfantAvatar?: string;
   onNavigate: (path: string) => void;
-  lang: "fr" | "en";
+  lang: Language;
 }
 
 export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
-  enfant,
-  tome,
+  enfantName = "Léo",
+  enfantAvatar = "leo",
   onNavigate,
   lang
 }) => {
-  const currentDate = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
+  const mascot = getMascot(enfantAvatar);
 
-  const handlePrint = () => {
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Diplôme de ${enfantName}`,
+          text: `Bravo ${enfantName} pour avoir terminé le Tome 1 des Copains de la Forêt ! 🎉`
+        });
+      } catch (e) {
+        console.info("Share canceled");
+      }
+    } else {
+      alert("Lien de diplôme copié !");
+    }
+  };
+
+  const handleDownload = () => {
     window.print();
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
-      
-      {/* Action buttons */}
-      <div className="no-print mb-6 flex justify-between items-center">
+    <div className="max-w-md mx-auto p-4 sm:p-6 pb-28 space-y-5 animate-fade-in">
+      {/* TOP HEADER */}
+      <div className="flex items-center justify-between pt-2">
         <button
-          onClick={() => onNavigate(`/enfant/${enfant.id}/parcours`)}
-          className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-forest transition cursor-pointer"
+          onClick={() => onNavigate("/parcours")}
+          className="p-2.5 rounded-2xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-xs hover:scale-105 transition-transform"
         >
-          <ArrowLeft size={16} />
-          <span>{lang === "fr" ? "Retour au parcours" : "Back to path"}</span>
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <button
-          onClick={handlePrint}
-          className="bg-forest hover:bg-forest-light text-white font-bold px-5 py-2.5 rounded-2xl shadow-md transition flex items-center gap-2 cursor-pointer"
-        >
-          <Printer size={18} />
-          <span>{lang === "fr" ? "Imprimer le Certificat 🖨️" : "Print Certificate 🖨️"}</span>
-        </button>
+        <h1 className="text-xl font-black font-fun text-gray-800 dark:text-gray-100">
+          Mon diplôme
+        </h1>
+
+        <div className="w-9" />
       </div>
 
-      {/* Official Certificate Card */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 p-8 sm:p-12 rounded-3xl border-8 border-amber-400 dark:border-amber-600 shadow-2xl relative text-center overflow-hidden">
-        
-        {/* Decorative corner seals */}
-        <div className="absolute top-4 left-4 text-3xl opacity-40">🌿</div>
-        <div className="absolute top-4 right-4 text-3xl opacity-40">🌿</div>
-        <div className="absolute bottom-4 left-4 text-3xl opacity-40">🌿</div>
-        <div className="absolute bottom-4 right-4 text-3xl opacity-40">🌿</div>
+      {/* GOLDEN DIPLOMA CERTIFICATE (Matching Screen 9) */}
+      <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
+        {/* Decorative Corner Ornaments */}
+        <div className="absolute top-2 left-2 text-2xl text-amber-500">⚜️</div>
+        <div className="absolute top-2 right-2 text-2xl text-amber-500">⚜️</div>
+        <div className="absolute bottom-2 left-2 text-2xl text-amber-500">⚜️</div>
+        <div className="absolute bottom-2 right-2 text-2xl text-amber-500">⚜️</div>
 
-        <div className="max-w-xl mx-auto">
-          
-          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800/60 px-4 py-1 rounded-full">
-            {lang === "fr" ? "CERTIFICAT OFFICIEL DE RÉUSSITE" : "OFFICIAL CERTIFICATE OF COMPLETION"}
-          </span>
-
-          <h1 className="text-3xl sm:text-5xl font-serif italic font-bold text-forest dark:text-forest-light mt-4 mb-2">
-            Grand Héros de la Forêt
-          </h1>
-
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-            {lang === "fr"
-              ? "Ce diplôme d'honneur est attribué avec toute la fierté de la tribu des animaux à :"
-              : "This diploma of honor is proudly awarded by the forest animals to:"}
-          </p>
-
-          {/* Child's Name */}
-          <div className="bg-white dark:bg-gray-800 py-4 px-8 rounded-2xl border-2 border-dashed border-amber-400 shadow-inner my-6 inline-block">
-            <p className="text-3xl sm:text-4xl font-handwriting font-black text-blue-700 dark:text-blue-300">
-              {enfant.pseudo}
-            </p>
-          </div>
-
-          <p className="text-base font-bold text-gray-800 dark:text-gray-200 my-4">
-            {lang === "fr"
-              ? `Pour avoir réussi avec brio toutes les épreuves et défis du :`
-              : `For successfully completing all challenges of:`}
-          </p>
-
-          <h2 className="text-2xl sm:text-3xl font-fun font-bold text-amber-700 dark:text-amber-300 mb-6">
-            {tome.titre}
-          </h2>
-
-          {/* Signatures */}
-          <div className="grid grid-cols-2 gap-4 pt-6 border-t-2 border-amber-300 dark:border-amber-700 mt-8 text-xs font-bold text-gray-600 dark:text-gray-300">
-            <div>
-              <p className="font-handwriting text-lg text-forest">Léo le renard 🦊</p>
-              <p className="text-[10px] uppercase text-gray-400">{lang === "fr" ? "Guide de la forêt" : "Forest Guide"}</p>
-            </div>
-            <div>
-              <p className="font-handwriting text-lg text-amber-700">Nina la souris 🐭</p>
-              <p className="text-[10px] uppercase text-gray-400">{lang === "fr" ? "Chef des défis" : "Challenge Master"}</p>
-            </div>
-          </div>
-
-          <div className="mt-6 text-[11px] text-gray-400 font-bold">
-            {lang === "fr" ? `Délivré le ${currentDate}` : `Issued on ${currentDate}`}
-          </div>
-
+        {/* HEADER RIBBON */}
+        <div className="inline-block bg-amber-500 text-amber-950 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md border border-amber-300">
+          Diplôme du Tome 1
         </div>
 
+        {/* FÉLICITATIONS BANNER */}
+        <div className="space-y-1">
+          <h2 className="text-3xl font-black font-fun text-amber-900 tracking-wide drop-shadow-xs">
+            FÉLICITATIONS !
+          </h2>
+          <div className="w-24 h-1 bg-amber-400 mx-auto rounded-full" />
+        </div>
+
+        {/* MASCOT & CHILD NAME */}
+        <div className="space-y-2 py-2">
+          <div className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-xl relative">
+            <Sparkles className="w-5 h-5 text-amber-500 absolute -top-1 -right-1 animate-spin" />
+            <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
+          </div>
+
+          <h3 className="text-2xl font-black font-fun text-emerald-900">
+            {enfantName}
+          </h3>
+        </div>
+
+        {/* CERTIFICATION TEXT */}
+        <p className="text-xs font-semibold text-amber-900 leading-relaxed max-w-xs mx-auto">
+          Tu as terminé avec succès tous les défis du <br />
+          <strong className="text-emerald-950 font-extrabold">Tome 1: La découverte de la forêt</strong> !
+        </p>
+
+        {/* GOLD MEDAL WAX SEAL BADGE */}
+        <div className="pt-2">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 border-4 border-amber-600 mx-auto flex items-center justify-center text-3xl shadow-xl">
+            🏅
+          </div>
+        </div>
       </div>
 
+      {/* ACTION BUTTONS (Partager & Télécharger) */}
+      <div className="space-y-2.5 pt-2">
+        <button
+          onClick={handleShare}
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-emerald-600/30 text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>Partager</span>
+        </button>
+
+        <button
+          onClick={handleDownload}
+          className="w-full bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-300 font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-emerald-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>Télécharger</span>
+        </button>
+      </div>
     </div>
   );
 };
