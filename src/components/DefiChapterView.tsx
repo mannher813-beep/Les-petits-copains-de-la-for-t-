@@ -7,20 +7,37 @@ interface DefiChapterViewProps {
   tomeSlug: string;
   chapitreSlug: string;
   activeEnfant: Enfant | null;
+  onSelectEnfant: (enfant: Enfant) => void;
   onNavigate: (path: string) => void;
   lang: "fr" | "en";
 }
+
+const AVATAR_EMOJIS: Record<string, string> = {
+  leo: "🦊",
+  nina: "🐭",
+  darina: "🦔",
+  lana: "🐦",
+  squirrel: "🐿️",
+  chouette: "🦉",
+  ourson: "🐻"
+};
 
 export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   tomeSlug,
   chapitreSlug,
   activeEnfant,
+  onSelectEnfant,
   onNavigate,
   lang
 }) => {
   const [data, setData] = useState<{ tome: Tome; chapitre: Chapitre } | null>(null);
   const [allChapters, setAllChapters] = useState<Chapitre[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // "Who's playing?" gate — re-asked on every scan so points always land on the right child
+  const [confirmedEnfant, setConfirmedEnfant] = useState<Enfant | null>(null);
+  const [availableEnfants, setAvailableEnfants] = useState<Enfant[]>([]);
+  const [enfantsLoading, setEnfantsLoading] = useState(true);
 
   // Interaction State
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
@@ -41,6 +58,8 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       setSelectedChoice(null);
       setTextAnswer("");
       setAttemptsCount(0);
+      setConfirmedEnfant(null); // require a fresh pick every time this screen is reached
+      setEnfantsLoading(true);
 
       const res = await multiTomeService.getChapitreBySlugs(tomeSlug, chapitreSlug);
       if (res) {
@@ -49,6 +68,10 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
         setAllChapters(chaps);
       }
       setLoading(false);
+
+      const enfants = await multiTomeService.getEnfantsByParent();
+      setAvailableEnfants(enfants);
+      setEnfantsLoading(false);
     }
     load();
   }, [tomeSlug, chapitreSlug]);
@@ -83,6 +106,86 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
 
   const { tome, chapitre } = data;
 
+  // Gate: show the account selector before every défi, regardless of what
+  // was last active on this phone — this is what makes sharing one device
+  // between several children safe (points always go to whoever taps their
+  // own tile here, not to whoever played last).
+  if (!confirmedEnfant) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 animate-fade-in">
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => onNavigate("/")}
+            className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-forest transition cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            <span>{lang === "fr" ? "Retour à l'accueil" : "Back home"}</span>
+          </button>
+          <span className="text-xs font-bold px-3 py-1 rounded-full bg-forest/10 text-forest dark:bg-forest/30 dark:text-forest-light">
+            {tome.titre}
+          </span>
+        </div>
+
+        <div
+          className="bg-white dark:bg-gray-800 rounded-3xl border-4 shadow-2xl p-6 sm:p-8 text-center"
+          style={{ borderColor: chapitre.couleur || tome.couleur_theme }}
+        >
+          <div className="text-4xl mb-3">🙋</div>
+          <h1 className="text-xl sm:text-2xl font-fun font-bold text-gray-900 dark:text-white mb-2">
+            {lang === "fr" ? "Qui relève le défi ?" : "Who's taking the challenge?"}
+          </h1>
+          <p className="text-sm text-gray-500 mb-6">
+            {lang === "fr"
+              ? `Chapitre ${chapitre.numero} — ${chapitre.titre}. Choisis ton profil pour que tes points comptent pour toi !`
+              : `Chapter ${chapitre.numero} — ${chapitre.titre}. Pick your profile so your points count for you!`}
+          </p>
+
+          {enfantsLoading ? (
+            <p className="text-sm text-gray-400 font-bold">
+              {lang === "fr" ? "Chargement des profils..." : "Loading profiles..."}
+            </p>
+          ) : availableEnfants.length === 0 ? (
+            <div>
+              <p className="text-sm text-gray-500 mb-4">
+                {lang === "fr" ? "Aucun profil pour l'instant." : "No profile yet."}
+              </p>
+              <button
+                onClick={() => onNavigate("/compte/enfants/nouveau")}
+                className="bg-forest text-white font-bold px-6 py-3 rounded-2xl shadow-md hover:bg-forest-light transition cursor-pointer"
+              >
+                {lang === "fr" ? "Créer un profil" : "Create a profile"}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {availableEnfants.map((enfant) => {
+                const isSuggested = activeEnfant?.id === enfant.id;
+                return (
+                  <button
+                    key={enfant.id}
+                    type="button"
+                    onClick={() => {
+                      setConfirmedEnfant(enfant);
+                      onSelectEnfant(enfant);
+                    }}
+                    className={`rounded-2xl border-2 p-4 text-center transition flex flex-col items-center gap-1 cursor-pointer ${
+                      isSuggested
+                        ? "border-forest bg-forest/10 dark:bg-forest/30 ring-2 ring-forest"
+                        : "border-warm-border bg-white dark:bg-gray-700 hover:border-forest-light"
+                    }`}
+                  >
+                    <span className="text-3xl">{AVATAR_EMOJIS[enfant.avatar] || "🌟"}</span>
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{enfant.pseudo}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const handleValidate = async () => {
     let correct = false;
 
@@ -102,10 +205,10 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
     setIsCorrect(correct);
     setAttemptsCount((prev) => prev + 1);
 
-    if (correct && activeEnfant) {
+    if (correct && confirmedEnfant) {
       const isFirstTry = attemptsCount === 0;
       const prog = await multiTomeService.validerProgression(
-        activeEnfant.id,
+        confirmedEnfant.id,
         chapitre.id,
         chapitre.points,
         isFirstTry
@@ -113,7 +216,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       setSavedProgression(prog);
 
       // Check if all chapters of this tome are completed for this child
-      const currentProgs = await multiTomeService.getProgressionsByEnfant(activeEnfant.id);
+      const currentProgs = await multiTomeService.getProgressionsByEnfant(confirmedEnfant.id);
       const completedChapIds = new Set(currentProgs.map((p) => p.chapitre_id));
       const allDone = allChapters.every((c) => completedChapIds.has(c.id));
       if (allDone) {
@@ -133,8 +236,8 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => {
-            if (activeEnfant) {
-              onNavigate(`/enfant/${activeEnfant.id}/parcours`);
+            if (confirmedEnfant) {
+              onNavigate(`/enfant/${confirmedEnfant.id}/parcours`);
             } else {
               onNavigate("/");
             }
@@ -281,9 +384,9 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
             {/* Completion Options */}
             <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
               
-              {isTomeCompleted && activeEnfant && (
+              {isTomeCompleted && confirmedEnfant && (
                 <button
-                  onClick={() => onNavigate(`/certificat/${tome.slug}/${activeEnfant.id}`)}
+                  onClick={() => onNavigate(`/certificat/${tome.slug}/${confirmedEnfant.id}`)}
                   className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Award size={18} />
@@ -300,9 +403,9 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
                 </button>
               )}
 
-              {activeEnfant && (
+              {confirmedEnfant && (
                 <button
-                  onClick={() => onNavigate(`/enfant/${activeEnfant.id}/parcours`)}
+                  onClick={() => onNavigate(`/enfant/${confirmedEnfant.id}/parcours`)}
                   className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white dark:bg-gray-700 text-forest dark:text-forest-light font-bold border-2 border-forest hover:bg-forest/10 cursor-pointer"
                 >
                   <span>{lang === "fr" ? "Voir mon parcours 🗺️" : "View my path 🗺️"}</span>

@@ -181,6 +181,7 @@ export default function App() {
               tomeSlug={tomeSlug}
               chapitreSlug={chapitreSlug}
               activeEnfant={activeEnfant}
+              onSelectEnfant={handleSelectEnfant}
               onNavigate={navigateTo}
               lang={lang}
             />

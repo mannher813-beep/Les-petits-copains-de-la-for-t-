@@ -608,9 +608,10 @@ create table if not exists chapitres (
 );
 
 -- 3. Table Enfants
+-- Un seul apprenant par compte : parent_id est UNIQUE.
 create table if not exists enfants (
   id uuid primary key default gen_random_uuid(),
-  parent_id uuid references auth.users(id) on delete cascade,
+  parent_id uuid unique references auth.users(id) on delete cascade,
   pseudo text not null,
   avatar text not null,
   tranche_age text not null,
