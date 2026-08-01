@@ -47,7 +47,7 @@ export const ChildBadges: React.FC<ChildBadgesProps> = ({
       
       {/* Back Button */}
       <button
-        onClick={() => onNavigate(`/enfant/${enfant.id}/parcours`)}
+        onClick={() => onNavigate("/parcours")}
         className="mb-6 flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-forest transition cursor-pointer"
       >
         <ArrowLeft size={16} />

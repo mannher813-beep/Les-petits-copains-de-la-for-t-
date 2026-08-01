@@ -64,7 +64,7 @@ export const ChildMotsMagiques: React.FC<ChildMotsMagiquesProps> = ({
       
       {/* Back Button */}
       <button
-        onClick={() => onNavigate(`/enfant/${enfant.id}/parcours`)}
+        onClick={() => onNavigate("/parcours")}
         className="mb-6 flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-forest transition cursor-pointer"
       >
         <ArrowLeft size={16} />
@@ -108,7 +108,7 @@ export const ChildMotsMagiques: React.FC<ChildMotsMagiquesProps> = ({
               : "Solve challenges along the path to fill your magic notebook!"}
           </p>
           <button
-            onClick={() => onNavigate(`/enfant/${enfant.id}/parcours`)}
+            onClick={() => onNavigate("/parcours")}
             className="bg-forest text-white font-bold px-6 py-3 rounded-2xl shadow-md hover:bg-forest-light transition"
           >
             {lang === "fr" ? "Commencer un défi" : "Start a Challenge"}

@@ -64,7 +64,7 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
       icon: Award,
       label: "Mes badges",
       badge: String(completedBadges),
-      action: () => onNavigate(`/enfant/${enfant.id}/badges`)
+      action: () => onNavigate("/badges")
     },
     {
       id: "diplomes",

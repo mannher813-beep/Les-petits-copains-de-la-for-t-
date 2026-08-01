@@ -75,7 +75,6 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
     }
 
     onChildCreated(newEnfant);
-    onNavigate(`/enfant/${newEnfant.id}/parcours`);
   };
 
   return (

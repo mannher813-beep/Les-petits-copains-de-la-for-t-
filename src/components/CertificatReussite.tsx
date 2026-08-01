@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { ArrowLeft, Share2, Download, Award, Sparkles, Star, Lock, Loader2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Download, Sparkles, Lock, Loader2 } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 interface CertificatReussiteProps {
   tomeSlug: string;
@@ -60,24 +62,35 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
     };
   }, [tomeSlug, enfantId]);
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Diplôme de ${enfantName}`,
-          text: `Bravo ${enfantName} pour avoir terminé le Tome 1 des Copains de la Forêt ! 🎉`
-        });
-      } catch (e) {
-        console.info("Share canceled");
-      }
-    } else {
-      alert("Lien de diplôme copié !");
-    }
-  };
+  const diplomaRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const handleDownload = () => {
-    if (!isComplete) return;
-    window.print();
+  const handleDownload = async () => {
+    if (!isComplete || !diplomaRef.current) return;
+    setIsGeneratingPdf(true);
+    try {
+      // Capture uniquement la carte du diplôme (pas toute la page) pour
+      // produire un vrai PDF du diplôme, et non une impression du site web.
+      const canvas = await html2canvas(diplomaRef.current, {
+        scale: 3,
+        backgroundColor: "#fef3c7",
+        useCORS: true
+      });
+      const imgData = canvas.toDataURL("image/png");
+
+      // Format paysage adapté au ratio du diplôme.
+      const pdf = new jsPDF({
+        orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.pdf`);
+    } catch (e) {
+      console.error("Erreur lors de la génération du PDF du diplôme", e);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -99,7 +112,10 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
       </div>
 
       {/* GOLDEN DIPLOMA CERTIFICATE (Matching Screen 9) */}
-      <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
+      <div
+        ref={diplomaRef}
+        className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden"
+      >
         {/* Decorative Corner Ornaments */}
         <div className="absolute top-2 left-2 text-2xl text-amber-500">⚜️</div>
         <div className="absolute top-2 right-2 text-2xl text-amber-500">⚜️</div>
@@ -145,22 +161,14 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
         </div>
       </div>
 
-      {/* ACTION BUTTONS (Partager & Télécharger) */}
+      {/* ACTION BUTTONS (Télécharger) */}
       <div className="space-y-2.5 pt-2">
         <button
-          onClick={handleShare}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-emerald-600/30 text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>Partager</span>
-        </button>
-
-        <button
           onClick={handleDownload}
-          disabled={!isComplete || checking}
-          className={`w-full font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
-            isComplete && !checking
-              ? "bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-300 border-2 border-emerald-300 hover:bg-emerald-50 cursor-pointer"
+          disabled={!isComplete || checking || isGeneratingPdf}
+          className={`w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
+            isComplete && !checking && !isGeneratingPdf
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-95 transition-transform"
               : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700 cursor-not-allowed"
           }`}
         >
@@ -169,10 +177,15 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Vérification des missions...</span>
             </>
+          ) : isGeneratingPdf ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Génération du PDF...</span>
+            </>
           ) : isComplete ? (
             <>
               <Download className="w-4 h-4" />
-              <span>Télécharger</span>
+              <span>Télécharger en PDF</span>
             </>
           ) : (
             <>

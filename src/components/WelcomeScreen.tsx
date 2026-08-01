@@ -222,7 +222,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate("/profil")}
+          onClick={() =>
+            onNavigate(activeEnfant ? `/certificat/tome-1/${activeEnfant.id}` : "/compte/enfants")
+          }
           className="bg-white dark:bg-gray-800 p-4 rounded-3xl border-2 border-amber-200 dark:border-gray-700 shadow-sm hover:border-amber-400 transition-all text-left flex flex-col justify-between"
         >
           <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3">

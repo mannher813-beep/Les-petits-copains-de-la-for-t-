@@ -149,7 +149,7 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
                   <button
                     onClick={() => {
                       onSelectEnfant(enfant);
-                      onNavigate(`/enfant/${enfant.id}/parcours`);
+                      onNavigate("/parcours");
                     }}
                     className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition"
                   >
@@ -160,7 +160,7 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
                   <button
                     onClick={() => {
                       onSelectEnfant(enfant);
-                      onNavigate(`/enfant/${enfant.id}/badges`);
+                      onNavigate("/badges");
                     }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition"
                   >
@@ -171,7 +171,7 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
                   <button
                     onClick={() => {
                       onSelectEnfant(enfant);
-                      onNavigate(`/enfant/${enfant.id}/classement`);
+                      onNavigate("/classement");
                     }}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition"
                   >

@@ -31,7 +31,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // QR Code generator state
   const [baseUrl, setBaseUrl] = useState("https://lescopainsdelaforet.pages.dev");
-  const [qrCodesData, setQrCodesData] = useState<{ chapterId: string; title: string; slug: string; url: string; dataUrl: string }[]>([]);
+  const [qrCodesData, setQrCodesData] = useState<{ code: string; chapterId: string; title: string; slug: string; url: string; dataUrl: string }[]>([]);
 
   // Editing forms state
   const [tomeForm, setTomeForm] = useState<Partial<Tome>>({});
@@ -101,10 +101,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const chaps = await multiTomeService.getChapitresByTomeId(tome.id);
     setChapitres(chaps);
 
-    const generated: { chapterId: string; title: string; slug: string; url: string; dataUrl: string }[] = [];
+    const generated: { code: string; chapterId: string; title: string; slug: string; url: string; dataUrl: string }[] = [];
+    const tomeNumero = tome.ordre || 1;
 
     for (const c of chaps) {
       const targetUrl = `${baseUrl.replace(/\/$/, "")}/defi/${tome.slug}/${c.slug}`;
+      const code = `T${tomeNumero}-C${c.numero}`;
       try {
         const dataUrl = await QRCode.toDataURL(targetUrl, {
           width: 400,
@@ -115,6 +117,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }
         });
         generated.push({
+          code,
           chapterId: c.id,
           title: c.titre,
           slug: c.slug,
@@ -128,6 +131,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     setQrCodesData(generated);
     setSubView("qr");
+  };
+
+  // Exporte tous les QR codes générés en un seul fichier CSV (code, titre,
+  // URL et image encodée en base64) — facilement intégrable dans un
+  // document HTML par une IA, sans dépendre de fichiers PNG/PDF séparés.
+  const handleExportQRCodesCSV = () => {
+    if (!selectedTome || qrCodesData.length === 0) return;
+
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+    const header = ["code", "titre", "url", "qr_image_base64"].join(",");
+    const rows = qrCodesData.map((item) =>
+      [
+        escapeCsv(item.code),
+        escapeCsv(item.title),
+        escapeCsv(item.url),
+        escapeCsv(item.dataUrl)
+      ].join(",")
+    );
+    const csvContent = [header, ...rows].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedTome.slug}-qr-codes.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (!isAdminLoggedIn) {
@@ -326,20 +359,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Printer className="w-4 h-4" /> Imprimer les QR Codes
             </button>
+            <button
+              onClick={handleExportQRCodesCSV}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Télécharger tous les QR Codes (CSV)
+            </button>
+            <p className="text-[10px] text-gray-400">
+              Le CSV contient le code (ex. T1-C1), le titre, l'URL et l'image du QR code encodée en base64 — prêt à intégrer dans un document HTML.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {qrCodesData.map((item) => (
               <div key={item.chapterId} className="bg-white p-3 rounded-2xl border text-center">
+                <span className="inline-block text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded-full mb-1">
+                  {item.code}
+                </span>
                 <h4 className="text-[11px] font-black uppercase text-emerald-800 mb-1">{item.title}</h4>
                 <img src={item.dataUrl} alt={item.title} className="w-28 h-28 mx-auto mb-2 border rounded-xl" />
-                <a
-                  href={item.dataUrl}
-                  download={`${selectedTome.slug}-${item.slug}.png`}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-bold py-1 px-2 rounded-lg flex items-center justify-center gap-1"
-                >
-                  <Download className="w-3 h-3" /> PNG
-                </a>
               </div>
             ))}
           </div>

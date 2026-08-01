@@ -199,7 +199,7 @@ export default function App() {
             onNavigate={navigateTo}
             onChildCreated={(newEnfant) => {
               handleSelectEnfant(newEnfant);
-              navigateTo("/parcours");
+              navigateTo("/");
             }}
             lang={lang}
           />

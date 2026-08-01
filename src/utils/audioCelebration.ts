@@ -7,6 +7,9 @@ class SoundManager {
   private bgmGain: GainNode | null = null;
   public isBGMPlaying: boolean = false;
   private bgmTimer: any = null;
+  // Volume du fond sonore ambiant (0 = silencieux, 1 = volume max).
+  // Par défaut bien audible (0.7) au lieu du volume quasi inaudible d'origine.
+  public bgmVolume: number = 0.7;
 
   constructor() {
     try {
@@ -16,6 +19,17 @@ class SoundManager {
       }
     } catch {
       this.isMuted = false;
+    }
+    try {
+      const savedVolume = localStorage.getItem("forest_bgm_volume");
+      if (savedVolume !== null) {
+        const parsed = parseFloat(savedVolume);
+        if (!Number.isNaN(parsed)) {
+          this.bgmVolume = Math.min(1, Math.max(0, parsed));
+        }
+      }
+    } catch {
+      this.bgmVolume = 0.7;
     }
   }
 
@@ -27,6 +41,15 @@ class SoundManager {
     if (muted && this.isBGMPlaying) {
       this.stopAmbientBGM();
     }
+  }
+
+  // Règle le volume du fond sonore ambiant (0 à 1). Persisté et appliqué
+  // immédiatement aux prochaines notes jouées par la boucle du BGM.
+  public setBGMVolume(volume: number) {
+    this.bgmVolume = Math.min(1, Math.max(0, volume));
+    try {
+      localStorage.setItem("forest_bgm_volume", String(this.bgmVolume));
+    } catch {}
   }
 
   private getContext(): AudioContext | null {
@@ -251,11 +274,15 @@ class SoundManager {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
+      // Le pic de volume suit le réglage utilisateur (bgmVolume 0..1),
+      // mappé sur une plage confortable pour une musique d'ambiance.
+      const peakGain = 0.03 + this.bgmVolume * 0.32;
+
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.8);
+      gain.gain.linearRampToValueAtTime(peakGain, ctx.currentTime + 0.8);
       gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 2.2);
 
       osc.connect(gain);
