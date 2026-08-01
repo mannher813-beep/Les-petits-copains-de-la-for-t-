@@ -4,7 +4,7 @@
   "description": "Suivi des défis et aventures pour les enfants de 5 à 7 ans, en complément du cahier imprimé.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fffbf4",
+  "background_color": "#2d5028",
   "theme_color": "#2e7d46",
   "orientation": "any",
   "icons": [
