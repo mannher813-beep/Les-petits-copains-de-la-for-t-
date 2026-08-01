@@ -21,6 +21,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [animStep, setAnimStep] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [showAllAges, setShowAllAges] = useState(false);
 
   // Trigger celebration sounds & confetti sequence
   const launchCelebrationSequence = () => {
@@ -75,11 +76,13 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
   };
 
   useEffect(() => {
-    multiTomeService.getLeaderboard(enfant.tranche_age || "5-6").then((data) => {
-      setEntries(data);
-      launchCelebrationSequence();
-    });
-  }, [enfant]);
+    multiTomeService
+      .getLeaderboard(showAllAges ? "toutes" : (enfant.tranche_age || "5-6"))
+      .then((data) => {
+        setEntries(data);
+        launchCelebrationSequence();
+      });
+  }, [enfant, showAllAges]);
 
   const toggleSound = () => {
     const nextMuted = !isMuted;
@@ -131,6 +134,30 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             <span className="uppercase">{lang}</span>
           </span>
         </div>
+      </div>
+
+      {/* AGE FILTER TOGGLE */}
+      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setShowAllAges(false)}
+          className={`flex-1 text-xs font-bold py-2 rounded-xl transition-colors cursor-pointer ${
+            !showAllAges
+              ? "bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          Ma tranche d'âge ({enfant.tranche_age})
+        </button>
+        <button
+          onClick={() => setShowAllAges(true)}
+          className={`flex-1 text-xs font-bold py-2 rounded-xl transition-colors cursor-pointer ${
+            showAllAges
+              ? "bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          Tous les âges
+        </button>
       </div>
 
       {/* LIVE UPDATE BANNER & RE-PLAY ANIMATION BUTTON */}
