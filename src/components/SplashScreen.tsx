@@ -12,7 +12,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onFinish();
-    }, 2100);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [onFinish]);
 
@@ -84,7 +84,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
-          transition={{ duration: 1.8, ease: "easeInOut" }}
+          transition={{ duration: 3.2, ease: "easeInOut" }}
           className="h-2 bg-gradient-to-r from-amber-300 via-emerald-300 to-yellow-300 rounded-full mt-8 max-w-xs shadow-inner"
         />
       </div>
