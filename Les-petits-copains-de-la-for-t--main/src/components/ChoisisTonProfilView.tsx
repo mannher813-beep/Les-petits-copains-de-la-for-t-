@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Enfant } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
-import { ArrowLeft, Settings, Plus, Check } from "lucide-react";
+import { ArrowLeft, Plus, Check } from "lucide-react";
 import { Language, getTranslation } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { AnimatedMascot } from "./AnimatedMascot";
@@ -44,13 +44,7 @@ export const ChoisisTonProfilView: React.FC<ChoisisTonProfilViewProps> = ({
           {getTranslation(lang, "chooseProfile")}
         </h1>
 
-        <button
-          onClick={() => onNavigate("/admin")}
-          className="p-2.5 rounded-2xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-xs hover:scale-105 transition-transform"
-          title="Paramètres / Admin"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        <div className="w-10" />
       </div>
 
       {/* AVATARS LIST (Matching Screen 2 in reference image) */}
@@ -82,7 +76,11 @@ export const ChoisisTonProfilView: React.FC<ChoisisTonProfilViewProps> = ({
                           : "border-gray-200 dark:border-gray-700 group-hover:border-emerald-300"
                       }`}
                     >
-                      <AnimatedMascot mascot={mascot} size="lg" animateType={isSelected ? "bounce" : "float"} />
+                      {enfant.photo ? (
+                        <img src={enfant.photo} alt={enfant.pseudo} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <AnimatedMascot mascot={mascot} size="lg" animateType={isSelected ? "bounce" : "float"} />
+                      )}
                     </div>
 
                     {/* Selected Checkmark Badge */}

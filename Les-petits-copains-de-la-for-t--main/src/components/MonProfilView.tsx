@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Enfant } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
-import { ArrowLeft, Globe, Camera, User, Award, Scroll, Settings, HelpCircle, LogOut, ChevronRight } from "lucide-react";
+import { ArrowLeft, Globe, Camera, User, Award, Scroll, HelpCircle, LogOut, ChevronRight } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { AnimatedMascot } from "./AnimatedMascot";
@@ -18,10 +18,11 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
   onNavigate,
   lang
 }) => {
-  const [currentAvatar, setCurrentAvatar] = useState(enfant.avatar || "leo");
+  const [currentPhoto, setCurrentPhoto] = useState<string | undefined>(enfant.photo);
   const [completedBadges, setCompletedBadges] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mascot = getMascot(currentAvatar);
+  const mascot = getMascot(enfant.avatar || "leo");
 
   React.useEffect(() => {
     multiTomeService.getProgressionsByEnfant(enfant.id).then((progs) => {
@@ -32,14 +33,21 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadError(null);
     try {
       const compressed = await compressImageFile(file, 256, 256);
-      setCurrentAvatar(compressed);
-      const updated = { ...enfant, avatar: compressed };
-      await multiTomeService.saveEnfant(updated);
+      // On envoie la photo dans son propre champ (children.photo_data_url) :
+      // "avatar" reste l'identifiant de mascotte de secours (avatar_id côté DB).
+      const updated = await multiTomeService.saveEnfant({ ...enfant, photo: compressed });
+      if (!updated) {
+        setUploadError("La photo n'a pas pu être enregistrée. Réessaie dans un instant.");
+        return;
+      }
+      setCurrentPhoto(updated.photo);
       localStorage.setItem("forest_active_enfant", JSON.stringify(updated));
     } catch (err) {
-      console.error("Error updating avatar photo:", err);
+      console.error("Error updating profile photo:", err);
+      setUploadError("La photo n'a pas pu être enregistrée. Réessaie dans un instant.");
     }
   };
 
@@ -66,13 +74,6 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
       action: () => onNavigate(`/certificat/tome-1/${enfant.id}`)
     },
     {
-      id: "settings",
-      icon: Settings,
-      label: "Paramètres",
-      badge: null,
-      action: () => onNavigate("/admin")
-    },
-    {
       id: "help",
       icon: HelpCircle,
       label: "Aide et support",
@@ -96,13 +97,12 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
           Mon profil
         </h1>
 
-        <button
-          onClick={() => onNavigate("/admin")}
+        <span
           className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 px-2.5 py-1 rounded-full text-xs font-bold shadow-xs"
         >
           <Globe className="w-3.5 h-3.5 text-emerald-600" />
           <span className="uppercase">{lang}</span>
-        </button>
+        </span>
       </div>
 
       {/* AVATAR PROFILE HEADER (Matching Screen 10) */}
@@ -120,8 +120,8 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
             onClick={() => fileInputRef.current?.click()}
             className="w-24 h-24 rounded-full bg-amber-100 p-1 border-4 border-emerald-500 shadow-xl mx-auto flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
           >
-            {currentAvatar.startsWith("data:") ? (
-              <img src={currentAvatar} alt={enfant.pseudo} className="w-full h-full object-cover rounded-full" />
+            {currentPhoto ? (
+              <img src={currentPhoto} alt={enfant.pseudo} className="w-full h-full object-cover rounded-full" />
             ) : (
               <AnimatedMascot mascot={mascot} size="xl" animateType="bounce" />
             )}
@@ -136,6 +136,11 @@ export const MonProfilView: React.FC<MonProfilViewProps> = ({
             <Camera className="w-4 h-4" />
           </button>
         </div>
+        {uploadError && (
+          <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-xl px-3 py-2">
+            {uploadError}
+          </p>
+        )}
 
         <div>
           <h2 className="text-2xl font-black font-fun text-gray-800 dark:text-gray-100">

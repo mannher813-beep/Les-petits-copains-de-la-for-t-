@@ -46,9 +46,12 @@ export interface Enfant {
   id: string;
   parent_id?: string;
   pseudo: string;           // Child nickname (never full name)
-  avatar: string;           // Avatar identifier key (leo, nina, darina, lana, etc.)
+  avatar: string;           // Avatar identifier key (leo, nina, darina, lana, etc.) — mascotte de secours
+  photo?: string;           // Photo personnalisée (data URL compressée), stockée dans children.photo_data_url
   tranche_age: TrancheAge;
   code_livre?: string;
+  total_points?: number;
+  niveau?: number;
   cree_le?: string;
 }
 

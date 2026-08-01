@@ -45,21 +45,32 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
     }
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pseudo.trim()) return;
 
     setIsSaving(true);
+    setSaveError(null);
+    const usingCustomPhoto = Boolean(customPhoto) && selectedAvatar === customPhoto;
     const newEnfant = await multiTomeService.saveEnfant({
       pseudo: pseudo.trim(),
-      avatar: selectedAvatar,
+      avatar: usingCustomPhoto ? "leo" : selectedAvatar,
+      photo: usingCustomPhoto ? customPhoto! : undefined,
       tranche_age: trancheAge
     });
 
     setIsSaving(false);
 
     if (!newEnfant) {
-      // Supabase write failed — do not navigate away, let the parent retry.
+      // L'écriture Supabase a échoué (session anonyme non ouverte, RLS, etc.) —
+      // on ne navigue pas et on l'affiche clairement au lieu de rester muet.
+      setSaveError(
+        lang === "fr"
+          ? "Le profil n'a pas pu être enregistré. Vérifie ta connexion et réessaie."
+          : "The profile could not be saved. Check your connection and try again."
+      );
       return;
     }
 
@@ -215,6 +226,12 @@ export const ChildProfileNew: React.FC<ChildProfileNewProps> = ({
               })}
             </div>
           </div>
+
+          {saveError && (
+            <p className="text-sm font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-2xl px-4 py-3">
+              {saveError}
+            </p>
+          )}
 
           {/* Submit Button */}
           <button

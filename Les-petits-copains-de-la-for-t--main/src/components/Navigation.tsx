@@ -75,7 +75,11 @@ export const Navigation: React.FC<NavigationProps> = ({
             className="flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-full px-3 py-1 hover:bg-emerald-100 transition-all text-left shadow-sm cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full bg-amber-100 p-0.5 border border-amber-300 flex items-center justify-center overflow-hidden">
-              <AnimatedMascot mascot={mascot} size="sm" showQuoteOnClick={false} />
+              {activeEnfant?.photo ? (
+                <img src={activeEnfant.photo} alt={activeEnfant.pseudo} className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <AnimatedMascot mascot={mascot} size="sm" showQuoteOnClick={false} />
+              )}
             </div>
             <div className="leading-tight">
               <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate max-w-[100px]">
@@ -163,8 +167,9 @@ export const Navigation: React.FC<NavigationProps> = ({
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-emerald-700" />}
             </button>
 
-            {/* Admin Shortcut if logged in or URL /admin */}
-            {(isAdminLoggedIn || currentPath.startsWith("/admin")) && (
+            {/* Raccourci admin visible UNIQUEMENT si une session admin réelle est active
+                (jamais déclenché par l'URL — /admin ne doit être atteignable que tapé directement) */}
+            {isAdminLoggedIn && (
               <button
                 onClick={() => handleNavClick("/admin")}
                 className="p-2 rounded-full bg-purple-100 text-purple-800 border border-purple-300 hover:scale-105 transition-transform cursor-pointer"

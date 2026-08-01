@@ -33,6 +33,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   const [attempted, setAttempted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
 
   const mascot = getMascot(activeEnfant?.avatar || "leo");
 
@@ -44,29 +45,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       setIsCorrect(false);
 
       const res = await multiTomeService.getChapitreBySlugs(tomeSlug, chapitreSlug);
-      if (res) {
-        setData(res);
-      } else {
-        const mockTome: Tome = { id: "t1", slug: tomeSlug, titre: "Tome 1 : La Rencontre", couleur_theme: "#3f9142", ordre: 1, publie: true };
-        const mockChap: Chapitre = {
-          id: "c3",
-          tome_id: "t1",
-          slug: "chapitre-3",
-          numero: 3,
-          titre: "La construction du barrage",
-          question_defi: "Quel animal construit des barrages avec des branches ?",
-          type_reponse: "choix_multiple",
-          choix: [
-            { label: "Le castor", correct: true },
-            { label: "Le renard", correct: false },
-            { label: "Le cerf", correct: false },
-            { label: "Le lapin", correct: false }
-          ],
-          mots_secrets: ["CASTOR"],
-          points: 50
-        };
-        setData({ tome: mockTome, chapitre: mockChap });
-      }
+      setData(res); // null si introuvable — affiché comme une vraie erreur, pas masqué par un faux chapitre
       setLoading(false);
     }
     load();
@@ -100,8 +79,22 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
     );
   }
 
-  if (!data) return null;
-  const { tome, chapitre } = data;
+  if (!data) {
+    return (
+      <div className="max-w-md mx-auto p-6 text-center space-y-4">
+        <p className="font-bold text-gray-700 dark:text-gray-200">
+          Ce défi n'existe pas encore dans le livre.
+        </p>
+        <button
+          onClick={() => onNavigate("/parcours")}
+          className="px-5 py-2.5 rounded-2xl bg-emerald-600 text-white font-bold"
+        >
+          Retour au parcours
+        </button>
+      </div>
+    );
+  }
+  const { chapitre } = data;
 
   const choiceAnimals = [
     { name: "Le castor", icon: "🦫", bg: "bg-amber-100" },
@@ -113,11 +106,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   const handleValidate = async () => {
     let correct = false;
     if (chapitre.type_reponse === "choix_multiple" && selectedChoice !== null) {
-      if (chapitre.choix && chapitre.choix[selectedChoice]?.correct) {
-        correct = true;
-      } else if (selectedChoice === 0) {
-        correct = true; // Fallback for castor
-      }
+      correct = Boolean(chapitre.choix && chapitre.choix[selectedChoice]?.correct);
     }
 
     setAttempted(true);
@@ -131,7 +120,14 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       }, 300);
       triggerConfetti();
       if (activeEnfant) {
-        await multiTomeService.validerProgression(activeEnfant.id, chapitre.id, 50, true);
+        const isFirstAttempt = !attempted;
+        const saved = await multiTomeService.validerProgression(
+          activeEnfant.id,
+          chapitre.id,
+          chapitre.points,
+          isFirstAttempt
+        );
+        setEarnedPoints((saved?.points_gagnes) ?? chapitre.points);
       }
       setShowCelebration(true);
     } else {
@@ -183,15 +179,12 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
           <div className="bg-amber-50 dark:bg-amber-950/40 rounded-2xl p-4 border border-amber-200 dark:border-amber-800 space-y-2">
             <div className="flex items-center justify-center gap-2 text-amber-900 dark:text-amber-200 font-extrabold text-sm">
               <Trophy className="w-5 h-5 text-amber-500" />
-              <span>Ton score : 950 points</span>
+              <span>Tu as gagné {earnedPoints} points !</span>
             </div>
 
             <div className="flex items-center justify-center gap-3 pt-1">
               <span className="bg-amber-300 text-amber-950 px-3 py-1 rounded-full text-xs font-black shadow-xs">
-                + 50 🪙
-              </span>
-              <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs font-black shadow-xs">
-                + 100 XP
+                + {earnedPoints} 🪙
               </span>
             </div>
           </div>
@@ -235,18 +228,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
 
         <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-950/60 border border-amber-300 text-amber-900 dark:text-amber-200 px-3 py-1 rounded-full text-xs font-black shadow-xs">
           <span>🪙</span>
-          <span>120</span>
-        </div>
-      </div>
-
-      {/* QUESTION PROGRESS BAR */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-xs font-bold text-gray-600 dark:text-gray-300">
-          <span>Question 2 / 5</span>
-          <span className="text-emerald-600 font-extrabold">40%</span>
-        </div>
-        <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-500 rounded-full w-[40%]" />
+          <span>{chapitre.points}</span>
         </div>
       </div>
 

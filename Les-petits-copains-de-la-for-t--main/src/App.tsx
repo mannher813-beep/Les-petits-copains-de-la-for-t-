@@ -21,6 +21,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 
 import { Enfant } from "./types/multiTome";
 import { multiTomeService } from "./services/multiTomeService";
+import { ensureSession } from "./lib/supabase";
 import { Language } from "./i18n/translations";
 
 export default function App() {
@@ -46,8 +47,10 @@ export default function App() {
   });
 
   useEffect(() => {
-    // Synchronize active child with available real profiles
-    multiTomeService.getEnfantsByParent().then((enfants) => {
+    // Synchronize active child with available real profiles.
+    // ensureSession() ouvre (ou réutilise) la session anonyme Supabase : sans
+    // elle, la RLS de "children" ne renvoie jamais aucune ligne.
+    ensureSession().then(() => multiTomeService.getEnfantsByParent()).then((enfants) => {
       if (enfants.length > 0) {
         if (!activeEnfant || !enfants.some((e) => e.id === activeEnfant.id)) {
           setActiveEnfant(enfants[0]);
@@ -161,8 +164,8 @@ export default function App() {
           />
         )}
 
-        {/* 2. ADMIN PANEL */}
-        {currentPath.startsWith("/admin") && (
+        {/* 2. ADMIN PANEL — uniquement sur l'URL exacte /admin, jamais via un bouton de l'appli */}
+        {currentPath === "/admin" && (
           <AdminDashboard
             onNavigate={navigateTo}
             lang={lang}

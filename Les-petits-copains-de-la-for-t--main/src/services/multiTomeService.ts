@@ -5,7 +5,7 @@
 // pour ne rien casser dans les composants qui les consomment, mais ils sont
 // maintenant mappés vers les VRAIES tables du projet Supabase "Les Copains de
 // la Forêt" (hofmvbsnisuhzytpgqol) : books, chapters, children, chapter_progress.
-import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { supabase, isSupabaseConfigured, ensureSession, getCurrentUserId } from "../lib/supabase";
 import { Tome, Chapitre, Enfant, Progression, LeaderboardEntry, TrancheAge } from "../types/multiTome";
 
 export function normalizeText(text: string): string {
@@ -49,33 +49,6 @@ const AVATAR_ID_TO_NAME: Record<number, string> = Object.fromEntries(
   Object.entries(AVATAR_NAME_TO_ID).map(([name, id]) => [id, name])
 );
 
-const DEFAULT_ENFANTS: Enfant[] = [
-  { id: "e1", pseudo: "Léo L'Explorateur", avatar: "leo", tranche_age: "5-6", code_livre: "T1-001" },
-  { id: "e2", pseudo: "Nina La Maligne", avatar: "nina", tranche_age: "5-6", code_livre: "T1-002" },
-  { id: "e3", pseudo: "Tom Le Rapide", avatar: "squirrel", tranche_age: "6-7", code_livre: "T1-003" },
-  { id: "e4", pseudo: "Zaza La Chouette", avatar: "chouette", tranche_age: "3-4", code_livre: "T1-004" },
-  { id: "e5", pseudo: "Darina L'Aventurière", avatar: "darina", tranche_age: "7-8", code_livre: "T1-005" },
-  { id: "e6", pseudo: "Lana Petite Plume", avatar: "lana", tranche_age: "3-4", code_livre: "T1-006" },
-  { id: "e7", pseudo: "Barnabé Le Fort", avatar: "ourson", tranche_age: "9-10", code_livre: "T1-007" },
-  { id: "e8", pseudo: "Mina La Curieuse", avatar: "nina", tranche_age: "6-7", code_livre: "T1-008" },
-  { id: "e9", pseudo: "Samy L'Agile", avatar: "squirrel", tranche_age: "9-10", code_livre: "T1-009" },
-  { id: "e10", pseudo: "Hugo Le Rusé", avatar: "leo", tranche_age: "7-8", code_livre: "T1-010" }
-];
-
-const DEFAULT_PROGRESSIONS: Progression[] = [
-  { id: "p1", enfant_id: "e1", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 120, premiere_tentative: true },
-  { id: "p2", enfant_id: "e1", chapitre_id: "chap-2", valide_le: new Date().toISOString(), points_gagnes: 110, premiere_tentative: true },
-  { id: "p3", enfant_id: "e2", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 95, premiere_tentative: false },
-  { id: "p4", enfant_id: "e3", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 150, premiere_tentative: true },
-  { id: "p5", enfant_id: "e4", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 100, premiere_tentative: true },
-  { id: "p6", enfant_id: "e5", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 130, premiere_tentative: true },
-  { id: "p7", enfant_id: "e6", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 80, premiere_tentative: false },
-  { id: "p8", enfant_id: "e7", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 140, premiere_tentative: true },
-  { id: "p9", enfant_id: "e8", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 105, premiere_tentative: true },
-  { id: "p10", enfant_id: "e9", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 115, premiere_tentative: true },
-  { id: "p11", enfant_id: "e10", chapitre_id: "chap-1", valide_le: new Date().toISOString(), points_gagnes: 90, premiere_tentative: false }
-];
-
 // --- Mappers DB -> App ---
 function rowToTome(row: any): Tome {
   return {
@@ -113,8 +86,11 @@ function rowToEnfant(row: any): Enfant {
     parent_id: row.profile_id || undefined,
     pseudo: row.pseudo || row.name,
     avatar: (row.avatar_id && AVATAR_ID_TO_NAME[row.avatar_id]) || "leo",
+    photo: row.photo_data_url || undefined,
     tranche_age: (row.age_band || "5-6") as TrancheAge,
     code_livre: row.code_livre || undefined,
+    total_points: row.total_points ?? undefined,
+    niveau: row.niveau ?? undefined,
     cree_le: row.created_at
   };
 }
@@ -327,92 +303,83 @@ class MultiTomeService {
   }
 
   // --- ENFANTS / PROFILS (table réelle: children, jointe à avatars) ---
-  async getEnfantsByParent(parentId?: string): Promise<Enfant[]> {
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        let query = supabase.from("children").select("*").order("created_at", { ascending: false });
-        if (parentId) {
-          query = query.eq("profile_id", parentId);
-        }
-        const { data, error } = await query;
-        if (!error && data) {
-          return data.map(rowToEnfant);
-        }
-      } catch (e) {
-        console.info("Supabase fetch children notice:", e);
-      }
+  // Toute lecture/écriture passe par la session Supabase courante : la RLS de
+  // "children" filtre déjà sur profile_id = auth.uid(), donc parentId n'a plus
+  // besoin d'être passé manuellement — il est dérivé de la session active.
+  async getEnfantsByParent(): Promise<Enfant[]> {
+    if (!isSupabaseConfigured() || !supabase) {
+      console.warn("Supabase non configuré (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquants).");
+      return [];
     }
-    const saved = getLocalStorageItem<Enfant[]>("enfants", []);
-    if (saved.length === 0) {
-      setLocalStorageItem("enfants", DEFAULT_ENFANTS);
-      return DEFAULT_ENFANTS;
+    await ensureSession();
+    const { data, error } = await supabase
+      .from("children")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Erreur lecture des profils enfants:", error.message);
+      return [];
     }
-    return saved;
+    return (data || []).map(rowToEnfant);
   }
 
   async getEnfantById(id: string): Promise<Enfant | null> {
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        const { data, error } = await supabase.from("children").select("*").eq("id", id).maybeSingle();
-        if (!error && data) return rowToEnfant(data);
-      } catch (e) {
-        console.info("Supabase fetch child by id notice:", e);
-      }
+    if (!isSupabaseConfigured() || !supabase) return null;
+    await ensureSession();
+    const { data, error } = await supabase.from("children").select("*").eq("id", id).maybeSingle();
+    if (error) {
+      console.error("Erreur lecture du profil enfant:", error.message);
+      return null;
     }
-    const enfants = await this.getEnfantsByParent();
-    return enfants.find((e) => e.id === id) || enfants[0] || null;
+    return data ? rowToEnfant(data) : null;
   }
 
   async saveEnfant(enfant: Partial<Enfant>): Promise<Enfant | null> {
-    const current = await this.getEnfantsByParent();
-    const newEnfant: Enfant = {
-      id: enfant.id || `enfant-${Date.now()}`,
-      pseudo: enfant.pseudo || "PetitCopain",
-      avatar: enfant.avatar || "leo",
-      tranche_age: enfant.tranche_age || "5-6",
-      code_livre: enfant.code_livre || "T1-88219"
-    };
-
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        const payload: any = {
-          pseudo: newEnfant.pseudo,
-          name: newEnfant.pseudo,
-          avatar_id: AVATAR_NAME_TO_ID[newEnfant.avatar] || 1,
-          age_band: newEnfant.tranche_age
-        };
-        // Un id venant de la vraie table children est un uuid ; sinon on laisse Postgres le générer.
-        if (enfant.id && /^[0-9a-f-]{36}$/i.test(enfant.id)) {
-          payload.id = enfant.id;
-        }
-        const { data, error } = await supabase.from("children").upsert(payload).select().single();
-        if (!error && data) return rowToEnfant(data);
-      } catch (e) {
-        console.info("Supabase save child notice:", e);
-      }
+    if (!isSupabaseConfigured() || !supabase) {
+      console.error("Supabase non configuré : impossible d'enregistrer le profil enfant.");
+      return null;
     }
 
-    const updated = current.some((e) => e.id === newEnfant.id)
-      ? current.map((e) => (e.id === newEnfant.id ? newEnfant : e))
-      : [...current, newEnfant];
-    setLocalStorageItem("enfants", updated);
-    return newEnfant;
+    const userId = await ensureSession();
+    if (!userId) {
+      console.error(
+        "Aucune session Supabase active — vérifie que les connexions anonymes sont activées " +
+        "(Dashboard > Authentication > Sign In / Providers > Anonymous)."
+      );
+      return null;
+    }
+
+    const payload: any = {
+      profile_id: userId,
+      pseudo: enfant.pseudo || "PetitCopain",
+      name: enfant.pseudo || "PetitCopain",
+      avatar_id: AVATAR_NAME_TO_ID[enfant.avatar || "leo"] || 1,
+      age_band: enfant.tranche_age || "5-6",
+      photo_data_url: enfant.photo ?? null
+    };
+    // Un id venant de la vraie table children est un uuid ; sinon on laisse Postgres le générer.
+    if (enfant.id && /^[0-9a-f-]{8}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{12}$/i.test(enfant.id)) {
+      payload.id = enfant.id;
+    }
+
+    const { data, error } = await supabase.from("children").upsert(payload).select().single();
+    if (error) {
+      console.error("Erreur enregistrement du profil enfant (Supabase):", error.message);
+      return null;
+    }
+    return rowToEnfant(data);
   }
 
   // --- PROGRESSIONS (table réelle: chapter_progress) ---
   async getProgressionsByEnfant(enfantId: string): Promise<Progression[]> {
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        const { data, error } = await supabase.from("chapter_progress").select("*").eq("child_id", enfantId);
-        if (!error && data) {
-          return data.map(rowToProgression);
-        }
-      } catch (e) {
-        console.info("Supabase fetch chapter_progress notice:", e);
-      }
+    if (!isSupabaseConfigured() || !supabase) return [];
+    await ensureSession();
+    const { data, error } = await supabase.from("chapter_progress").select("*").eq("child_id", enfantId);
+    if (error) {
+      console.error("Erreur lecture progression:", error.message);
+      return [];
     }
-    const allProgs = getLocalStorageItem<Progression[]>("progressions", []);
-    return allProgs.filter((p) => p.enfant_id === enfantId);
+    return (data || []).map(rowToProgression);
   }
 
   async validerProgression(
@@ -421,98 +388,68 @@ class MultiTomeService {
     points: number,
     isFirstAttempt: boolean
   ): Promise<Progression | null> {
+    if (!isSupabaseConfigured() || !supabase) return null;
+    if (Number.isNaN(Number(chapitreId))) {
+      console.error(`chapitreId "${chapitreId}" n'est pas un id réel de la table "chapters" — progression non enregistrée.`);
+      return null;
+    }
+    await ensureSession();
+
     const pointsGagnes = points + (isFirstAttempt ? 5 : 0);
 
-    if (isSupabaseConfigured() && supabase && !Number.isNaN(Number(chapitreId))) {
-      try {
-        const { data: existing } = await supabase
-          .from("chapter_progress")
-          .select("*")
-          .eq("child_id", enfantId)
-          .eq("chapter_id", Number(chapitreId))
-          .maybeSingle();
-        if (existing) return rowToProgression(existing);
+    const { data: existing } = await supabase
+      .from("chapter_progress")
+      .select("*")
+      .eq("child_id", enfantId)
+      .eq("chapter_id", Number(chapitreId))
+      .maybeSingle();
+    if (existing) return rowToProgression(existing);
 
-        const { data, error } = await supabase
-          .from("chapter_progress")
-          .insert({
-            child_id: enfantId,
-            chapter_id: Number(chapitreId),
-            points_earned: pointsGagnes,
-            first_attempt: isFirstAttempt
-          })
-          .select()
-          .single();
-        if (!error && data) return rowToProgression(data);
-      } catch (e) {
-        console.info("Supabase insert chapter_progress notice:", e);
-      }
+    const { data, error } = await supabase
+      .from("chapter_progress")
+      .insert({
+        child_id: enfantId,
+        chapter_id: Number(chapitreId),
+        points_earned: pointsGagnes,
+        first_attempt: isFirstAttempt
+      })
+      .select()
+      .single();
+    if (error) {
+      console.error("Erreur enregistrement progression (Supabase):", error.message);
+      return null;
     }
-
-    const allProgs = getLocalStorageItem<Progression[]>("progressions", []);
-    const existingLocal = allProgs.find((p) => p.enfant_id === enfantId && p.chapitre_id === chapitreId);
-    if (existingLocal) return existingLocal;
-
-    const newProg: Progression = {
-      id: `prog-${Date.now()}`,
-      enfant_id: enfantId,
-      chapitre_id: chapitreId,
-      valide_le: new Date().toISOString(),
-      points_gagnes: pointsGagnes,
-      premiere_tentative: isFirstAttempt
-    };
-    setLocalStorageItem("progressions", [...allProgs, newProg]);
-    return newProg;
+    return rowToProgression(data);
   }
 
   // --- CLASSEMENT (LEADERBOARD) ---
+  // Utilise la fonction RPC dédiée get_leaderboard(p_age_band), qui tourne en
+  // SECURITY DEFINER côté base : elle seule peut agréger les points de TOUS
+  // les enfants (la RLS de "children" limite sinon chaque parent à ses propres
+  // enfants, ce qui rendait le classement global impossible à calculer côté front).
   async getLeaderboard(trancheAge: TrancheAge | "toutes"): Promise<LeaderboardEntry[]> {
-    let enfants: Enfant[] = [];
-    let allProgs: Progression[] = [];
+    if (!isSupabaseConfigured() || !supabase) return [];
+    await ensureSession();
 
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        let query = supabase.from("children").select("*");
-        if (trancheAge && trancheAge !== "toutes") {
-          query = query.eq("age_band", trancheAge);
-        }
-        const { data: enfData } = await query;
-        if (enfData) enfants = enfData.map(rowToEnfant);
-
-        const { data: progData } = await supabase.from("chapter_progress").select("*");
-        if (progData) allProgs = progData.map(rowToProgression);
-      } catch (e) {
-        console.info("Supabase leaderboard query notice:", e);
-      }
-    } else {
-      enfants = getLocalStorageItem<Enfant[]>("enfants", []);
-      if (enfants.length === 0) {
-        enfants = DEFAULT_ENFANTS;
-        setLocalStorageItem("enfants", DEFAULT_ENFANTS);
-      }
-      allProgs = getLocalStorageItem<Progression[]>("progressions", []);
-      if (allProgs.length === 0) {
-        allProgs = DEFAULT_PROGRESSIONS;
-        setLocalStorageItem("progressions", DEFAULT_PROGRESSIONS);
-      }
-      if (trancheAge && trancheAge !== "toutes") {
-        enfants = enfants.filter((e) => e.tranche_age === trancheAge);
-      }
+    const { data, error } = await supabase.rpc("get_leaderboard", {
+      p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
+    });
+    if (error) {
+      console.error("Erreur lecture classement (RPC get_leaderboard):", error.message);
+      return [];
     }
 
-    const entries: LeaderboardEntry[] = enfants.map((enfant) => {
-      const childProgs = allProgs.filter((p) => p.enfant_id === enfant.id);
-      const earnedPoints = childProgs.reduce((sum, p) => sum + (p.points_gagnes || 0), 0);
-      return {
-        enfant,
-        total_points: earnedPoints,
-        chapitres_valides: childProgs.length,
-        rang: 0
-      };
-    });
-
-    entries.sort((a, b) => b.total_points - a.total_points);
-    return entries.map((entry, idx) => ({ ...entry, rang: idx + 1 }));
+    return (data || []).map((row: any, idx: number) => ({
+      enfant: {
+        id: row.child_id,
+        pseudo: row.pseudo,
+        avatar: AVATAR_ID_TO_NAME[row.avatar_id] || "leo",
+        tranche_age: row.age_band as TrancheAge
+      },
+      total_points: Number(row.total_points) || 0,
+      chapitres_valides: Number(row.chapitres_valides) || 0,
+      rang: idx + 1
+    }));
   }
 
   // --- DEFI BY SCAN TOKEN ---
@@ -544,7 +481,35 @@ class MultiTomeService {
       };
     }
 
-    // Try fetching matching chapter directly from Supabase
+    // 1. Vrai QR imprimé : le jeton scanné correspond à un token réel de la
+    // table "qr_codes". C'est le chemin normal en production — on utilise la
+    // RPC get_defi_by_token, qui seule sait faire la jointure qr_codes -> chapters -> books.
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("get_defi_by_token", { p_token: raw });
+        if (!rpcError && rpcData && rpcData.length > 0) {
+          const row = rpcData[0];
+          const { data: bookRow } = await supabase
+            .from("chapters")
+            .select("slug, chapter_num, books(slug)")
+            .eq("id", row.chapter_id)
+            .maybeSingle();
+          return {
+            tome_slug: (bookRow as any)?.books?.slug || "tome-1",
+            chapitre_slug: bookRow?.slug || `chapitre-${bookRow?.chapter_num || 1}`,
+            chapitre_num: bookRow?.chapter_num || 1,
+            question_defi: row.defi_question_fr,
+            type_reponse: row.defi_type === "texte_libre" ? "texte_libre" : "choix_multiple",
+            choix: row.defi_choices || [],
+            mots_secrets: row.defi_mots_secrets || []
+          };
+        }
+      } catch (e) {
+        console.info("Supabase RPC get_defi_by_token notice:", e);
+      }
+    }
+
+    // 2. Code saisi à la main (pas un vrai scan QR) : recherche directe dans "chapters".
     if (isSupabaseConfigured() && supabase) {
       try {
         const idFilter = Number.isNaN(Number(raw)) ? "" : `,id.eq.${raw}`;
@@ -618,6 +583,11 @@ class MultiTomeService {
   }
 
   // --- STATISTIQUES EN TEMPS RÉEL DEPUIS SUPABASE ---
+  // get_admin_stats() est une RPC SECURITY DEFINER qui vérifie elle-même
+  // is_admin() côté base (JWT app_metadata.role = 'admin') et renvoie une
+  // erreur pour tout autre appelant : les stats réelles ne sont donc
+  // accessibles qu'à un compte réellement promu admin dans Supabase Auth,
+  // jamais à un simple état local "isAdminLoggedIn" côté front.
   async getAdminStats(): Promise<{
     total_parents: number;
     total_enfants: number;
@@ -625,46 +595,27 @@ class MultiTomeService {
     total_chapitres: number;
     total_qr_scanned: number;
     total_certificats: number;
-  }> {
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        const [
-          { count: enfCount },
-          { count: tomCount },
-          { count: chapCount },
-          { count: progCount }
-        ] = await Promise.all([
-          supabase.from("children").select("*", { count: "exact", head: true }),
-          supabase.from("books").select("*", { count: "exact", head: true }),
-          supabase.from("chapters").select("*", { count: "exact", head: true }),
-          supabase.from("chapter_progress").select("*", { count: "exact", head: true })
-        ]);
+  } | null> {
+    if (!isSupabaseConfigured() || !supabase) return null;
+    await ensureSession();
 
-        return {
-          total_parents: Math.max(0, Math.ceil((enfCount || 0) / 2)),
-          total_enfants: enfCount || 0,
-          total_tomes: tomCount || 0,
-          total_chapitres: chapCount || 0,
-          total_qr_scanned: progCount || 0,
-          total_certificats: Math.floor((progCount || 0) / 5)
-        };
-      } catch (e) {
-        console.info("Supabase stats query notice:", e);
-      }
+    const { data, error } = await supabase.rpc("get_admin_stats");
+    if (error) {
+      console.error(
+        "Erreur RPC get_admin_stats — probablement un compte non-admin (voir is_admin() côté Supabase) :",
+        error.message
+      );
+      return null;
     }
 
-    const localEnfants = getLocalStorageItem<Enfant[]>("enfants", []);
-    const localTomes = getLocalStorageItem<Tome[]>("tomes", []);
-    const localChapitres = getLocalStorageItem<Chapitre[]>("chapitres", []);
-    const localProgs = getLocalStorageItem<Progression[]>("progressions", []);
-
+    const c = data?.comptages || {};
     return {
-      total_parents: Math.max(0, Math.ceil(localEnfants.length / 2)),
-      total_enfants: localEnfants.length,
-      total_tomes: localTomes.length,
-      total_chapitres: localChapitres.length,
-      total_qr_scanned: localProgs.length,
-      total_certificats: Math.floor(localProgs.length / 5)
+      total_parents: c.parents || 0,
+      total_enfants: c.enfants || 0,
+      total_tomes: c.tomes || 0,
+      total_chapitres: c.chapitres || 0,
+      total_qr_scanned: c.validations_totales || 0,
+      total_certificats: c.diplomes || 0
     };
   }
 }

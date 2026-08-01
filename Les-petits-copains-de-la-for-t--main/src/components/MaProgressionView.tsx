@@ -88,13 +88,12 @@ export const MaProgressionView: React.FC<MaProgressionViewProps> = ({
           Ma progression
         </h1>
 
-        <button
-          onClick={() => onNavigate("/admin")}
+        <span
           className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 px-2.5 py-1 rounded-full text-xs font-bold shadow-xs"
         >
           <Globe className="w-3.5 h-3.5 text-emerald-600" />
           <span className="uppercase">{lang}</span>
-        </button>
+        </span>
       </div>
 
       {/* CHILD PROFILE BANNER (Matching Screen 7) */}

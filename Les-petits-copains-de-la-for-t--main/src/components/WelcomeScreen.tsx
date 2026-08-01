@@ -98,8 +98,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </div>
 
           {/* Avatar Companion */}
-          <div className="w-20 h-20 shrink-0 rounded-3xl bg-white/20 backdrop-blur-md p-1.5 border-2 border-amber-300 shadow-lg flex items-center justify-center relative">
-            <AnimatedMascot mascot={mascot} size="lg" animateType="celebrate" />
+          <div className="w-20 h-20 shrink-0 rounded-3xl bg-white/20 backdrop-blur-md p-1.5 border-2 border-amber-300 shadow-lg flex items-center justify-center relative overflow-hidden">
+            {activeEnfant?.photo ? (
+              <img src={activeEnfant.photo} alt={activeEnfant.pseudo} className="w-full h-full object-cover rounded-2xl" />
+            ) : (
+              <AnimatedMascot mascot={mascot} size="lg" animateType="celebrate" />
+            )}
           </div>
         </div>
 
