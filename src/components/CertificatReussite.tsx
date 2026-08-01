@@ -3,7 +3,7 @@ import { ArrowLeft, Download, Sparkles, Lock, Loader2 } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 interface CertificatReussiteProps {

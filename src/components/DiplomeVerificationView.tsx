@@ -4,7 +4,7 @@ import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
 import { Enfant } from "../types/multiTome";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 interface DiplomeVerificationViewProps {
