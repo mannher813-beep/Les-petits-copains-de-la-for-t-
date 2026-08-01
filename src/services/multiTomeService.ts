@@ -444,6 +444,7 @@ class MultiTomeService {
         id: row.child_id,
         pseudo: row.pseudo,
         avatar: AVATAR_ID_TO_NAME[row.avatar_id] || "leo",
+        photo: row.photo_data_url || undefined,
         tranche_age: row.age_band as TrancheAge
       },
       total_points: Number(row.total_points) || 0,

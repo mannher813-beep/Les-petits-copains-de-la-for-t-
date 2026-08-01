@@ -168,7 +168,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             }`}
           >
             <div className="w-13 h-13 rounded-full bg-slate-200 p-0.5 border-2 border-slate-300 shadow-md mb-1 relative group cursor-pointer hover:scale-110 transition-transform">
-              <img src={getMascot(top2.enfant.avatar).image} alt={top2.enfant.pseudo} className="w-full h-full object-contain" />
+              <img src={top2.enfant.photo || getMascot(top2.enfant.avatar).image} alt={top2.enfant.pseudo} className="w-full h-full object-cover rounded-full" />
               <div className="absolute -top-1 -right-1 bg-slate-300 text-slate-900 text-[9px] font-black px-1 rounded-full border border-white">
                 2e
               </div>
@@ -197,7 +197,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             <div className="relative mb-1">
               <Crown className="w-8 h-8 text-amber-400 fill-amber-400 absolute -top-6 left-1/2 -translate-x-1/2 drop-shadow-lg animate-bounce" />
               <div className="w-18 h-18 rounded-full bg-gradient-to-tr from-amber-300 via-yellow-200 to-amber-400 p-1 border-4 border-amber-300 shadow-2xl relative ring-4 ring-amber-400/50 animate-pulse">
-                <img src={getMascot(top1.enfant.avatar).image} alt={top1.enfant.pseudo} className="w-full h-full object-contain" />
+                <img src={top1.enfant.photo || getMascot(top1.enfant.avatar).image} alt={top1.enfant.pseudo} className="w-full h-full object-cover rounded-full" />
               </div>
             </div>
 
@@ -224,7 +224,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             }`}
           >
             <div className="w-13 h-13 rounded-full bg-amber-700 p-0.5 border-2 border-amber-600 shadow-md mb-1 relative group cursor-pointer hover:scale-110 transition-transform">
-              <img src={getMascot(top3.enfant.avatar).image} alt={top3.enfant.pseudo} className="w-full h-full object-contain" />
+              <img src={top3.enfant.photo || getMascot(top3.enfant.avatar).image} alt={top3.enfant.pseudo} className="w-full h-full object-cover rounded-full" />
               <div className="absolute -top-1 -right-1 bg-amber-600 text-amber-100 text-[9px] font-black px-1 rounded-full border border-white">
                 3e
               </div>
@@ -269,7 +269,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
                 </span>
 
                 <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 p-0.5 border-2 border-amber-300 shrink-0 shadow-xs relative">
-                  <img src={mascot.image} alt={entry.enfant.pseudo} className="w-full h-full object-contain" />
+                  <img src={entry.enfant.photo || mascot.image} alt={entry.enfant.pseudo} className="w-full h-full object-cover rounded-full" />
                   {isSelf && (
                     <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full text-[8px] font-black border border-white">
                       Moi
