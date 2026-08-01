@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ShieldCheck, Lock, Download, Loader2, UserPlus, Sparkles, ArrowRight } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
 import { Enfant } from "../types/multiTome";
-import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 interface DiplomeVerificationViewProps {
@@ -80,25 +79,24 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
     };
   }, [tomeSlug, activeEnfant?.id]);
 
-  const diplomaRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>("");
   const [pdfError, setPdfError] = useState(false);
 
-  // Beaucoup de navigateurs mobiles bloquent silencieusement un téléchargement
-  // déclenché par le code (pdf.save()) si trop de temps s'est écoulé depuis le
-  // dernier vrai geste utilisateur — ce qui est le cas ici car html2canvas
-  // (surtout en scale:3) peut prendre une seconde ou plus. Résultat : le
-  // bouton tourne, le PDF est bien généré en mémoire, mais rien ne se
-  // télécharge, sans erreur visible.
-  //
-  // Solution fiable : on ne télécharge plus automatiquement à la fin de cette
-  // fonction. On génère le PDF en Blob et on affiche un vrai lien <a download>
-  // que la personne tape elle-même — ce second tap est un geste utilisateur
-  // frais que le navigateur ne bloque jamais.
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+  // Dessin direct du diplôme dans le PDF (voir CertificatReussite.tsx pour le
+  // détail de pourquoi on n'utilise plus html2canvas ici).
   const handleGenerate = async () => {
-    if (!isComplete || !diplomaRef.current) return;
+    if (!isComplete) return;
     setIsGeneratingPdf(true);
     setPdfError(false);
     if (pdfUrl) {
@@ -106,18 +104,81 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
       setPdfUrl(null);
     }
     try {
-      const canvas = await html2canvas(diplomaRef.current, {
-        scale: 3,
-        backgroundColor: "#fef3c7",
-        useCORS: true
+      const W = 480;
+      const H = 640;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [W, H] });
+
+      pdf.setFillColor(254, 243, 199);
+      pdf.roundedRect(0, 0, W, H, 28, 28, "F");
+      pdf.setDrawColor(251, 191, 36);
+      pdf.setLineWidth(7);
+      pdf.roundedRect(6, 6, W - 12, H - 12, 24, 24, "S");
+
+      pdf.setFillColor(245, 158, 11);
+      [[26, 26], [W - 26, 26], [26, H - 26], [W - 26, H - 26]].forEach(([cx, cy]) => {
+        pdf.circle(cx, cy, 5, "F");
       });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
-        unit: "px",
-        format: [canvas.width, canvas.height]
-      });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+
+      const ribbonLabel = `DIPLÔME ${(tomeTitre || tomeSlug).toUpperCase()}`;
+      const ribbonW = Math.min(360, Math.max(220, ribbonLabel.length * 6.5));
+      const ribbonY = 44;
+      pdf.setFillColor(245, 158, 11);
+      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 30, 15, 15, "F");
+      pdf.setTextColor(120, 53, 15);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(ribbonLabel, W / 2, ribbonY + 20, { align: "center" });
+
+      pdf.setFontSize(30);
+      pdf.setTextColor(120, 53, 15);
+      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 78, { align: "center" });
+      pdf.setFillColor(251, 191, 36);
+      pdf.rect(W / 2 - 44, ribbonY + 90, 88, 3, "F");
+
+      const imgSize = 110;
+      const imgX = W / 2 - imgSize / 2;
+      const imgY = ribbonY + 112;
+      try {
+        const img = await loadImage(mascot.image);
+        const cx = W / 2;
+        const cy = imgY + imgSize / 2;
+        const outerR = imgSize / 2 + 6;
+        pdf.setFillColor(255, 255, 255);
+        pdf.circle(cx, cy, outerR, "F");
+        pdf.setDrawColor(251, 191, 36);
+        pdf.setLineWidth(4);
+        pdf.circle(cx, cy, outerR, "S");
+
+        pdf.saveGraphicsState();
+        pdf.circle(cx, cy, imgSize / 2, null as any);
+        pdf.clip();
+        pdf.addImage(img, "PNG", imgX, imgY, imgSize, imgSize);
+        pdf.restoreGraphicsState();
+      } catch (imgErr) {
+        console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
+      }
+
+      pdf.setFontSize(24);
+      pdf.setTextColor(6, 78, 59);
+      pdf.text(activeEnfant?.pseudo || "", W / 2, imgY + imgSize + 46, { align: "center" });
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      pdf.setTextColor(120, 53, 15);
+      pdf.text("Tu as terminé avec succès tous les défis du", W / 2, imgY + imgSize + 78, { align: "center" });
+      pdf.setFont("helvetica", "bold");
+      pdf.text(tomeTitre || tomeSlug, W / 2, imgY + imgSize + 96, { align: "center" });
+
+      const medalY = imgY + imgSize + 140;
+      pdf.setFillColor(217, 119, 6);
+      pdf.circle(W / 2, medalY, 26, "F");
+      pdf.setFillColor(252, 211, 77);
+      pdf.circle(W / 2, medalY, 20, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(20);
+      pdf.setTextColor(120, 53, 15);
+      pdf.text("1", W / 2, medalY + 7, { align: "center" });
+
       const nom = (activeEnfant?.pseudo || "diplome").replace(/\s+/g, "-").toLowerCase();
       const blob = pdf.output("blob");
       setPdfUrl(URL.createObjectURL(blob));
@@ -196,7 +257,6 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
       </div>
 
       <div
-        ref={diplomaRef}
         className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden"
       >
         <div className="absolute top-2 left-2 text-2xl text-amber-500">⚜️</div>

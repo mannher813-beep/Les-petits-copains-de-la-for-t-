@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, Download, Sparkles, Lock, Loader2 } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
-import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 interface CertificatReussiteProps {
@@ -62,25 +61,30 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
     };
   }, [tomeSlug, enfantId]);
 
-  const diplomaRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>("");
   const [pdfError, setPdfError] = useState(false);
 
-  // Beaucoup de navigateurs mobiles bloquent silencieusement un téléchargement
-  // déclenché par le code (pdf.save()) si trop de temps s'est écoulé depuis le
-  // dernier vrai geste utilisateur — ce qui est le cas ici car html2canvas
-  // (surtout en scale:3) peut prendre une seconde ou plus. Résultat : le
-  // bouton tourne, le PDF est bien généré en mémoire, mais rien ne se
-  // télécharge, sans erreur visible.
-  //
-  // Solution fiable : on ne télécharge plus automatiquement à la fin de cette
-  // fonction. On génère le PDF en Blob et on affiche un vrai lien <a download>
-  // que la personne tape elle-même — ce second tap est un geste utilisateur
-  // frais que le navigateur ne bloque jamais.
+  // Charge l'image de la mascotte en mémoire (nécessaire pour jsPDF.addImage,
+  // qui a besoin d'un HTMLImageElement déjà chargé, pas juste d'une URL).
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+  // On dessine le diplôme directement avec les primitives de jsPDF (formes,
+  // couleurs, texte vectoriel) plutôt que de "photographier" le HTML avec
+  // html2canvas : cette dernière approche ne restituait ni les dégradés, ni
+  // les bordures, ni la police, ni même le cadrage de l'image (Tailwind v4
+  // n'est pas fiablement interprété par html2canvas). Dessiner nous-mêmes
+  // élimine ce problème à la racine et produit un PDF plus net et plus léger.
   const handleGenerate = async () => {
-    if (!isComplete || !diplomaRef.current) return;
+    if (!isComplete) return;
     setIsGeneratingPdf(true);
     setPdfError(false);
     if (pdfUrl) {
@@ -88,22 +92,92 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
       setPdfUrl(null);
     }
     try {
-      // Capture uniquement la carte du diplôme (pas toute la page) pour
-      // produire un vrai PDF du diplôme, et non une impression du site web.
-      const canvas = await html2canvas(diplomaRef.current, {
-        scale: 3,
-        backgroundColor: "#fef3c7",
-        useCORS: true
-      });
-      const imgData = canvas.toDataURL("image/png");
+      const W = 480;
+      const H = 640;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [W, H] });
 
-      // Format paysage adapté au ratio du diplôme.
-      const pdf = new jsPDF({
-        orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
-        unit: "px",
-        format: [canvas.width, canvas.height]
+      // Fond crème + bordure dorée arrondie
+      pdf.setFillColor(254, 243, 199); // amber-100
+      pdf.roundedRect(0, 0, W, H, 28, 28, "F");
+      pdf.setDrawColor(251, 191, 36); // amber-400
+      pdf.setLineWidth(7);
+      pdf.roundedRect(6, 6, W - 12, H - 12, 24, 24, "S");
+
+      // Petits ornements dorés dans les 4 coins
+      pdf.setFillColor(245, 158, 11); // amber-500
+      [[26, 26], [W - 26, 26], [26, H - 26], [W - 26, H - 26]].forEach(([cx, cy]) => {
+        pdf.circle(cx, cy, 5, "F");
       });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+
+      // Ruban "DIPLÔME DU TOME 1"
+      const ribbonW = 240;
+      const ribbonY = 44;
+      pdf.setFillColor(245, 158, 11);
+      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 30, 15, 15, "F");
+      pdf.setTextColor(120, 53, 15); // amber-950
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("DIPLÔME DU TOME 1", W / 2, ribbonY + 20, { align: "center" });
+
+      // FÉLICITATIONS !
+      pdf.setFontSize(30);
+      pdf.setTextColor(120, 53, 15);
+      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 78, { align: "center" });
+      pdf.setFillColor(251, 191, 36);
+      pdf.rect(W / 2 - 44, ribbonY + 90, 88, 3, "F");
+
+      // Portrait de la mascotte, dans un cadre rond doré
+      const imgSize = 110;
+      const imgX = W / 2 - imgSize / 2;
+      const imgY = ribbonY + 112;
+      try {
+        const img = await loadImage(mascot.image);
+        const cx = W / 2;
+        const cy = imgY + imgSize / 2;
+        const outerR = imgSize / 2 + 6;
+        pdf.setFillColor(255, 255, 255);
+        pdf.circle(cx, cy, outerR, "F");
+        pdf.setDrawColor(251, 191, 36);
+        pdf.setLineWidth(4);
+        pdf.circle(cx, cy, outerR, "S");
+
+        // jsPDF ne découpe pas nativement en cercle : on définit un cercle
+        // "invisible" (ni rempli ni tracé) juste avant clip(), qui devient
+        // alors le chemin de découpe pour l'image dessinée ensuite.
+        pdf.saveGraphicsState();
+        pdf.circle(cx, cy, imgSize / 2, null as any);
+        pdf.clip();
+        pdf.addImage(img, "PNG", imgX, imgY, imgSize, imgSize);
+        pdf.restoreGraphicsState();
+      } catch (imgErr) {
+        console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
+      }
+
+      // Prénom de l'enfant
+      pdf.setFontSize(24);
+      pdf.setTextColor(6, 78, 59); // emerald-900
+      pdf.text(enfantName, W / 2, imgY + imgSize + 46, { align: "center" });
+
+      // Texte de certification
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      pdf.setTextColor(120, 53, 15);
+      const line1 = "Tu as terminé avec succès tous les défis du";
+      pdf.text(line1, W / 2, imgY + imgSize + 78, { align: "center" });
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Tome 1 : La découverte de la forêt !", W / 2, imgY + imgSize + 96, { align: "center" });
+
+      // Médaille dorée
+      const medalY = imgY + imgSize + 140;
+      pdf.setFillColor(217, 119, 6); // amber-600 (contour)
+      pdf.circle(W / 2, medalY, 26, "F");
+      pdf.setFillColor(252, 211, 77); // amber-300 (intérieur)
+      pdf.circle(W / 2, medalY, 20, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(20);
+      pdf.setTextColor(120, 53, 15);
+      pdf.text("1", W / 2, medalY + 7, { align: "center" });
+
       const blob = pdf.output("blob");
       setPdfUrl(URL.createObjectURL(blob));
       setPdfFileName(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.pdf`);
@@ -135,7 +209,6 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
 
       {/* GOLDEN DIPLOMA CERTIFICATE (Matching Screen 9) */}
       <div
-        ref={diplomaRef}
         className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden"
       >
         {/* Decorative Corner Ornaments */}
