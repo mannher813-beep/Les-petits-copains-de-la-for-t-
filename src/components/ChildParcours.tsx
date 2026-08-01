@@ -134,7 +134,7 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
   const progressPercent = Math.round(((currentUnlockedStep - 1) / totalSteps) * 100);
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6 pb-28 space-y-4 animate-fade-in">
+    <div className="max-w-md mx-auto p-4 sm:p-6 pb-40 space-y-4 animate-fade-in">
       {/* TOP HEADER */}
       <div className="flex items-center justify-between pt-1">
         <button
@@ -313,30 +313,39 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
 
       </div>
 
-      {/* PROGRESS BAR — bloc indépendant, plus collé/superposé à la carte du monde */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-3.5 border-2 border-emerald-400 shadow-xl space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-500" />
-            <span className="text-xs font-black text-gray-800 dark:text-gray-100">
-              Aventure du Tome : {progressPercent}%
-            </span>
-          </div>
+      {/* Espace réservé pour ne pas laisser la barre fixe recouvrir le bas de la carte */}
+      <div className="h-2" />
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
-              <Gift className="w-4 h-4" />
-              <span>2 Coffres</span>
+      {/* PROGRESS BAR — fixe à l'écran (au-dessus de la nav du bas), toujours visible
+          pendant le défilement de la carte, indépendante de celle-ci. */}
+      <div
+        className="fixed left-0 right-0 z-40 px-4 sm:px-6 pointer-events-none"
+        style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="max-w-md mx-auto bg-white/97 dark:bg-gray-900/97 backdrop-blur-md rounded-2xl p-3.5 border-2 border-emerald-400 shadow-2xl space-y-2 pointer-events-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-500" />
+              <span className="text-xs font-black text-gray-800 dark:text-gray-100">
+                Aventure du Tome : {progressPercent}%
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                <Gift className="w-4 h-4" />
+                <span>2 Coffres</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* PROGRESS BAR */}
-        <div className="w-full h-3.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-emerald-300 p-0.5 relative">
-          <div
-            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 rounded-full transition-all duration-700"
-            style={{ width: `${progressPercent}%` }}
-          />
+          {/* PROGRESS BAR */}
+          <div className="w-full h-3.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-emerald-300 p-0.5 relative">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 rounded-full transition-all duration-700"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
       </div>
 

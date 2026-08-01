@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { QrCode, Camera, Keyboard, AlertTriangle, ArrowRight, Sparkles, CheckCircle2, RefreshCw, Upload, Image as ImageIcon, ShieldAlert, X, BookOpen, ExternalLink } from "lucide-react";
+import { QrCode, Camera, Keyboard, AlertTriangle, ArrowRight, RefreshCw, Upload, Image as ImageIcon, ShieldAlert, X, BookOpen, ExternalLink } from "lucide-react";
 import { multiTomeService } from "../services/multiTomeService";
 import { Language, getTranslation } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
@@ -114,14 +114,6 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({ onNavigate, lang }
       cancelAnimationFrame(animId);
     };
   }, [isScanning]);
-
-  // Sample demo tokens to help parents test immediately
-  const demoTokens = [
-    { code: "T1-C1", label: "Tome 1 - Chapitre 1 (La rencontre)" },
-    { code: "T1-C2", label: "Tome 1 - Chapitre 2 (Le chemin mystérieux)" },
-    { code: "T1-C3", label: "Tome 1 - Chapitre 3 (La rivière enchantée)" },
-    { code: "T2-C1", label: "Tome 2 - Chapitre 1 (La cabane)" }
-  ];
 
   const handleProcessToken = async (rawToken: string) => {
     if (!rawToken || loading) return;
@@ -559,33 +551,6 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({ onNavigate, lang }
             <span>Valider</span>
           </button>
         </form>
-      </div>
-
-      {/* QUICK DEMO TOKENS PANEL FOR TEST / DEMO */}
-      <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
-        <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>Accès rapide aux chapitres :</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {demoTokens.map((item) => (
-            <button
-              key={item.code}
-              onClick={() => handleProcessToken(item.code)}
-              className="flex items-center justify-between bg-white dark:bg-gray-800 border border-emerald-200 dark:border-gray-700 rounded-xl px-3 py-2 text-left hover:border-emerald-500 transition-colors shadow-2xs cursor-pointer"
-            >
-              <div>
-                <div className="text-xs font-extrabold text-emerald-900 dark:text-emerald-200">
-                  {item.code}
-                </div>
-                <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-                  {item.label}
-                </div>
-              </div>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* PLAYFUL CHILD MODAL FOR EXTERNAL LINKS OR NON-PLATFORM QR CODES */}
