@@ -159,9 +159,17 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
 
         {/* MASCOT & CHILD NAME */}
         <div className="space-y-2 py-2">
-          <div className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-xl relative">
+          <div
+            className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-xl relative overflow-hidden"
+            style={{ width: 80, height: 80 }}
+          >
             <Sparkles className="w-5 h-5 text-amber-500 absolute -top-1 -right-1 animate-spin" />
-            <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
+            <img
+              src={mascot.image}
+              alt={mascot.name}
+              className="w-full h-full object-contain"
+              style={{ width: "100%", height: "100%" }}
+            />
           </div>
 
           <h3 className="text-2xl font-black font-fun text-emerald-900">
