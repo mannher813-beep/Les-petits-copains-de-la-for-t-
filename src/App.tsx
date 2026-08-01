@@ -16,6 +16,7 @@ import { ChildClassement } from "./components/ChildClassement";
 import { DefiChapterView } from "./components/DefiChapterView";
 import { MaProgressionView } from "./components/MaProgressionView";
 import { CertificatReussite } from "./components/CertificatReussite";
+import { DiplomeVerificationView } from "./components/DiplomeVerificationView";
 import { MonProfilView } from "./components/MonProfilView";
 import { AdminDashboard } from "./components/AdminDashboard";
 
@@ -121,6 +122,11 @@ export default function App() {
   const isMotsRoute = currentPath.startsWith("/mots-magiques");
   const isClassementRoute = currentPath.startsWith("/classement");
   const isCertificatRoute = currentPath.startsWith("/certificat/");
+  // Route publique visée par le QR "VALIDATION FINALE" imprimé sur le
+  // diplôme papier (page 40). Contrairement à /certificat/:tomeSlug/:enfantId,
+  // elle ne contient jamais d'identifiant d'enfant : elle s'appuie sur le
+  // profil actif de l'appareil qui scanne.
+  const isVerificationRoute = currentPath.startsWith("/verification/");
   const isProgressionRoute = currentPath === "/progression";
   const isScanRoute = currentPath === "/scan";
   const isProfilRoute = currentPath === "/profil";
@@ -323,6 +329,20 @@ export default function App() {
               enfantId={enfantId}
               enfantName={activeEnfant?.pseudo || "Léo"}
               enfantAvatar={activeEnfant?.avatar || "leo"}
+              onNavigate={navigateTo}
+              lang={lang}
+            />
+          );
+        })()}
+
+        {/* 12bis. VÉRIFICATION D'AUTHENTICITÉ DU DIPLÔME (QR final imprimé) */}
+        {isVerificationRoute && (() => {
+          const parts = currentPath.split("/").filter(Boolean); // ["verification", "tome-slug"]
+          const tomeSlug = parts[1] || "tome-1";
+          return (
+            <DiplomeVerificationView
+              tomeSlug={tomeSlug}
+              activeEnfant={activeEnfant}
               onNavigate={navigateTo}
               lang={lang}
             />
