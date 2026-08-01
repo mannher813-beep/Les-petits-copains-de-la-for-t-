@@ -93,6 +93,24 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
       img.src = src;
     });
 
+  const renderCircularMascot = (img: HTMLImageElement, size: number): string => {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return canvas.toDataURL("image/png");
+  };
+
   // Dessin direct du diplôme dans le PDF (voir CertificatReussite.tsx pour le
   // détail de pourquoi on n'utilise plus html2canvas ici).
   const handleGenerate = async () => {
@@ -149,11 +167,8 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
         pdf.setLineWidth(4);
         pdf.circle(cx, cy, outerR, "S");
 
-        pdf.saveGraphicsState();
-        pdf.circle(cx, cy, imgSize / 2, null as any);
-        pdf.clip();
-        pdf.addImage(img, "PNG", imgX, imgY, imgSize, imgSize);
-        pdf.restoreGraphicsState();
+        const circularDataUrl = renderCircularMascot(img, imgSize * 2);
+        pdf.addImage(circularDataUrl, "PNG", imgX, imgY, imgSize, imgSize);
       } catch (imgErr) {
         console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
       }

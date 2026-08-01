@@ -77,6 +77,28 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
       img.src = src;
     });
 
+  // Découpe l'image en cercle nous-mêmes via un <canvas> (technique standard
+  // et fiable), au lieu de compter sur pdf.clip() qui s'est révélé imprévisible
+  // pour ce cas précis. Le cadrage imite "object-contain" : l'image entière
+  // reste visible, centrée, sans être étirée ni recadrée n'importe comment.
+  const renderCircularMascot = (img: HTMLImageElement, size: number): string => {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return canvas.toDataURL("image/png");
+  };
+
   // On dessine le diplôme directement avec les primitives de jsPDF (formes,
   // couleurs, texte vectoriel) plutôt que de "photographier" le HTML avec
   // html2canvas : cette dernière approche ne restituait ni les dégradés, ni
@@ -141,14 +163,8 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
         pdf.setLineWidth(4);
         pdf.circle(cx, cy, outerR, "S");
 
-        // jsPDF ne découpe pas nativement en cercle : on définit un cercle
-        // "invisible" (ni rempli ni tracé) juste avant clip(), qui devient
-        // alors le chemin de découpe pour l'image dessinée ensuite.
-        pdf.saveGraphicsState();
-        pdf.circle(cx, cy, imgSize / 2, null as any);
-        pdf.clip();
-        pdf.addImage(img, "PNG", imgX, imgY, imgSize, imgSize);
-        pdf.restoreGraphicsState();
+        const circularDataUrl = renderCircularMascot(img, imgSize * 2);
+        pdf.addImage(circularDataUrl, "PNG", imgX, imgY, imgSize, imgSize);
       } catch (imgErr) {
         console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
       }
