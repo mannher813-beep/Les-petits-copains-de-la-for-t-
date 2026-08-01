@@ -64,10 +64,29 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
 
   const diplomaRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>("");
+  const [pdfError, setPdfError] = useState(false);
 
-  const handleDownload = async () => {
+  // Beaucoup de navigateurs mobiles bloquent silencieusement un téléchargement
+  // déclenché par le code (pdf.save()) si trop de temps s'est écoulé depuis le
+  // dernier vrai geste utilisateur — ce qui est le cas ici car html2canvas
+  // (surtout en scale:3) peut prendre une seconde ou plus. Résultat : le
+  // bouton tourne, le PDF est bien généré en mémoire, mais rien ne se
+  // télécharge, sans erreur visible.
+  //
+  // Solution fiable : on ne télécharge plus automatiquement à la fin de cette
+  // fonction. On génère le PDF en Blob et on affiche un vrai lien <a download>
+  // que la personne tape elle-même — ce second tap est un geste utilisateur
+  // frais que le navigateur ne bloque jamais.
+  const handleGenerate = async () => {
     if (!isComplete || !diplomaRef.current) return;
     setIsGeneratingPdf(true);
+    setPdfError(false);
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
     try {
       // Capture uniquement la carte du diplôme (pas toute la page) pour
       // produire un vrai PDF du diplôme, et non une impression du site web.
@@ -85,9 +104,12 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
         format: [canvas.width, canvas.height]
       });
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.pdf`);
+      const blob = pdf.output("blob");
+      setPdfUrl(URL.createObjectURL(blob));
+      setPdfFileName(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.pdf`);
     } catch (e) {
       console.error("Erreur lors de la génération du PDF du diplôme", e);
+      setPdfError(true);
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -163,37 +185,58 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
 
       {/* ACTION BUTTONS (Télécharger) */}
       <div className="space-y-2.5 pt-2">
-        <button
-          onClick={handleDownload}
-          disabled={!isComplete || checking || isGeneratingPdf}
-          className={`w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
-            isComplete && !checking && !isGeneratingPdf
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-95 transition-transform"
-              : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700 cursor-not-allowed"
-          }`}
-        >
-          {checking ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Vérification des missions...</span>
-            </>
-          ) : isGeneratingPdf ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Génération du PDF...</span>
-            </>
-          ) : isComplete ? (
-            <>
-              <Download className="w-4 h-4" />
-              <span>Télécharger en PDF</span>
-            </>
-          ) : (
-            <>
-              <Lock className="w-4 h-4" />
-              <span>Termine toutes les missions pour débloquer</span>
-            </>
-          )}
-        </button>
+        {pdfUrl ? (
+          // Le PDF est prêt en mémoire (Blob). Ce lien natif <a download>,
+          // tapé directement par la personne, est un vrai geste utilisateur :
+          // il ne sera jamais bloqué par le navigateur, contrairement à un
+          // pdf.save() déclenché en fin de fonction async.
+          <a
+            href={pdfUrl}
+            download={pdfFileName}
+            className="w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform"
+          >
+            <Download className="w-4 h-4" />
+            <span>Appuie ici pour télécharger le PDF</span>
+          </a>
+        ) : (
+          <button
+            onClick={handleGenerate}
+            disabled={!isComplete || checking || isGeneratingPdf}
+            className={`w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
+              isComplete && !checking && !isGeneratingPdf
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-95 transition-transform"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700 cursor-not-allowed"
+            }`}
+          >
+            {checking ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Vérification des missions...</span>
+              </>
+            ) : isGeneratingPdf ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Génération du PDF...</span>
+              </>
+            ) : isComplete ? (
+              <>
+                <Download className="w-4 h-4" />
+                <span>Préparer le PDF</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Termine toutes les missions pour débloquer</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {pdfError && (
+          <p className="text-center text-[11px] font-bold text-red-500 px-2">
+            La génération du PDF a échoué. Réessaie, ou vérifie ta connexion.
+          </p>
+        )}
 
         {!checking && !isComplete && totalMissions > 0 && (
           <p className="text-center text-[11px] font-bold text-gray-500 dark:text-gray-400 px-2">
