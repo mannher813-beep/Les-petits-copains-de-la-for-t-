@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { Tome, Chapitre, Enfant, Progression } from "../types/multiTome";
 import { multiTomeService, normalizeText } from "../services/multiTomeService";
-import { ArrowLeft, Sparkles, Check, ArrowRight, Volume2, Coins, Trophy, Award, RefreshCw, Star, XCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, Check, ArrowRight, Volume2, Coins, Trophy, Award, RefreshCw, Star, XCircle, Timer } from "lucide-react";
 import { Language, getTranslation } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { AnimatedMascot } from "./AnimatedMascot";
@@ -35,6 +35,12 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   const [showCelebration, setShowCelebration] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
 
+  // Chronomètre de rapidité : démarre dès que la question s'affiche, s'arrête
+  // à la validation. Sert à classer les enfants par rapidité de réponse.
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
+  const [finalResponseTimeMs, setFinalResponseTimeMs] = useState<number | null>(null);
+
   const mascot = getMascot(activeEnfant?.avatar || "leo");
 
   useEffect(() => {
@@ -43,13 +49,31 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       setShowCelebration(false);
       setAttempted(false);
       setIsCorrect(false);
+      setElapsedMs(0);
+      setFinalResponseTimeMs(null);
+      setQuestionStartedAt(null);
 
       const res = await multiTomeService.getChapitreBySlugs(tomeSlug, chapitreSlug);
       setData(res); // null si introuvable — affiché comme une vraie erreur, pas masqué par un faux chapitre
       setLoading(false);
+      if (res) setQuestionStartedAt(Date.now());
     }
     load();
   }, [tomeSlug, chapitreSlug]);
+
+  // Tick du chronomètre pendant que la question est active (pas encore tentée)
+  useEffect(() => {
+    if (!questionStartedAt || attempted) return;
+    const interval = setInterval(() => {
+      setElapsedMs(Date.now() - questionStartedAt);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [questionStartedAt, attempted]);
+
+  const formatChrono = (ms: number) => {
+    const totalSeconds = ms / 1000;
+    return `${totalSeconds.toFixed(1)}s`;
+  };
 
   const triggerConfetti = () => {
     try {
@@ -109,6 +133,13 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       correct = Boolean(chapitre.choix && chapitre.choix[selectedChoice]?.correct);
     }
 
+    // Fige le chrono au moment précis de la validation (temps de réponse réel)
+    const responseTimeMs = questionStartedAt ? Date.now() - questionStartedAt : undefined;
+    if (responseTimeMs !== undefined) {
+      setElapsedMs(responseTimeMs);
+      setFinalResponseTimeMs(responseTimeMs);
+    }
+
     setAttempted(true);
     setIsCorrect(correct);
 
@@ -125,7 +156,8 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
           activeEnfant.id,
           chapitre.id,
           chapitre.points,
-          isFirstAttempt
+          isFirstAttempt,
+          isFirstAttempt ? responseTimeMs : undefined
         );
         setEarnedPoints((saved?.points_gagnes) ?? chapitre.points);
       }
@@ -182,10 +214,16 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
               <span>Tu as gagné {earnedPoints} points !</span>
             </div>
 
-            <div className="flex items-center justify-center gap-3 pt-1">
+            <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
               <span className="bg-amber-300 text-amber-950 px-3 py-1 rounded-full text-xs font-black shadow-xs">
                 + {earnedPoints} 🪙
               </span>
+              {finalResponseTimeMs !== null && (
+                <span className="flex items-center gap-1 bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 px-3 py-1 rounded-full text-xs font-black shadow-xs">
+                  <Timer className="w-3.5 h-3.5" />
+                  Répondu en {formatChrono(finalResponseTimeMs)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -230,6 +268,12 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
           <span>🪙</span>
           <span>{chapitre.points}</span>
         </div>
+      </div>
+
+      {/* CHRONOMÈTRE DE RAPIDITÉ */}
+      <div className="flex items-center justify-center gap-1.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 px-3 py-1.5 rounded-2xl text-xs font-black w-fit mx-auto">
+        <Timer className="w-3.5 h-3.5" />
+        <span>{formatChrono(elapsedMs)}</span>
       </div>
 
       {/* QUESTION CARD */}

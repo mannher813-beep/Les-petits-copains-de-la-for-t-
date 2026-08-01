@@ -62,6 +62,7 @@ export interface Progression {
   valide_le: string;
   points_gagnes: number;
   premiere_tentative: boolean;
+  temps_reponse_ms?: number; // Temps mis pour répondre au défi (chronométré côté client)
 }
 
 export interface LeaderboardEntry {
@@ -69,4 +70,6 @@ export interface LeaderboardEntry {
   total_points: number;
   chapitres_valides: number;
   rang: number;
+  chapitres_chronometres?: number; // Nb de défis pour lesquels un temps a été mesuré
+  temps_moyen_ms?: number;         // Temps moyen de réponse (classement "Vitesse")
 }

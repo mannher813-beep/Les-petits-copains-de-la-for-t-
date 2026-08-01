@@ -63,20 +63,44 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
 
   const completedChapIds = new Set(progressions.map((p) => p.chapitre_id));
 
-  // Determine current unlocked level (1..8)
-  const currentUnlockedStep = Math.min(completedChapIds.size + 1, 8);
+  // Nombre total d'étapes = nombre RÉEL de missions (chapitres) en base pour ce
+  // tome — la carte doit refléter le contenu de la base, plus une valeur figée à 8.
+  const totalSteps = Math.max(chapitres.length, 1);
 
-  // 8 S-Curved Node Positions (percentages & pixels)
-  const nodePositions = [
-    { x: 30, y: 70, label: "Clairière de départ", emoji: "🌲" },
-    { x: 72, y: 150, label: "Le Grand Chêne", emoji: "🌳" },
-    { x: 78, y: 240, label: "Le Barrage du Castor", emoji: "🦫" },
-    { x: 48, y: 320, label: "Ruisseau Enchanté", emoji: "🌊" },
-    { x: 22, y: 400, label: "Vallée des Champignons", emoji: "🍄" },
-    { x: 45, y: 485, label: "La Cabane Cachée", emoji: "🏡" },
-    { x: 75, y: 565, label: "Sentier des Étoiles", emoji: "✨" },
-    { x: 50, y: 645, label: "Le Sommet Magique", emoji: "🏰" }
-  ];
+  // Determine current unlocked level (1..totalSteps)
+  const currentUnlockedStep = Math.min(completedChapIds.size + 1, totalSteps);
+
+  const STEP_HEIGHT = 90;
+  const TOP_OFFSET = 70;
+  const BIOME_EMOJIS = ["🌲", "🌳", "🦫", "🌊", "🍄", "🏡", "✨", "🏰", "🦋", "🌸", "🦌", "🐿️"];
+
+  // Positions générées dynamiquement pour autant de noeuds que de missions
+  // réellement présentes en base (chemin en zigzag, pas une liste figée).
+  const nodePositions = Array.from({ length: totalSteps }).map((_, i) => {
+    const chap = chapitres[i];
+    const xWave = 50 + 26 * Math.sin(i * 1.05 + 0.5);
+    return {
+      x: Math.round(Math.max(15, Math.min(85, xWave))),
+      y: TOP_OFFSET + i * STEP_HEIGHT,
+      label: chap?.titre || `Chapitre ${i + 1}`,
+      emoji: BIOME_EMOJIS[i % BIOME_EMOJIS.length]
+    };
+  });
+
+  // Hauteur totale de la carte, calculée pour accueillir toutes les missions
+  const mapHeight = TOP_OFFSET + (totalSteps - 1) * STEP_HEIGHT + 160;
+
+  // Tracé du chemin reliant chaque mission, généré pour N noeuds
+  const roadPathD =
+    nodePositions.length > 1
+      ? `M ${nodePositions[0].x} ${nodePositions[0].y} ` +
+        nodePositions
+          .slice(1)
+          .map((p) => `L ${p.x} ${p.y}`)
+          .join(" ")
+      : nodePositions.length === 1
+      ? `M ${nodePositions[0].x} ${nodePositions[0].y} L ${nodePositions[0].x} ${nodePositions[0].y}`
+      : "";
 
   // Map world themes per tome
   const getWorldTheme = () => {
@@ -107,7 +131,6 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
       }
     : null;
 
-  const totalSteps = 8;
   const progressPercent = Math.round(((currentUnlockedStep - 1) / totalSteps) * 100);
 
   return (
@@ -161,41 +184,46 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
         })}
       </div>
 
-      {/* WORLD MAP CANVAS CONTAINER */}
-      <div className={`bg-gradient-to-b ${worldTheme.bg} rounded-3xl p-4 sm:p-6 border-4 ${worldTheme.border} shadow-2xl relative min-h-[730px] overflow-hidden`}>
+      {/* WORLD MAP CANVAS CONTAINER — hauteur dynamique selon le nombre réel de missions */}
+      <div
+        style={{ minHeight: `${mapHeight}px` }}
+        className={`bg-gradient-to-b ${worldTheme.bg} rounded-3xl p-4 sm:p-6 border-4 ${worldTheme.border} shadow-2xl relative overflow-hidden`}
+      >
         {/* PARCHMENT TEXTURE OVERLAY */}
         <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
 
         {/* FLOATING CLOUDS / PARTICLES DECORATION */}
         <div className="absolute top-4 left-3 text-3xl opacity-85 animate-pulse pointer-events-none">☁️</div>
         <div className="absolute top-12 right-6 text-3xl opacity-80 pointer-events-none">🌲</div>
-        <div className="absolute top-52 left-2 text-2xl opacity-80 pointer-events-none">🦋</div>
-        <div className="absolute top-80 right-4 text-3xl opacity-80 pointer-events-none">🍄</div>
-        <div className="absolute top-[430px] left-5 text-2xl opacity-80 pointer-events-none">🌸</div>
-        <div className="absolute top-[580px] right-8 text-3xl opacity-85 pointer-events-none">✨</div>
+        {mapHeight > 250 && <div className="absolute top-52 left-2 text-2xl opacity-80 pointer-events-none">🦋</div>}
+        {mapHeight > 350 && <div className="absolute top-80 right-4 text-3xl opacity-80 pointer-events-none">🍄</div>}
+        {mapHeight > 480 && <div className="absolute top-[430px] left-5 text-2xl opacity-80 pointer-events-none">🌸</div>}
+        {mapHeight > 620 && <div className="absolute top-[580px] right-8 text-3xl opacity-85 pointer-events-none">✨</div>}
         <div className="absolute bottom-16 left-4 text-3xl opacity-80 pointer-events-none">🌳</div>
 
-        {/* SVG SMOOTH WINDING ROAD PATH */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 730" preserveAspectRatio="none">
+        {/* SVG SMOOTH WINDING ROAD PATH — tracé calculé pour N missions réelles */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 100 ${mapHeight}`} preserveAspectRatio="none">
           {/* Path Shadow / Outer Border */}
           <path
-            d="M 30 70 Q 82 110 72 150 T 78 240 Q 48 280 48 320 T 22 400 Q 25 440 45 485 T 75 565 Q 60 605 50 645"
+            d={roadPathD}
             fill="none"
             stroke="rgba(0, 0, 0, 0.25)"
             strokeWidth="18"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           {/* Outer Road Base */}
           <path
-            d="M 30 70 Q 82 110 72 150 T 78 240 Q 48 280 48 320 T 22 400 Q 25 440 45 485 T 75 565 Q 60 605 50 645"
+            d={roadPathD}
             fill="none"
             stroke="#fef3c7"
             strokeWidth="14"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           {/* Inner Golden Dashed Line */}
           <path
-            d="M 30 70 Q 82 110 72 150 T 78 240 Q 48 280 48 320 T 22 400 Q 25 440 45 485 T 75 565 Q 60 605 50 645"
+            d={roadPathD}
             fill="none"
             stroke="#f59e0b"
             strokeWidth="6"
@@ -283,31 +311,32 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
           );
         })}
 
-        {/* BOTTOM PROGRESS CARD & REWARD MILESTONES */}
-        <div className="absolute bottom-3 left-3 right-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl p-3.5 border-2 border-emerald-400 shadow-2xl z-30 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-500" />
-              <span className="text-xs font-black text-gray-800 dark:text-gray-100">
-                Aventure du Tome : {progressPercent}%
-              </span>
-            </div>
+      </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
-                <Gift className="w-4 h-4" />
-                <span>2 Coffres</span>
-              </div>
-            </div>
+      {/* PROGRESS BAR — bloc indépendant, plus collé/superposé à la carte du monde */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-3.5 border-2 border-emerald-400 shadow-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Award className="w-5 h-5 text-amber-500" />
+            <span className="text-xs font-black text-gray-800 dark:text-gray-100">
+              Aventure du Tome : {progressPercent}%
+            </span>
           </div>
 
-          {/* PROGRESS BAR */}
-          <div className="w-full h-3.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-emerald-300 p-0.5 relative">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 rounded-full transition-all duration-700"
-              style={{ width: `${progressPercent}%` }}
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+              <Gift className="w-4 h-4" />
+              <span>2 Coffres</span>
+            </div>
           </div>
+        </div>
+
+        {/* PROGRESS BAR */}
+        <div className="w-full h-3.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-emerald-300 p-0.5 relative">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 rounded-full transition-all duration-700"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
       </div>
 

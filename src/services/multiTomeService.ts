@@ -102,7 +102,8 @@ function rowToProgression(row: any): Progression {
     chapitre_id: String(row.chapter_id),
     valide_le: row.validated_at,
     points_gagnes: row.points_earned,
-    premiere_tentative: row.first_attempt
+    premiere_tentative: row.first_attempt,
+    temps_reponse_ms: row.response_time_ms ?? undefined
   };
 }
 
@@ -386,7 +387,8 @@ class MultiTomeService {
     enfantId: string,
     chapitreId: string,
     points: number,
-    isFirstAttempt: boolean
+    isFirstAttempt: boolean,
+    responseTimeMs?: number
   ): Promise<Progression | null> {
     if (!isSupabaseConfigured() || !supabase) return null;
     if (Number.isNaN(Number(chapitreId))) {
@@ -411,7 +413,10 @@ class MultiTomeService {
         child_id: enfantId,
         chapter_id: Number(chapitreId),
         points_earned: pointsGagnes,
-        first_attempt: isFirstAttempt
+        first_attempt: isFirstAttempt,
+        response_time_ms: typeof responseTimeMs === "number" && Number.isFinite(responseTimeMs)
+          ? Math.round(responseTimeMs)
+          : null
       })
       .select()
       .single();
@@ -449,6 +454,37 @@ class MultiTomeService {
       },
       total_points: Number(row.total_points) || 0,
       chapitres_valides: Number(row.chapitres_valides) || 0,
+      rang: idx + 1
+    }));
+  }
+
+  // --- CLASSEMENT VITESSE (temps moyen de réponse, le plus rapide en tête) ---
+  // Utilise get_leaderboard_vitesse (RPC dédiée, même principe que get_leaderboard) :
+  // ne classe que les enfants ayant au moins un défi chronométré.
+  async getLeaderboardVitesse(trancheAge: TrancheAge | "toutes"): Promise<LeaderboardEntry[]> {
+    if (!isSupabaseConfigured() || !supabase) return [];
+    await ensureSession();
+
+    const { data, error } = await supabase.rpc("get_leaderboard_vitesse", {
+      p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
+    });
+    if (error) {
+      console.error("Erreur lecture classement vitesse (RPC get_leaderboard_vitesse):", error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any, idx: number) => ({
+      enfant: {
+        id: row.child_id,
+        pseudo: row.pseudo,
+        avatar: AVATAR_ID_TO_NAME[row.avatar_id] || "leo",
+        photo: row.photo_data_url || undefined,
+        tranche_age: row.age_band as TrancheAge
+      },
+      total_points: Number(row.total_points) || 0,
+      chapitres_valides: Number(row.chapitres_valides) || 0,
+      chapitres_chronometres: Number(row.chapitres_chronometres) || 0,
+      temps_moyen_ms: row.temps_moyen_ms != null ? Number(row.temps_moyen_ms) : undefined,
       rang: idx + 1
     }));
   }

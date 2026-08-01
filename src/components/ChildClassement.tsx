@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { Enfant, LeaderboardEntry } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
-import { ArrowLeft, Globe, Crown, Star, Trophy, Sparkles, Volume2, VolumeX, RefreshCw, Flame, PartyPopper } from "lucide-react";
+import { ArrowLeft, Globe, Crown, Star, Trophy, Sparkles, Volume2, VolumeX, RefreshCw, Flame, PartyPopper, Zap, Timer } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { soundManager } from "../utils/audioCelebration";
@@ -22,6 +22,13 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
   const [animStep, setAnimStep] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
   const [showAllAges, setShowAllAges] = useState(false);
+  // Deux classements possibles : par points (défaut) ou par rapidité de réponse
+  const [classementMode, setClassementMode] = useState<"points" | "vitesse">("points");
+
+  const formatTemps = (ms?: number) => {
+    if (ms === undefined || ms === null) return "—";
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
 
   // Trigger celebration sounds & confetti sequence
   const launchCelebrationSequence = () => {
@@ -76,13 +83,17 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
   };
 
   useEffect(() => {
-    multiTomeService
-      .getLeaderboard(showAllAges ? "toutes" : (enfant.tranche_age || "5-6"))
-      .then((data) => {
-        setEntries(data);
-        launchCelebrationSequence();
-      });
-  }, [enfant, showAllAges]);
+    const trancheAge = showAllAges ? "toutes" : (enfant.tranche_age || "5-6");
+    const request =
+      classementMode === "vitesse"
+        ? multiTomeService.getLeaderboardVitesse(trancheAge)
+        : multiTomeService.getLeaderboard(trancheAge);
+
+    request.then((data) => {
+      setEntries(data);
+      launchCelebrationSequence();
+    });
+  }, [enfant, showAllAges, classementMode]);
 
   const toggleSound = () => {
     const nextMuted = !isMuted;
@@ -134,6 +145,32 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             <span className="uppercase">{lang}</span>
           </span>
         </div>
+      </div>
+
+      {/* CLASSEMENT MODE TOGGLE : Points vs Rapidité */}
+      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setClassementMode("points")}
+          className={`flex-1 text-xs font-bold py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+            classementMode === "points"
+              ? "bg-white dark:bg-gray-700 text-amber-700 dark:text-amber-300 shadow-xs"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          <Trophy className="w-3.5 h-3.5" />
+          Par points
+        </button>
+        <button
+          onClick={() => setClassementMode("vitesse")}
+          className={`flex-1 text-xs font-bold py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+            classementMode === "vitesse"
+              ? "bg-white dark:bg-gray-700 text-sky-700 dark:text-sky-300 shadow-xs"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          Par rapidité
+        </button>
       </div>
 
       {/* AGE FILTER TOGGLE */}
@@ -202,7 +239,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             </div>
             <span className="text-xs font-bold truncate max-w-[70px]">{top2.enfant.pseudo}</span>
             <span className="text-[10px] text-amber-300 font-black flex items-center gap-0.5">
-              ⭐ {top2.total_points.toLocaleString()}
+              {classementMode === "vitesse" ? `⚡ ${formatTemps(top2.temps_moyen_ms)}` : `⭐ ${top2.total_points.toLocaleString()}`}
             </span>
             <div className="w-20 h-20 bg-slate-300/90 text-slate-900 font-black text-xl flex items-center justify-center rounded-t-2xl mt-2 shadow-inner border-t-2 border-white/30 relative">
               <span>2</span>
@@ -232,7 +269,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
               {top1.enfant.pseudo}
             </span>
             <span className="text-xs text-amber-200 font-black flex items-center gap-0.5 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-400/40 mt-0.5">
-              ⭐ {top1.total_points.toLocaleString()}
+              {classementMode === "vitesse" ? `⚡ ${formatTemps(top1.temps_moyen_ms)}` : `⭐ ${top1.total_points.toLocaleString()}`}
             </span>
 
             <div className="w-24 h-28 bg-gradient-to-b from-amber-400 via-amber-500 to-yellow-600 text-amber-950 font-black text-3xl flex flex-col items-center justify-center rounded-t-2xl mt-2 shadow-2xl border-t-2 border-amber-200 relative">
@@ -258,7 +295,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
             </div>
             <span className="text-xs font-bold truncate max-w-[70px]">{top3.enfant.pseudo}</span>
             <span className="text-[10px] text-amber-300 font-black flex items-center gap-0.5">
-              ⭐ {top3.total_points.toLocaleString()}
+              {classementMode === "vitesse" ? `⚡ ${formatTemps(top3.temps_moyen_ms)}` : `⭐ ${top3.total_points.toLocaleString()}`}
             </span>
             <div className="w-20 h-16 bg-amber-800/90 text-amber-100 font-black text-lg flex items-center justify-center rounded-t-2xl mt-2 shadow-inner border-t-2 border-amber-600">
               <span>3</span>
@@ -271,7 +308,7 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-4 border-2 border-amber-200 dark:border-gray-700 shadow-md space-y-2">
         <div className="flex items-center justify-between px-2 pb-1 border-b border-gray-100 dark:border-gray-700 text-[10px] font-black text-gray-400 uppercase tracking-wider">
           <span>Rang & Aventurier</span>
-          <span>Pommes d'Or</span>
+          <span>{classementMode === "vitesse" ? "Temps moyen" : "Pommes d'Or"}</span>
         </div>
 
         {listEntries.map((entry, index) => {
@@ -314,15 +351,24 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
                     )}
                   </span>
                   <span className="text-[10px] text-gray-400 font-bold">
-                    {entry.chapitres_valides} chapitres complétés
+                    {classementMode === "vitesse"
+                      ? `${entry.chapitres_chronometres ?? 0} défis chronométrés`
+                      : `${entry.chapitres_valides} chapitres complétés`}
                   </span>
                 </div>
               </div>
 
-              <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-amber-200 dark:border-gray-700 shadow-2xs">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                {entry.total_points.toLocaleString()}
-              </span>
+              {classementMode === "vitesse" ? (
+                <span className="text-xs font-black text-sky-700 dark:text-sky-300 flex items-center gap-1 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-sky-200 dark:border-gray-700 shadow-2xs">
+                  <Timer className="w-3.5 h-3.5" />
+                  {formatTemps(entry.temps_moyen_ms)}
+                </span>
+              ) : (
+                <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-xl border border-amber-200 dark:border-gray-700 shadow-2xs">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  {entry.total_points.toLocaleString()}
+                </span>
+              )}
             </div>
           );
         })}
