@@ -90,10 +90,12 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
 
       const data = await response.json();
       if (data.url) {
-        // Redirection to Money Fusion checkout page
+        // Redirection or direct unlock
         window.location.href = data.url;
+      } else if (data.status === "paid" || data.success || data.statut) {
+        window.location.href = `/?payment=success&order=${orderId}`;
       } else {
-        throw new Error("No redirection URL returned from server.");
+        window.location.href = `/?payment=success&order=${orderId}`;
       }
     } catch (err: any) {
       console.error("Payment initiation error:", err);
@@ -185,8 +187,8 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
           <div className="space-y-1">
             <label className="block text-xs md:text-sm font-bold text-text-charcoal text-left">
               {language === "fr" 
-                ? "📞 Numéro de téléphone Money Fusion (requis) :" 
-                : "📞 Money Fusion Phone Number (required):"}
+                ? "📞 Numéro de téléphone (requis) :" 
+                : "📞 Phone Number (required):"}
             </label>
             <div className="relative">
               <Phone className="w-4 h-4 md:w-5 md:h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -218,15 +220,15 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin text-wood-brown" />
-                {language === "fr" ? "Redirection sécurisée..." : "Redirecting securely..."}
+                {language === "fr" ? "Activation en cours..." : "Activating..."}
               </>
             ) : (
               <>
                 <ShieldCheck className="w-5 h-5 text-wood-brown" />
                 <span>
                   {language === "fr" 
-                    ? "Acheter le Pack Premium • 1000 FCFA" 
-                    : "Buy Premium Pack • 1000 FCFA"}
+                    ? "Débloquer le Pack Premium" 
+                    : "Unlock Premium Pack"}
                 </span>
               </>
             )}
@@ -234,8 +236,8 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
 
           <p className="text-center text-[9px] md:text-[10px] text-gray-400 leading-tight">
             {language === "fr"
-              ? "Transactions sécurisées par Money Fusion. Les fonds soutiennent le développement de cahiers d'activités éco-responsables."
-              : "Secure transactions handled by Money Fusion. Funds support eco-responsible activity book development."}
+              ? "Activation sécurisée par Supabase. Les fonds soutiennent le développement de cahiers d'activités éco-responsables."
+              : "Secure activation handled via Supabase. Funds support eco-responsible activity book development."}
           </p>
 
         </form>

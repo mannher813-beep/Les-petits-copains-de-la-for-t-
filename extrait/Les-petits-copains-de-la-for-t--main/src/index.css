@@ -1,0 +1,325 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@400;600;700&family=Fredoka+One&family=Short+Stack&family=Playfair+Display:wght@600;700&family=Dancing+Script:wght@600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html, body, #root {
+  background-color: #ffffff !important;
+  color: #1f2937;
+  min-height: 100vh;
+}
+
+html.dark, html.dark body, html.dark #root {
+  background-color: #111827 !important;
+  color: #f3f4f6;
+}
+
+@theme {
+  --font-sans: "Fredoka", "Comic Neue", "Comic Sans MS", cursive, sans-serif;
+  --font-handwriting: "Short Stack", cursive, sans-serif;
+  --font-fun: "Fredoka One", sans-serif;
+  --font-serif: "Georgia", "Cambria", serif;
+  
+  --color-forest: #5A7D51;
+  --color-forest-light: #7DA673;
+  --color-wood-brown: #8B5E3C;
+  --color-sun-yellow: #F4D35E;
+  --color-sky-blue: #A8DADC;
+  --color-berry-pink: #E98074;
+  --color-warm-cream: #F7F3E9;
+  --color-warm-linen: #F0EAD6;
+  --color-warm-border: #E2DCC8;
+  --color-text-charcoal: #4A443D;
+  
+  /* Retain mapping so existing element references switch dynamically */
+  --color-orange-friend: #8B5E3C;
+  --color-blue-friend: #A8DADC;
+  --color-yellow-friend: #F4D35E;
+  --color-rose-friend: #E98074;
+  --color-rouge-friend: #E98074;
+  --color-creme-friend: #F7F3E9;
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f8ff;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: #69b06c;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e7d46;
+}
+
+/* Print styling helpers & A4 page control */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  html, body, #root, .min-h-screen {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+
+  .book-print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 15mm 20mm 15mm !important;
+    margin: 0 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: #ffffff !important;
+    page-break-after: always !important;
+    break-after: always !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* --- ACTIVITY STYLE CLASS ENGINE --- */
+.exo {
+  border: 3.5px solid var(--color-warm-border);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 6px 15px rgba(139, 94, 60, 0.05);
+}
+
+.exo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.exo-num {
+  background: var(--color-forest);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 4px 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.exo-type {
+  font-size: 12px;
+  color: #7A7265;
+  background: var(--color-warm-cream);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.consigne {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-wood-brown);
+}
+
+.bubble {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--color-warm-cream);
+  border: 2px solid var(--color-warm-border);
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--color-text-charcoal);
+}
+
+.case-ecrire {
+  display: inline-block;
+  border-bottom: 3px dashed var(--color-wood-brown);
+  vertical-align: bottom;
+}
+
+.badge-cercle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 15px auto;
+  border: 5px solid var(--color-sun-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 15px rgba(244, 211, 94, 0.3);
+}
+
+.badge-nom {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: "Georgia", serif;
+  font-style: italic;
+}
+
+.note-histoire {
+  background: var(--color-warm-cream);
+  border: 2px dashed var(--color-warm-border);
+  border-radius: 16px;
+  padding: 12px 18px;
+  font-size: 15px;
+}
+
+.warm-organic-dots {
+  background-color: #F7F3E9;
+  background-image: radial-gradient(#E2DCC8 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
+/* --- FOREST NIGHT THEME --- */
+.dark {
+  --color-warm-cream: #141E13;
+  --color-warm-linen: #0F160E;
+  --color-warm-border: #2C3E29;
+  --color-text-charcoal: #E5E0D5;
+  --color-forest: #8BB883;
+  --color-forest-light: #A3CBA0;
+  --color-wood-brown: #E4A873;
+  --color-creme-friend: #141E13;
+  --color-orange-friend: #E4A873;
+  
+  background-color: #0F160E !important;
+  color: #E5E0D5 !important;
+}
+
+/* Core Interface Elements */
+.dark .bg-white {
+  background-color: #1A2519 !important;
+  color: #E5E0D5 !important;
+}
+
+.dark .bg-white\/90 {
+  background-color: rgba(26, 37, 25, 0.9) !important;
+}
+
+.dark .border-warm-border {
+  border-color: #2C3E29 !important;
+}
+
+.dark .text-gray-900, 
+.dark .text-gray-800, 
+.dark .text-text-charcoal {
+  color: #E5E0D5 !important;
+}
+
+.dark .text-gray-700 {
+  color: #D5D0C5 !important;
+}
+
+.dark .text-gray-600 {
+  color: #B5B0A5 !important;
+}
+
+.dark .text-gray-500 {
+  color: #959085 !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #121A11 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1A2519 !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: #1D2C1B !important;
+}
+
+.dark .bg-green-50 {
+  background-color: #172416 !important;
+}
+
+.dark .border-green-200 {
+  border-color: #2C3E29 !important;
+}
+
+.dark .warm-organic-dots {
+  background-color: #141E13 !important;
+  background-image: radial-gradient(#2C3E29 1.5px, transparent 1.5px) !important;
+}
+
+.dark .exo {
+  background: #1A2519 !important;
+  border-color: #2C3E29 !important;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Retain warm, soft eye-safe cream paper for book layout to keep activities drawings completely legible */
+.dark .book-print-page {
+  background: radial-gradient(circle, #FCFBF7 0%, #F5F1E5 100%) !important;
+  color: #4A443D !important;
+}
+
+.dark .book-print-page .text-gray-900,
+.dark .book-print-page .text-gray-800,
+.dark .book-print-page .text-gray-700,
+.dark .book-print-page .text-text-charcoal {
+  color: #4A443D !important;
+}
+
+.dark .book-print-page .text-gray-600 {
+  color: #5A544D !important;
+}
+
+.dark .book-print-page .text-gray-500 {
+  color: #6A645D !important;
+}
+
+.dark .book-print-page .bg-white {
+  background-color: #ffffff !important;
+  color: #4A443D !important;
+}
+
+.dark .book-print-page .bg-gray-50 {
+  background-color: #FAF8F2 !important;
+}
+
+.dark .book-print-page .bg-gray-100 {
+  background-color: #F5F1E5 !important;
+}
+
+.dark .book-print-page .bg-amber-50 {
+  background-color: #FDFBF7 !important;
+}
+
+.dark .book-print-page .bg-green-50 {
+  background-color: #F4FAF2 !important;
+}
+
+.dark .book-print-page .warm-organic-dots {
+  background-color: #F7F3E9 !important;
+  background-image: radial-gradient(#E2DCC8 1.5px, transparent 1.5px) !important;
+}
+
+.dark .book-print-page .exo {
+  background: #ffffff !important;
+  border-color: #E2DCC8 !important;
+  box-shadow: 0 6px 15px rgba(139, 94, 60, 0.05) !important;
+}
+

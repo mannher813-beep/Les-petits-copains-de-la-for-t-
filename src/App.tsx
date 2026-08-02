@@ -24,6 +24,7 @@ import { Enfant } from "./types/multiTome";
 import { multiTomeService } from "./services/multiTomeService";
 import { ensureSession } from "./lib/supabase";
 import { Language } from "./i18n/translations";
+import { backgroundMusic } from "./utils/backgroundMusic";
 
 export default function App() {
   // Splash Screen State
@@ -56,6 +57,13 @@ export default function App() {
         if (!activeEnfant || !enfants.some((e) => e.id === activeEnfant.id)) {
           setActiveEnfant(enfants[0]);
           localStorage.setItem("forest_active_enfant", JSON.stringify(enfants[0]));
+        } else {
+          // Sync existing activeEnfant with fresh data from database (e.g. updated avatar)
+          const updatedActive = enfants.find((e) => e.id === activeEnfant.id);
+          if (updatedActive) {
+            setActiveEnfant(updatedActive);
+            localStorage.setItem("forest_active_enfant", JSON.stringify(updatedActive));
+          }
         }
       } else {
         if (activeEnfant) {
@@ -67,7 +75,15 @@ export default function App() {
   }, []);
 
   // Language state (fr, en, es, de, it, pt)
-  const [lang, setLang] = useState<Language>("fr");
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = localStorage.getItem("forest_lang");
+    return (saved as Language) || "fr";
+  });
+
+  const handleSelectLang = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem("forest_lang", newLang);
+  };
 
   // Admin login status
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
@@ -132,6 +148,31 @@ export default function App() {
   const isProfilRoute = currentPath === "/profil";
   const isLandingRoute = currentPath === "/landing";
 
+  // Gestionnaire de musique de fond (générique de jeu éducatif)
+  // Coupé automatiquement sur l'écran de défi (isDefiRoute) pour préserver la concentration de l'enfant.
+  useEffect(() => {
+    if (isDefiRoute) {
+      backgroundMusic.setConcentrationMode(true);
+    } else {
+      backgroundMusic.setConcentrationMode(false);
+    }
+  }, [isDefiRoute, currentPath]);
+
+  // Démarre la musique de fond dès la première interaction utilisateur sur l'écran (politique de lecture auto)
+  useEffect(() => {
+    const handleGesture = () => {
+      if (!isDefiRoute && !backgroundMusic.getMuted()) {
+        backgroundMusic.start();
+      }
+    };
+    window.addEventListener("click", handleGesture, { once: true });
+    window.addEventListener("touchstart", handleGesture, { once: true });
+    return () => {
+      window.removeEventListener("click", handleGesture);
+      window.removeEventListener("touchstart", handleGesture);
+    };
+  }, [isDefiRoute]);
+
   return (
     <div className={`min-h-screen bg-white dark:bg-gray-900 font-sans text-gray-800 dark:text-gray-100 ${isDarkMode ? "dark" : ""}`}>
       <GlobalSvgSymbols />
@@ -153,7 +194,7 @@ export default function App() {
           isDarkMode={isDarkMode}
           onToggleDarkMode={toggleDarkMode}
           lang={lang}
-          onSelectLang={(l) => setLang(l)}
+          onSelectLang={handleSelectLang}
           isAdminLoggedIn={isAdminLoggedIn}
         />
       )}
@@ -165,7 +206,7 @@ export default function App() {
           <LandingView
             onNavigate={navigateTo}
             lang={lang}
-            onSelectLang={setLang}
+            onSelectLang={handleSelectLang}
             onContinueWithoutAccount={() => navigateTo("/parcours")}
           />
         )}
@@ -355,6 +396,7 @@ export default function App() {
             <MonProfilView
               enfant={activeEnfant}
               onNavigate={navigateTo}
+              onSelectEnfant={handleSelectEnfant}
               lang={lang}
             />
           ) : (

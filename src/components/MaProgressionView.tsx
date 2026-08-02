@@ -4,6 +4,7 @@ import { multiTomeService } from "../services/multiTomeService";
 import { ArrowLeft, Globe, Trophy, Target, Lock, Sparkles, Star } from "lucide-react";
 import { Language, getTranslation } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
+import { AnimatedMascot } from "./AnimatedMascot";
 
 interface MaProgressionViewProps {
   enfant: Enfant;
@@ -97,9 +98,9 @@ export const MaProgressionView: React.FC<MaProgressionViewProps> = ({
       </div>
 
       {/* CHILD PROFILE BANNER (Matching Screen 7) */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-5 text-white shadow-xl flex items-center gap-4 relative overflow-hidden">
-        <div className="w-16 h-16 rounded-2xl bg-white/20 p-1 border-2 border-white/30 shrink-0 shadow-md">
-          <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-5 text-white shadow-xl flex items-center gap-4 relative overflow-visible">
+        <div className="w-16 h-16 rounded-2xl bg-white/20 p-1 border-2 border-white/30 shrink-0 shadow-md relative overflow-visible">
+          <AnimatedMascot avatarId={enfant.avatar} size="md" popOutOfFrame={true} animateType="bounce" />
         </div>
 
         <div className="flex-1">

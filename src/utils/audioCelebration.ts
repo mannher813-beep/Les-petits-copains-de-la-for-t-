@@ -16,6 +16,7 @@ const SOUND_FILES = {
 
 class SoundManager {
   public isMuted: boolean = false;
+  private volume: number = 0.8; // Default 80%
   // Un pool de lecteurs par son permet de rejouer un même effet très
   // rapidement (plusieurs bonnes réponses d'affilée, etc.) sans qu'un appel
   // coupe le précédent.
@@ -27,8 +28,13 @@ class SoundManager {
       if (savedMute !== null) {
         this.isMuted = JSON.parse(savedMute);
       }
+      const savedVol = localStorage.getItem("forest_audio_volume");
+      if (savedVol !== null) {
+        this.volume = Math.max(0, Math.min(1, parseFloat(savedVol)));
+      }
     } catch {
       this.isMuted = false;
+      this.volume = 0.8;
     }
   }
 
@@ -39,8 +45,29 @@ class SoundManager {
     } catch {}
   }
 
+  public setVolume(vol: number) {
+    const clamped = Math.max(0, Math.min(1, vol));
+    this.volume = clamped;
+    try {
+      localStorage.setItem("forest_audio_volume", JSON.stringify(clamped));
+    } catch {}
+
+    if (clamped === 0) {
+      this.setMuted(true);
+    } else if (this.isMuted) {
+      this.isMuted = false;
+      try {
+        localStorage.setItem("forest_audio_muted", "false");
+      } catch {}
+    }
+  }
+
+  public getVolume(): number {
+    return this.volume;
+  }
+
   private play(key: keyof typeof SOUND_FILES, playbackRate: number = 1) {
-    if (this.isMuted) return;
+    if (this.isMuted || this.volume <= 0) return;
     try {
       let pool = this.pools[key];
       if (!pool) {
@@ -55,7 +82,7 @@ class SoundManager {
       }
       audio.currentTime = 0;
       audio.playbackRate = playbackRate;
-      audio.volume = 1;
+      audio.volume = Math.max(0, Math.min(1, this.volume));
       void audio.play().catch(() => {
         // Lecture bloquée (pas encore d'interaction utilisateur) — sans
         // conséquence, l'effet suivant retentera normalement.

@@ -34,20 +34,26 @@ export function ensureSession(): Promise<string | null> {
   if (!supabase) return Promise.resolve(null);
   if (!ensureSessionPromise) {
     ensureSessionPromise = (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) return session.user.id;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.user?.id) return data.session.user.id;
 
-      const { data, error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error(
-          "Impossible d'ouvrir une session anonyme Supabase. " +
-          "Vérifie que 'Allow anonymous sign-ins' est activé dans le dashboard Supabase.",
-          error
-        );
-        ensureSessionPromise = null; // permettre une nouvelle tentative plus tard
+        const { data: signData, error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.warn(
+            "Impossible d'ouvrir une session anonyme Supabase. " +
+            "Vérifie que 'Allow anonymous sign-ins' est activé dans le dashboard Supabase.",
+            error
+          );
+          ensureSessionPromise = null;
+          return null;
+        }
+        return signData.session?.user?.id ?? null;
+      } catch (err) {
+        console.warn("Supabase auth non disponible (mode hors-ligne):", err);
+        ensureSessionPromise = null;
         return null;
       }
-      return data.session?.user?.id ?? null;
     })();
   }
   return ensureSessionPromise;
@@ -55,6 +61,11 @@ export function ensureSession(): Promise<string | null> {
 
 export async function getCurrentUserId(): Promise<string | null> {
   if (!supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user?.id ?? (await ensureSession());
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id ?? (await ensureSession());
+  } catch (err) {
+    console.warn("Erreur lecture utilisateur courant:", err);
+    return null;
+  }
 }

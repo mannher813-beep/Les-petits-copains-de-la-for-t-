@@ -68,24 +68,26 @@ export const ChoisisTonProfilView: React.FC<ChoisisTonProfilViewProps> = ({
                   }}
                   className="group flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95"
                 >
-                  <div className="relative">
+                  <div className="relative overflow-visible">
                     <div
-                      className={`w-20 h-20 sm:w-22 sm:h-22 rounded-full p-1 border-4 transition-all shadow-lg flex items-center justify-center bg-amber-50 dark:bg-gray-800 ${
+                      className={`w-20 h-20 sm:w-22 sm:h-22 rounded-full p-1 border-4 transition-all shadow-xl flex items-center justify-center bg-amber-50 dark:bg-gray-800 overflow-visible ${
                         isSelected
                           ? "border-emerald-500 ring-4 ring-emerald-500/20 scale-105"
                           : "border-gray-200 dark:border-gray-700 group-hover:border-emerald-300"
                       }`}
                     >
-                      {enfant.photo ? (
-                        <img src={enfant.photo} alt={enfant.pseudo} className="w-full h-full object-cover rounded-full" />
-                      ) : (
-                        <AnimatedMascot mascot={mascot} size="lg" animateType={isSelected ? "bounce" : "float"} />
-                      )}
+                      <AnimatedMascot
+                        avatarId={enfant.avatar}
+                        mascot={mascot}
+                        size="lg"
+                        popOutOfFrame={true}
+                        animateType={isSelected ? "bounce" : "float"}
+                      />
                     </div>
 
                     {/* Selected Checkmark Badge */}
                     {isSelected && (
-                      <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-md">
+                      <div className="absolute -top-1 -right-1 z-20 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-md">
                         <Check className="w-4 h-4 stroke-[3]" />
                       </div>
                     )}

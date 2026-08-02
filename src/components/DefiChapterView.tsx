@@ -29,7 +29,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   const [loading, setLoading] = useState(true);
 
   // Interaction State
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(0); // Default castor selected
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(null); // Never preselect answer in advance
   const [attempted, setAttempted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -49,6 +49,7 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       setShowCelebration(false);
       setAttempted(false);
       setIsCorrect(false);
+      setSelectedChoice(null); // Never preselect answer
       setElapsedMs(0);
       setFinalResponseTimeMs(null);
       setQuestionStartedAt(null);
@@ -120,17 +121,36 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
   }
   const { chapitre } = data;
 
-  const choiceAnimals = [
-    { name: "Le castor", icon: "🦫", bg: "bg-amber-100" },
-    { name: "Le renard", icon: "🦊", bg: "bg-orange-100" },
-    { name: "Le cerf", icon: "🦌", bg: "bg-emerald-100" },
-    { name: "Le lapin", icon: "🐰", bg: "bg-rose-100" }
+  const choiceMascots = [
+    { id: "leo", name: "Léo le renard", bg: "bg-orange-100 dark:bg-orange-950/40" },
+    { id: "nina", name: "Nina la souris", bg: "bg-purple-100 dark:bg-purple-950/40" },
+    { id: "tom", name: "Tom le hérisson", bg: "bg-amber-100 dark:bg-amber-950/40" },
+    { id: "zaza", name: "Zaza l'oiseau", bg: "bg-sky-100 dark:bg-sky-950/40" }
   ];
 
   const handleValidate = async () => {
+    if (selectedChoice === null) return;
+
+    const choicesList = (chapitre.choix && chapitre.choix.length > 0)
+      ? chapitre.choix
+      : [
+          { label: "Léo le renard", correct: true, avatar: "leo" },
+          { label: "Nina la souris", correct: false, avatar: "nina" },
+          { label: "Tom le hérisson", correct: false, avatar: "tom" },
+          { label: "Zaza l'oiseau", correct: false, avatar: "zaza" }
+        ];
+
     let correct = false;
-    if (chapitre.type_reponse === "choix_multiple" && selectedChoice !== null) {
-      correct = Boolean(chapitre.choix && chapitre.choix[selectedChoice]?.correct);
+    const choiceItem = choicesList[selectedChoice];
+    if (choiceItem) {
+      if (typeof choiceItem.correct === "boolean") {
+        correct = choiceItem.correct;
+      } else if (chapitre.reponse_attendue) {
+        const selLabel = choiceItem.label || choiceItem.textFr || choiceItem.name || "";
+        correct = normalizeText(selLabel) === normalizeText(chapitre.reponse_attendue);
+      } else {
+        correct = (selectedChoice === 0);
+      }
     }
 
     // Fige le chrono au moment précis de la validation (temps de réponse réel)
@@ -290,53 +310,183 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
         </h2>
       </div>
 
-      {/* 4 ANIMAL CHOICE CARDS GRID */}
-      <div className="grid grid-cols-2 gap-3">
-        {(chapitre.choix || choiceAnimals).map((choice: any, idx: number) => {
-          const isSelected = selectedChoice === idx;
-          const animal = choiceAnimals[idx % choiceAnimals.length];
+      {/* 4 3D ANIMATED MASCOT CHOICE CARDS GRID */}
+      {(() => {
+        const choicesList = (chapitre.choix && chapitre.choix.length > 0)
+          ? chapitre.choix
+          : [
+              { label: "Léo le renard", correct: true, avatar: "leo" },
+              { label: "Nina la souris", correct: false, avatar: "nina" },
+              { label: "Tom le hérisson", correct: false, avatar: "tom" },
+              { label: "Zaza l'oiseau", correct: false, avatar: "zaza" }
+            ];
 
-          return (
-            <button
-              key={idx}
-              onClick={() => {
-                soundManager.playTapSound();
-                setSelectedChoice(idx);
-              }}
-              className={`relative rounded-3xl p-4 border-4 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer shadow-md ${
-                isSelected
-                  ? "bg-emerald-50 border-emerald-500 ring-4 ring-emerald-500/20 scale-102"
-                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-emerald-300"
-              }`}
-            >
-              <div className={`w-16 h-16 rounded-2xl ${animal.bg} flex items-center justify-center text-4xl shadow-inner border border-black/5`}>
-                {animal.icon}
-              </div>
+        return (
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            {choicesList.map((choice: any, idx: number) => {
+              const isSelected = selectedChoice === idx;
+              const mascotChoice = choiceMascots[idx % choiceMascots.length];
+              const avatarId = choice.avatar || mascotChoice.id;
 
-              <span className="text-xs font-extrabold text-gray-800 dark:text-gray-100">
-                {choice.label || animal.name}
-              </span>
+              // Check if this choice is intrinsically the correct one
+              let isChoiceCorrect = false;
+              if (typeof choice.correct === "boolean") {
+                isChoiceCorrect = choice.correct;
+              } else if (chapitre.reponse_attendue) {
+                const selLabel = choice.label || choice.textFr || choice.name || "";
+                isChoiceCorrect = normalizeText(selLabel) === normalizeText(chapitre.reponse_attendue);
+              } else {
+                isChoiceCorrect = (idx === 0);
+              }
 
-              {/* CHECKMARK BADGE IF SELECTED */}
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                  <Check className="w-4 h-4 stroke-[3]" />
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              let cardStyle = "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-amber-300";
+              let badge = null;
+
+              if (!attempted) {
+                if (isSelected) {
+                  cardStyle = "bg-amber-50 dark:bg-amber-950/40 border-amber-400 ring-4 ring-amber-400/30 scale-102";
+                  badge = (
+                    <div className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                  );
+                }
+              } else {
+                // Evaluation done
+                if (isSelected) {
+                  if (isCorrect) {
+                    // Correct answer chosen -> Green
+                    cardStyle = "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 ring-4 ring-emerald-500/40 scale-102";
+                    badge = (
+                      <div className="absolute top-2 right-2 z-20 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Bonne !</span>
+                      </div>
+                    );
+                  } else {
+                    // Wrong answer chosen -> Red
+                    cardStyle = "bg-red-50 dark:bg-red-950/60 border-red-500 ring-4 ring-red-500/40 scale-102 animate-shake";
+                    badge = (
+                      <div className="absolute top-2 right-2 z-20 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md">
+                        <XCircle className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Faux !</span>
+                      </div>
+                    );
+                  }
+                } else if (isChoiceCorrect) {
+                  // Show true correct choice in Green
+                  cardStyle = "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-400 ring-2 ring-emerald-400/20";
+                  badge = (
+                    <div className="absolute top-2 right-2 z-20 bg-emerald-600 text-white px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Correcte</span>
+                    </div>
+                  );
+                } else {
+                  cardStyle = "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-60";
+                }
+              }
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={attempted}
+                  onClick={() => {
+                    if (attempted) return;
+                    soundManager.playTapSound();
+                    setSelectedChoice(idx);
+                  }}
+                  className={`relative rounded-3xl p-4 border-4 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer shadow-md overflow-visible ${cardStyle}`}
+                >
+                  {/* Pop-Out 3D Mascot Avatar Container */}
+                  <div className={`w-18 h-18 rounded-2xl ${mascotChoice.bg} flex items-center justify-center overflow-visible border-2 border-amber-200 dark:border-gray-600 shadow-inner relative mt-1`}>
+                    <AnimatedMascot
+                      avatarId={avatarId}
+                      size="md"
+                      popOutOfFrame={true}
+                      animateType={isSelected ? (attempted ? (isCorrect ? "celebrate" : "shake") : "bounce") : "float"}
+                    />
+                  </div>
+
+                  <span className="text-xs font-extrabold text-gray-800 dark:text-gray-100 text-center">
+                    {choice.label || choice.textFr || choice.textEn || mascotChoice.name}
+                  </span>
+
+                  {badge}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* FEEDBACK BANNER IF WRONG ANSWER */}
+      {attempted && !isCorrect && (
+        <div className="bg-red-100 dark:bg-red-950/80 border-2 border-red-300 dark:border-red-800 rounded-2xl p-4 text-center space-y-2 animate-bounce-short">
+          <div className="flex items-center justify-center gap-2 text-red-700 dark:text-red-300 font-black text-sm">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span>Oups ! Ce n'est pas la bonne réponse.</span>
+          </div>
+          <p className="text-xs text-red-600 dark:text-red-300 font-bold">
+            La réponse encadrée en vert est la bonne. Tu peux réinstaller ton choix et réessayer !
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playTapSound();
+              setAttempted(false);
+              setIsCorrect(false);
+              setSelectedChoice(null);
+            }}
+            className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-md flex items-center justify-center gap-2 mx-auto active:scale-95 transition-transform cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Réessayer</span>
+          </button>
+        </div>
+      )}
 
       {/* SUIVANT / VALIDER BUTTON */}
       <div className="pt-2">
-        <button
-          onClick={handleValidate}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl shadow-xl shadow-emerald-600/30 text-base active:scale-95 transition-all flex items-center justify-center gap-2"
-        >
-          <span>Suivant</span>
-          <ArrowRight className="w-5 h-5" />
-        </button>
+        {!attempted ? (
+          <button
+            type="button"
+            disabled={selectedChoice === null}
+            onClick={handleValidate}
+            className={`w-full font-extrabold py-4 rounded-2xl shadow-xl text-base transition-all flex items-center justify-center gap-2 ${
+              selectedChoice !== null
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 active:scale-95 cursor-pointer"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none"
+            }`}
+          >
+            <span>{selectedChoice !== null ? "Valider ma réponse" : "Choisis une réponse"}</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        ) : isCorrect ? (
+          <button
+            type="button"
+            onClick={() => setShowCelebration(true)}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl shadow-xl shadow-emerald-600/30 text-base active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Voir mon résultat</span>
+            <Sparkles className="w-5 h-5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playTapSound();
+              setAttempted(false);
+              setIsCorrect(false);
+              setSelectedChoice(null);
+            }}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-2xl shadow-xl shadow-amber-500/30 text-base active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span>Réessayer</span>
+          </button>
+        )}
       </div>
     </div>
   );

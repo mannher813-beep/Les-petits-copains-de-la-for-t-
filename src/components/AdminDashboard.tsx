@@ -270,10 +270,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 p-4 rounded-3xl">
             <h3 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-xs uppercase mb-1">
-              Statut MoneyFusion Payment Gateway
+              Statut Base de Données & Accès Supabase
             </h3>
             <p className="text-xs text-emerald-700 dark:text-emerald-300">
-              API Webhook opérationnel (`/api/moneyfusion/webhook`). Prêt pour les achats de tomes imprimés.
+              Synchronisation Supabase opérationnelle. Gestion directe des accès et profils enfants.
             </p>
           </div>
         </div>

@@ -1,0 +1,1994 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from "react";
+import { BookData, UserProgress } from "../types";
+import { DrawingCanvas } from "./DrawingCanvas";
+import { AppleCounter } from "./AppleCounter";
+import { StickerPalette, STICKERS_LIST } from "./StickerPalette";
+import { soundManager } from "../utils/audioCelebration";
+import coverEn from "../assets/images/forest_friends_pwa_icon_1784212488830.jpg";
+import coverFr from "../assets/images/forest_friends_pwa_icon_1784283197982.jpg";
+import { 
+  CheckCircle, 
+  HelpCircle, 
+  Volume2, 
+  VolumeX, 
+  BookOpen, 
+  ArrowLeft, 
+  ArrowRight,
+  Sparkles,
+  Trophy,
+  Undo,
+  Moon,
+  Sun
+} from "lucide-react";
+
+const getCharacterViewBox = (char: string): string => {
+  const c = char.toLowerCase();
+  if (c === "tom" || c === "darina") return "0 0 130 145";
+  if (c === "zaza" || c === "lana") return "0 0 110 145";
+  return "0 0 120 150"; // leo, nina, etc.
+};
+
+const getStoryInstructionText = (bookId: number, chapId: number, lang: "fr" | "en"): string => {
+  if (bookId === 1) {
+    if (chapId === 1) return lang === "fr" ? "Dis bonjour bien fort à tes nouveaux amis et tourne la page !" : "Say hello loudly to your new friends and turn the page!";
+    if (chapId === 2) return lang === "fr" ? "Fais un clin d'œil complice à Nina pour lui montrer que tu es prêt, puis tourne la page !" : "Wink at Nina to show her you're ready, then turn the page!";
+    if (chapId === 3) return lang === "fr" ? "Récite la formule secrète 'Cui-cui !' avec Lana, puis prépare-toi à lire !" : "Say the secret formula 'Tweet-tweet!' with Lana, then get ready to read!";
+    if (chapId === 4) return lang === "fr" ? "Prépare tes doigts pour compter avec Darina, puis tourne la page !" : "Get your fingers ready to count with Darina, then turn the page!";
+    return lang === "fr" ? "Mets ton plus beau chapeau de fête imaginaire et prépare-toi pour le gâteau !" : "Put on your best imaginary party hat and get ready for the cake!";
+  }
+  if (bookId === 2) {
+    if (chapId === 1) return lang === "fr" ? "Prends ta règle imaginaire et prépare-toi à dessiner les plans de la cabane !" : "Grab your imaginary ruler and get ready to draw the treehouse plans!";
+    if (chapId === 2) return lang === "fr" ? "Fais semblant de scier du bois : 'Cric-crac !' puis tourne la page !" : "Pretend to saw some wood: 'Crick-crack!' then turn the page!";
+    if (chapId === 3) return lang === "fr" ? "Plie une lettre magique en papier dans tes mains, puis tourne la page !" : "Fold a magical paper letter in your hands, then turn the page!";
+    if (chapId === 4) return lang === "fr" ? "Fais semblant de grimper à l'échelle barreau par barreau, puis tourne la page !" : "Pretend to climb the ladder rung by rung, then turn the page!";
+    return lang === "fr" ? "Gonfle un ballon imaginaire très fort et fais-le éclater : 'Pouf !' pour lancer la fête !" : "Blow up an imaginary balloon really big and pop it: 'Pop!' to start the party!";
+  }
+  if (bookId === 3) {
+    if (chapId === 1) return lang === "fr" ? "Ouvre de grands yeux de détective pour déchiffrer la carte secrète !" : "Open your big detective eyes to decode the secret map!";
+    if (chapId === 2) return lang === "fr" ? "Fais de grands bonds de grenouille sur place pour traverser le ruisseau !" : "Take big frog leaps in place to cross the stream!";
+    if (chapId === 3) return lang === "fr" ? "Suis les empreintes de pas invisibles sur le sol de ta chambre !" : "Follow the invisible footprints on your room's floor!";
+    if (chapId === 4) return lang === "fr" ? "Fais semblant d'allumer une lanterne magique pour éclairer la grotte !" : "Pretend to light a magic lantern to light up the cave!";
+    return lang === "fr" ? "Fais tourner la clé en or dans la serrure imaginaire : 'Clic-clac !' pour ouvrir le coffre !" : "Turn the golden key in the imaginary lock: 'Click-clack!' to open the chest!";
+  }
+  if (bookId === 4) {
+    if (chapId === 1) return lang === "fr" ? "Pointe le doigt vers le ciel et cherche l'étoile filante la plus brillante !" : "Point your finger to the sky and search for the brightest shooting star!";
+    if (chapId === 2) return lang === "fr" ? "Fais danser tes doigts comme des lucioles lumineuses autour de toi !" : "Make your fingers dance like glowing fireflies all around you!";
+    if (chapId === 3) return lang === "fr" ? "Chuchote doucement pour ne pas effrayer le brouillard magique du lac !" : "Whisper softly so you don't scare away the lake's magic mist!";
+    if (chapId === 4) return lang === "fr" ? "Frotte tes mains pour réchauffer le cristal de l'étoile tombée au sol !" : "Rub your hands to warm up the crystal of the star that fell to earth!";
+    return lang === "fr" ? "Ferme les yeux très fort, fais ton plus beau vœu pour la forêt, puis tourne la page !" : "Close your eyes tight, make your best wish for the forest, then turn the page!";
+  }
+  if (bookId === 5) {
+    if (chapId === 1) return lang === "fr" ? "Fais semblant de cueillir de délicieuses baies juteuses et mets-les dans ton panier !" : "Pretend to gather delicious juicy berries and put them in your basket!";
+    if (chapId === 2) return lang === "fr" ? "Fais semblant de mélanger la pâte à tarte magique dans un grand bol !" : "Pretend to stir the magic pie batter in a large bowl!";
+    if (chapId === 3) return lang === "fr" ? "Secoue une nappe imaginaire pour l'étendre bien droite sur l'herbe !" : "Shake an imaginary picnic blanket to spread it straight on the grass!";
+    if (chapId === 4) return lang === "fr" ? "Dis bonjour très gentiment au petit hérisson timide qui cache son nez !" : "Say hello very gently to the shy little hedgehog hiding his nose!";
+    return lang === "fr" ? "Fais semblant de croquer dans une délicieuse part de tarte magique !" : "Pretend to take a big bite out of a delicious slice of magic pie!";
+  }
+  if (bookId === 6) {
+    if (chapId === 1) return lang === "fr" ? "Fais tourner tes bras pour faire pédaler le sous-marin jaune sous l'eau !" : "Spin your arms to pedal the yellow submarine underwater!";
+    if (chapId === 2) return lang === "fr" ? "Fais des bulles avec ta bouche : 'Bloup, bloup !' comme un petit poisson !" : "Blow bubbles with your mouth: 'Bloop, bloop!' like a little fish!";
+    if (chapId === 3) return lang === "fr" ? "Tape dans tes mains pour suivre le rythme entraînant de la pieuvre !" : "Clap your hands to follow the catchy rhythm of the octopus!";
+    if (chapId === 4) return lang === "fr" ? "Imagine une perle dorée qui brille au creux de tes mains !" : "Imagine a golden pearl glowing in the palms of your hands!";
+    return lang === "fr" ? "Agite les mains pour saluer les mouettes blanches à la surface !" : "Wave your hands to greet the white seagulls at the surface!";
+  }
+  return "";
+};
+
+const renderChapterCoverIllustration = (bookId: number, chapId: number) => {
+  if (bookId === 1) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-24 h-24 absolute left-10 bottom-6"><use href="#d-tree" /></svg>
+          <svg className="w-24 h-32 absolute right-8 bottom-6"><use href="#d-sapin" /></svg>
+          <svg className="w-32 h-40 z-10" viewBox="0 0 120 150">
+            <use href="#c-leo" xlinkHref="#c-leo" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-24 h-24 absolute left-8 bottom-6"><use href="#d-tree" /></svg>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M50,180 Q150,130 250,160 T350,110" fill="none" stroke="#e08a2e" strokeWidth="12" strokeLinecap="round"/>
+          </svg>
+          <svg className="w-28 h-36 z-10 mr-12" viewBox="0 0 120 150">
+            <use href="#c-nina" xlinkHref="#c-nina" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-x-0 bottom-0 h-16 w-full" viewBox="0 0 400 100">
+            <path d="M0,50 Q100,20 200,50 T400,50 L400,100 L0,100 Z" fill="#58b7e8" />
+          </svg>
+          <svg className="w-24 h-32 absolute left-12 bottom-12" viewBox="0 0 130 145">
+            <use href="#c-tom" xlinkHref="#c-tom" />
+          </svg>
+          <svg className="w-24 h-32 absolute right-12 bottom-12" viewBox="0 0 110 145">
+            <use href="#c-zaza" xlinkHref="#c-zaza" />
+          </svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-16 h-16 absolute left-16 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-24 h-24 absolute left-24 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-20 h-20 absolute right-24 bottom-6"><use href="#d-champi" /></svg>
+          <svg className="w-24 h-32 z-10" viewBox="0 0 130 145">
+            <use href="#c-tom" xlinkHref="#c-tom" />
+          </svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <svg className="absolute top-0 inset-x-0 w-full h-12" viewBox="0 0 400 60">
+          <path d="M10,10 Q200,40 390,10" fill="none" stroke="#b0790a" strokeWidth="2"/>
+          <polygon points="50,14 70,14 60,35" fill="#e05a4e"/>
+          <polygon points="120,18 140,18 130,39" fill="#ffd23f"/>
+          <polygon points="190,20 210,20 200,41" fill="#58b7e8"/>
+          <polygon points="260,18 280,18 270,39" fill="#5cae5f"/>
+          <polygon points="330,14 350,14 340,35" fill="#f6a8c4"/>
+        </svg>
+        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 2) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-44 h-28 bg-sky-600 border-4 border-white rounded-xl shadow-md p-2 flex flex-col justify-between mb-2">
+            <div className="grid grid-cols-6 gap-1 h-16 opacity-35">
+              {[...Array(12)].map((_, i) => <div key={i} className="border border-white/50" />)}
+            </div>
+            <div className="text-[10px] text-white font-mono text-left font-bold">CABANE PLAN v1.2</div>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-20 h-20 absolute left-8 bottom-6"><use href="#d-sapin" /></svg>
+          <g className="absolute bottom-6 left-28 flex flex-col gap-1">
+            <rect width="70" height="10" fill="#c08552" rx="2" stroke="#5c3d2e" strokeWidth="1"/>
+            <rect width="70" height="10" fill="#d4a373" rx="2" stroke="#5c3d2e" strokeWidth="1" className="ml-2"/>
+            <rect width="70" height="10" fill="#c08552" rx="2" stroke="#5c3d2e" strokeWidth="1" className="ml-1"/>
+          </g>
+          <svg className="w-24 h-30 z-10 ml-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-32 h-20 bg-amber-50 border-2 border-amber-800 rounded-lg shadow p-2 relative transform -rotate-6 mb-4 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-red-600 border-2 border-amber-100 flex items-center justify-center text-white text-[8px] font-bold">♥</div>
+            <div className="absolute inset-0 border-2 border-dashed border-amber-800/20 m-1 rounded" />
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute right-12 top-0 h-full w-12" viewBox="0 0 40 200">
+            <line x1="10" y1="0" x2="10" y2="200" stroke="#a8713f" strokeWidth="4"/>
+            <line x1="30" y1="0" x2="30" y2="200" stroke="#a8713f" strokeWidth="4"/>
+            <line x1="10" y1="40" x2="30" y2="40" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="80" x2="30" y2="80" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="120" x2="30" y2="120" stroke="#e0a96d" strokeWidth="6"/>
+            <line x1="10" y1="160" x2="30" y2="160" stroke="#e0a96d" strokeWidth="6"/>
+          </svg>
+          <svg className="w-24 h-30 z-10 mr-16" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute left-10 top-6 w-8 h-10 bg-red-500 rounded-full opacity-70" />
+          <div className="absolute right-14 top-10 w-6 h-8 bg-yellow-400 rounded-full opacity-70" />
+          <div className="absolute left-1/3 top-2 w-7 h-9 bg-sky-400 rounded-full opacity-70" />
+        </div>
+        <svg className="w-20 h-24" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        <svg className="w-16 h-20" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 3) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-40 h-28 bg-[#f5ebd3] border-4 border-[#8b5a2b] rounded-xl shadow-lg p-2 relative transform rotate-2 mb-2">
+            <svg className="w-full h-full" viewBox="0 0 120 80">
+              <path d="M10,40 Q40,20 60,50 T110,30" fill="none" stroke="#8b5a2b" strokeWidth="3" strokeDasharray="4 2"/>
+              <text x="100" y="35" fill="red" fontSize="14" fontWeight="bold">X</text>
+              <circle cx="10" cy="40" r="4" fill="#4e9d58"/>
+              <path d="M30,15 L35,25 L25,25 Z" fill="#4e9d58"/>
+            </svg>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <rect y="120" width="400" height="80" fill="#daf0fd"/>
+            <path d="M0,120 Q100,100 200,120 T400,120 L400,200 L0,200 Z" fill="#58b7e8" opacity="0.7"/>
+            <ellipse cx="80" cy="150" rx="20" ry="10" fill="#9e9e9e" stroke="#616161" strokeWidth="2"/>
+            <ellipse cx="150" cy="135" rx="24" ry="12" fill="#757575" stroke="#424242" strokeWidth="2"/>
+            <ellipse cx="230" cy="160" rx="22" ry="11" fill="#9e9e9e" stroke="#616161" strokeWidth="2"/>
+            <ellipse cx="310" cy="140" rx="20" ry="10" fill="#757575" stroke="#424242" strokeWidth="2"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 mb-8" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-20 h-20 absolute left-6 bottom-4"><use href="#d-tree" /></svg>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g fill="#a16207" opacity="0.7">
+              <circle cx="80" cy="140" r="5"/>
+              <circle cx="74" cy="132" r="2"/>
+              <circle cx="80" cy="130" r="2.5"/>
+              <circle cx="86" cy="132" r="2"/>
+              <circle cx="150" cy="115" r="5"/>
+              <circle cx="144" cy="107" r="2"/>
+              <circle cx="150" cy="105" r="2.5"/>
+              <circle cx="156" cy="107" r="2"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 ml-28" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M60,200 C60,60 340,60 340,200 Z" fill="#424242"/>
+            <path d="M90,200 C90,90 310,90 310,200 Z" fill="#212121"/>
+            <g transform="translate(200, 100) rotate(15) scale(0.8)">
+              <circle cx="0" cy="0" r="14" fill="none" stroke="#ffd23f" strokeWidth="5"/>
+              <line x1="14" y1="0" x2="45" y2="0" stroke="#ffd23f" strokeWidth="6"/>
+              <line x1="35" y1="0" x2="35" y2="12" stroke="#ffd23f" strokeWidth="5"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-24" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <path d="M0,0 L40,0 Q60,100 40,200 L0,200 Z" fill="#8b5a2b"/>
+          <g transform="translate(240, 120)">
+            <rect width="90" height="55" fill="#8d5b28" rx="6" stroke="#4a2f15" strokeWidth="3"/>
+            <rect width="90" height="20" fill="#b0790a" rx="4" stroke="#4a2f15" strokeWidth="2"/>
+            <circle cx="45" cy="28" r="7" fill="#212121"/>
+            <circle cx="20" cy="18" r="8" fill="#ffd23f" opacity="0.9"/>
+            <circle cx="70" cy="16" r="6" fill="#ffd23f" opacity="0.9"/>
+          </g>
+        </svg>
+        <svg className="w-18 h-22 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 4) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end bg-slate-900 rounded-2xl overflow-hidden p-2">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <circle cx="50" cy="40" r="1.5" fill="white"/>
+            <circle cx="150" cy="30" r="2" fill="white"/>
+            <path d="M300,10 L180,80" stroke="#ffd23f" strokeWidth="3" strokeLinecap="round"/>
+            <circle cx="180" cy="80" r="5" fill="#fff7c2"/>
+          </svg>
+          <svg className="w-16 h-20 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g fill="#ffd23f">
+              <circle cx="70" cy="80" r="5"/>
+              <circle cx="150" cy="50" r="4"/>
+              <circle cx="280" cy="90" r="6"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-900 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M0,150 Q100,120 200,155 T400,140 L400,200 L0,200 Z" fill="#e2e8f0" opacity="0.6"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-16" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-slate-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(200, 90) scale(1.3)">
+              <polygon points="0,-35 10,-10 35,-10 15,5 22,30 0,15 -22,30 -15,5 -35,-10 -10,-10" fill="#ffd23f"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-24" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center bg-slate-900 rounded-2xl overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <g transform="translate(200, 45) scale(0.7)">
+            <polygon points="0,-35 10,-10 35,-10 15,5 22,30 0,15 -22,30 -15,5 -35,-10 -10,-10" fill="#ffd23f"/>
+          </g>
+        </svg>
+        <svg className="w-16 h-20 z-10" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 5) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="w-32 h-24 bg-[#d4a373] border-4 border-[#8b5a2b] rounded-2xl shadow-md p-1.5 relative mb-2 flex flex-col justify-end">
+            <path d="M10,24 C10,-10 110,-10 110,24" fill="none" stroke="#8b5a2b" strokeWidth="4" className="absolute top-0 left-0 right-0 h-12"/>
+            <div className="flex gap-1 justify-center flex-wrap px-2 mb-1 z-10">
+              <circle cx="0" cy="0" r="7" className="bg-red-500 rounded-full w-4 h-4" />
+              <circle cx="0" cy="0" r="7" className="bg-blue-600 rounded-full w-4 h-4" />
+              <circle cx="0" cy="0" r="7" className="bg-red-600 rounded-full w-4 h-4" />
+            </div>
+            <div className="text-[9px] text-[#5c3d2e] font-bold z-10">GOÛTER DES COPAINS</div>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end">
+          <div className="flex gap-4 items-end mb-4">
+            <div className="w-20 h-24 bg-red-100 border-2 border-red-800 rounded p-1.5 shadow transform -rotate-12 flex flex-col justify-between">
+              <div className="text-[8px] text-red-900 font-serif font-black leading-none">RECETTE TARTE</div>
+              <div className="w-8 h-8 rounded-full bg-yellow-300 mx-auto" />
+            </div>
+            <svg className="w-24 h-16" viewBox="0 0 100 60">
+              <path d="M10,10 Q50,60 90,10 Z" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="3"/>
+              <ellipse cx="62" cy="30" rx="10" ry="7" fill="#d4a373"/>
+            </svg>
+          </div>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <polygon points="50,180 150,100 350,100 280,180" fill="#ef4444"/>
+          </svg>
+          <svg className="w-20 h-24 z-10 ml-40" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center">
+          <svg className="w-16 h-16 absolute left-12 bottom-4"><use href="#d-tree" /></svg>
+          <svg className="w-28 h-36 z-10" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center gap-2">
+        <svg className="absolute inset-x-0 bottom-4 h-16" viewBox="0 0 400 60">
+          <ellipse cx="200" cy="40" rx="120" ry="20" fill="#e2e8f0"/>
+          <ellipse cx="200" cy="35" rx="30" ry="12" fill="#e0a96d" stroke="#8b5a2b" strokeWidth="2"/>
+        </svg>
+        <svg className="w-16 h-20" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  if (bookId === 6) {
+    if (chapId === 1) {
+      return (
+        <div className="relative w-full h-full flex flex-col items-center justify-end bg-sky-950 rounded-2xl overflow-hidden p-2">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(130, 70)">
+              <rect x="20" y="20" width="100" height="50" rx="25" fill="#facc15" stroke="#ca8a04" strokeWidth="4"/>
+              <circle cx="45" cy="45" r="10" fill="#38bdf8"/>
+            </g>
+          </svg>
+          <svg className="w-14 h-18 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-900 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <path d="M10,200 L30,130 Q40,110 60,130 T80,200 Z" fill="#ec4899" opacity="0.8"/>
+            <g fill="#f97316" transform="translate(180, 160) scale(0.6)">
+              <polygon points="0,-20 5,-5 20,-5 8,4 12,19 0,10 -12,19 -8,4 -20,-5 -5,-5" />
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10" viewBox="0 0 120 150"><use href="#c-nina" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <circle cx="200" cy="70" r="30" fill="#a855f7" stroke="#7e22ce" strokeWidth="3"/>
+          </svg>
+          <svg className="w-18 h-22 z-10 ml-44" viewBox="0 0 110 145"><use href="#c-zaza" /></svg>
+        </div>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <div className="relative w-full h-full flex items-end justify-center bg-sky-950 rounded-2xl overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+            <g transform="translate(200, 110)">
+              <path d="M-50,0 C-50,40 50,40 50,0 Z" fill="#94a3b8"/>
+              <circle cx="0" cy="5" r="12" fill="#fff"/>
+            </g>
+          </svg>
+          <svg className="w-20 h-24 z-10 mr-28" viewBox="0 0 130 145"><use href="#c-tom" /></svg>
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-full h-full flex items-end justify-center bg-sky-300 rounded-2xl overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+          <rect y="110" width="400" height="90" fill="#38bdf8"/>
+        </svg>
+        <svg className="w-16 h-20 z-10 mr-44" viewBox="0 0 120 150"><use href="#c-leo" /></svg>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+const renderStorySceneIllustration = (bookId: number, chapId: number) => {
+  if (bookId === 1) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <use href="#c-leo" x="150" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="220" y="65" width="50" height="60"/>
+          <use href="#c-tom" x="300" y="70" width="55" height="55"/>
+          <use href="#c-zaza" x="380" y="55" width="50" height="70"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <rect x="220" y="40" width="100" height="70" rx="4" fill="#fdf6e8" stroke="#c07318" strokeWidth="2"/>
+          <path d="M240,90 Q270,60 300,75" fill="none" stroke="#c07318" strokeWidth="2" strokeDasharray="4 3"/>
+          <use href="#c-nina" x="120" y="60" width="60" height="75"/>
+          <use href="#c-leo" x="350" y="50" width="65" height="80"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <path d="M0,110 Q200,90 400,110 T600,110 L600,150 L0,150 Z" fill="#58b7e8"/>
+          <rect x="200" y="90" width="30" height="10" fill="#a8713f" rx="2"/>
+          <rect x="280" y="90" width="30" height="10" fill="#a8713f" rx="2" opacity=".4" stroke="#a8713f" strokeDasharray="3 2"/>
+          <use href="#c-leo" x="100" y="40" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="40" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <use href="#d-champi" x="120" y="80" width="45" height="45"/>
+          <use href="#d-champi" x="180" y="75" width="50" height="50"/>
+          <use href="#c-tom" x="260" y="50" width="65" height="75"/>
+          <use href="#c-nina" x="350" y="60" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <circle cx="200" cy="30" r="8" fill="#ffd23f"/>
+        <circle cx="280" cy="20" r="10" fill="#f6a8c4"/>
+        <circle cx="360" cy="35" r="7" fill="#58b7e8"/>
+        <use href="#c-leo" x="150" y="55" width="60" height="75"/>
+        <use href="#c-tom" x="240" y="65" width="55" height="65"/>
+        <use href="#c-zaza" x="320" y="55" width="55" height="75"/>
+      </g>
+    );
+  }
+
+  if (bookId === 2) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="180" y="30" width="120" height="80" fill="#2563eb" stroke="#fff" strokeWidth="2" rx="4"/>
+          <use href="#c-leo" x="80" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <rect x="200" y="60" width="80" height="12" fill="#d4a373" stroke="#8b5a2b" strokeWidth="1.5" rx="2"/>
+          <use href="#c-nina" x="100" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <rect x="220" y="45" width="80" height="50" rx="3" fill="#fafaf9" stroke="#78350f" strokeWidth="2"/>
+          <circle cx="260" cy="70" r="6" fill="#dc2626"/>
+          <use href="#c-zaza" x="120" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <line x1="250" y1="10" x2="250" y2="150" stroke="#78350f" strokeWidth="4"/>
+          <line x1="280" y1="10" x2="280" y2="150" stroke="#78350f" strokeWidth="4"/>
+          <use href="#c-tom" x="130" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <circle cx="180" cy="40" r="12" fill="#ef4444" opacity="0.8"/>
+        <use href="#c-leo" x="90" y="50" width="60" height="75"/>
+        <use href="#c-nina" x="360" y="55" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 3) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="200" y="35" width="120" height="70" rx="6" fill="#fef3c7" stroke="#78350f" strokeWidth="2.5"/>
+          <text x="290" y="65" fill="#ef4444" fontSize="16" fontWeight="extrabold">X</text>
+          <use href="#c-leo" x="100" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="360" y="50" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M0,115 Q150,95 300,115 T600,115 L600,150 L0,150 Z" fill="#0284c7" opacity="0.7"/>
+          <ellipse cx="230" cy="110" rx="18" ry="8" fill="#a8a29e" stroke="#44403c" strokeWidth="1.5"/>
+          <use href="#c-leo" x="90" y="45" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <circle cx="210" cy="80" r="4" fill="#a16207"/>
+          <circle cx="250" cy="70" r="4" fill="#a16207"/>
+          <use href="#c-tom" x="110" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="350" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M180,110 C180,40 340,40 340,110 Z" fill="#292524"/>
+          <circle cx="260" cy="65" r="8" fill="none" stroke="#fbbf24" strokeWidth="3"/>
+          <use href="#c-zaza" x="90" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="360" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <rect x="210" y="45" width="90" height="55" fill="#78350f" rx="5" stroke="#451a03" strokeWidth="2.5"/>
+        <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="340" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 4) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <path d="M150,15 L320,50" stroke="#fef08a" strokeWidth="2" strokeDasharray="4 4"/>
+          <polygon points="320,50 324,42 334,42 328,48 331,56 322,51 313,56 316,48 310,42 320,42" fill="#fcd34d"/>
+          <use href="#c-leo" x="80" y="45" width="60" height="75"/>
+          <use href="#c-zaza" x="380" y="40" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <circle cx="200" cy="50" r="4" fill="#fbbf24" opacity="0.9"/>
+          <use href="#c-nina" x="100" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <ellipse cx="230" cy="65" rx="60" ry="15" fill="#f1f5f9" opacity="0.6"/>
+          <use href="#c-zaza" x="110" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <polygon points="250,30 255,48 272,48 258,58 263,75 250,65 237,75 242,58 228,48 245,48" fill="#fcd34d"/>
+          <use href="#c-tom" x="120" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <polygon points="250,20 254,32 266,32 257,39 260,51 250,44 240,51 243,39 234,32 246,32" fill="#fbbf24" opacity="0.6"/>
+        <use href="#c-leo" x="140" y="50" width="60" height="75"/>
+        <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 5) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="210" y="50" width="80" height="50" rx="10" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2"/>
+          <use href="#c-nina" x="120" y="50" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M210,70 Q250,110 290,70 Z" fill="#94a3b8"/>
+          <use href="#c-tom" x="100" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <polygon points="180,95 240,65 360,65 300,95" fill="#f87171"/>
+          <use href="#c-zaza" x="100" y="45" width="60" height="75"/>
+          <use href="#c-tom" x="340" y="50" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M210,95 C190,70 190,30 220,40" fill="none" stroke="#16a34a" strokeWidth="3"/>
+          <use href="#c-tom" x="120" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <ellipse cx="250" cy="70" rx="40" ry="15" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2"/>
+        <use href="#c-leo" x="130" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="310" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  if (bookId === 6) {
+    if (chapId === 1) {
+      return (
+        <g>
+          <rect x="210" y="50" width="80" height="40" rx="20" fill="#fbbf24" stroke="#d97706" strokeWidth="2"/>
+          <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+          <use href="#c-nina" x="320" y="50" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 2) {
+      return (
+        <g>
+          <path d="M220,95 Q230,60 210,40" fill="none" stroke="#f43f5e" strokeWidth="4" strokeLinecap="round"/>
+          <use href="#c-nina" x="120" y="50" width="60" height="75"/>
+          <use href="#c-tom" x="320" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    if (chapId === 3) {
+      return (
+        <g>
+          <circle cx="250" cy="55" r="18" fill="#c084fc"/>
+          <use href="#c-zaza" x="120" y="45" width="60" height="75"/>
+          <use href="#c-leo" x="340" y="45" width="60" height="75"/>
+        </g>
+      );
+    }
+    if (chapId === 4) {
+      return (
+        <g>
+          <path d="M210,80 Q250,110 290,80 Z" fill="#94a3b8"/>
+          <use href="#c-tom" x="110" y="50" width="60" height="75"/>
+          <use href="#c-nina" x="340" y="55" width="55" height="65"/>
+        </g>
+      );
+    }
+    return (
+      <g>
+        <path d="M210,40 Q217,33 225,40 Q232,33 240,40" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round"/>
+        <use href="#c-leo" x="120" y="45" width="60" height="75"/>
+        <use href="#c-nina" x="320" y="50" width="55" height="65"/>
+      </g>
+    );
+  }
+
+  return null;
+};
+
+
+interface BookViewerProps {
+  book: BookData;
+  progress: UserProgress;
+  onChangeProgress: (updater: (prev: UserProgress) => UserProgress) => void;
+  onExit: () => void;
+  onOpenPremiumModal?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
+}
+
+export const BookViewer: React.FC<BookViewerProps> = ({
+  book,
+  progress,
+  onChangeProgress,
+  onExit,
+  onOpenPremiumModal,
+  isDarkMode = false,
+  onToggleDarkMode
+}) => {
+  const { childName, currentLanguage: lang, currentPage } = progress;
+  const [soundEnabled, setSoundEnabled] = useState(!soundManager.isMuted);
+  
+  // Track selected options for each QCM
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  // Track grid targets found
+  const [gridFound, setGridFound] = useState<Record<string, string[]>>({});
+  // Track drawing canvas states
+  const [drawings, setDrawings] = useState<Record<string, string>>({});
+  // Track handwritten text inputs
+  const [textInputs, setTextInputs] = useState<Record<string, string>>({});
+  // Track connecting pairs (matching)
+  const [activeMatch, setActiveMatch] = useState<{ missionId: number; leftIndex: number } | null>(null);
+  const [matches, setMatches] = useState<Record<string, Record<number, number>>>({}); // maps left index to right index
+
+  // Track digital stickers placed on the book pages
+  const [placedStickers, setPlacedStickers] = useState<{ id: string; type: string; x: number; y: number; page: number }[]>(() => {
+    try {
+      const saved = localStorage.getItem(`forest_stickers_book_${book.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Track the sticker being actively dragged
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Auto-persist placed stickers in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(`forest_stickers_book_${book.id}`, JSON.stringify(placedStickers));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [placedStickers, book.id]);
+
+  const handleSelectSticker = (stickerId: string) => {
+    soundManager.playStickerPlaced();
+    setPlacedStickers(prev => [
+      ...prev,
+      {
+        id: `sticker-${Date.now()}-${Math.random()}`,
+        type: stickerId,
+        x: 35 + Math.random() * 30, // center-ish random horizontal %
+        y: 35 + Math.random() * 30, // center-ish random vertical %
+        page: currentPage
+      }
+    ]);
+  };
+
+  const handleDeleteSticker = (stickerId: string) => {
+    soundManager.playTapSound();
+    setPlacedStickers(prev => prev.filter(st => st.id !== stickerId));
+  };
+
+  const handleClearPageStickers = () => {
+    soundManager.playTapSound();
+    setPlacedStickers(prev => prev.filter(st => st.page !== currentPage));
+  };
+
+  const handleStickerPointerDown = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    setActiveDragId(id);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleStickerPointerMove = (e: React.PointerEvent, id: string) => {
+    if (activeDragId !== id) return;
+    e.preventDefault();
+    const parent = (e.currentTarget as HTMLElement).closest(".book-print-page");
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
+
+    setPlacedStickers(prev =>
+      prev.map(st => (st.id === id ? { ...st, x, y } : st))
+    );
+  };
+
+  const handleStickerPointerUp = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    setActiveDragId(null);
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    soundManager.playTapSound();
+  };
+
+  // Le son n'est plus synthétisé localement ici : voir soundManager
+  // (src/utils/audioCelebration.ts), partagé avec le reste de l'app.
+
+  // Déclenche automatiquement le son de célébration adapté en arrivant sur
+  // une page badge ou diplôme.
+  useEffect(() => {
+    const config = getPageConfig(currentPage);
+    if (config.type === "diploma") {
+      const timer = setTimeout(() => soundManager.playDiplomeVictoire(), 300);
+      return () => clearTimeout(timer);
+    }
+    if (config.type === "badge") {
+      const timer = setTimeout(() => soundManager.playFanfare(), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
+
+  // Helper to get total pages
+  const totalPages = 40;
+
+  const navigateToPage = (target: number) => {
+    // If Book 1 (Tome 1) and navigating beyond page 11, check premium status
+    if (book.id === 1 && target > 11 && !progress.isPremium) {
+      if (onOpenPremiumModal) {
+        onOpenPremiumModal();
+      }
+      return;
+    }
+    soundManager.playTapSound();
+    onChangeProgress(prev => ({
+      ...prev,
+      currentPage: Math.max(1, Math.min(totalPages, target))
+    }));
+  };
+
+  // Determine what content belongs on the current page
+  // Page 1: Cover
+  // Page 2: Presentation
+  // Pages 3-8: Chapter 1 (Cover, Story, M1/2, M3/4, M5/6, Badge)
+  // Pages 9-16: Chapter 2 (Cover, Story, M7/8, M9/10, M11/12, M13/14, M15/16, Badge)
+  // Pages 17-24: Chapter 3 (Cover, Story, M17/18, M19/20, M21/22, M23/24, M25/26, Badge)
+  // Pages 25-32: Chapter 4 (Cover, Story, M27/28, M29/30, M31/32, M33/34, M35/36, Badge)
+  // Pages 33-39: Chapter 5 (Cover, Story, M37/38, M39/40, M41/42, M43/44, Badge)
+  // Page 40: Diploma
+
+  // Returns { type: "cover" | "presentation" | "chap-cover" | "story" | "exercises" | "badge" | "diploma", chapter?: Chapter }
+  const getPageConfig = (page: number) => {
+    if (page === 1) return { type: "cover" };
+    if (page === 2) return { type: "presentation" };
+    if (page === 40) return { type: "diploma" };
+
+    // Find corresponding chapter
+    let chapId = 1;
+    let offset = 3; // Chap 1 starts at page 3
+
+    if (page >= 3 && page <= 8) {
+      chapId = 1;
+      offset = 3;
+    } else if (page >= 9 && page <= 16) {
+      chapId = 2;
+      offset = 9;
+    } else if (page >= 17 && page <= 24) {
+      chapId = 3;
+      offset = 17;
+    } else if (page >= 25 && page <= 32) {
+      chapId = 4;
+      offset = 25;
+    } else if (page >= 33 && page <= 39) {
+      chapId = 5;
+      offset = 33;
+    }
+
+    const chapter = book.chapters.find(c => c.id === chapId)!;
+    const relPage = page - offset; // 0: Cover, 1: Story, 2+: Exercises, last: Badge
+
+    const isLastOfChapter = (chapId === 1 && relPage === 5) || 
+                          (chapId > 1 && relPage === (chapId === 5 ? 6 : 7));
+
+    if (relPage === 0) return { type: "chap-cover", chapter };
+    if (relPage === 1) return { type: "story", chapter };
+    if (isLastOfChapter) return { type: "badge", chapter };
+
+    // Exercise page. Map the relative page to specific missions
+    // In Chap 1 (total 6 pages): page 5 (M1, M2), page 6 (M3, M4), page 7 (M5, M6)
+    // In Chap 2 (total 8 pages): page 11 (M7, M8), page 12 (M9, M10), page 13 (M11, M12), page 14 (M13, M14), page 15 (M15, M16)
+    // In Chap 3 (total 8 pages): page 19 (M17, M18), page 20 (M19, M20), page 21 (M21, M22), page 22 (M23, M24), page 23 (M25, M26)
+    // In Chap 4 (total 8 pages): page 27 (M27, M28), page 28 (M29, M30), page 29 (M31, M32), page 30 (M33, M34), page 31 (M35, M36)
+    // In Chap 5 (total 7 pages): page 35 (M37, M38), page 36 (M39, M40), page 37 (M41, M42), page 38 (M43, M44)
+    let mIndexStart = (relPage - 2) * 2;
+    const missions = chapter.missions.slice(mIndexStart, mIndexStart + 2);
+
+    return { type: "exercises", chapter, missions };
+  };
+
+  const pageConfig = getPageConfig(currentPage);
+
+  // Handle QCM Option Click
+  const handleQcmClick = (missionId: number, optionId: string, isCorrect?: boolean) => {
+    setSelectedOptions(prev => ({
+      ...prev,
+      [missionId]: optionId
+    }));
+    (isCorrect ? soundManager.playCorrectAnswer() : soundManager.playWrongAnswer());
+  };
+
+  // Handle Grid Item Toggle
+  const handleGridClick = (missionId: number, itemId: string, isTarget: boolean, maxTargets: number) => {
+    const key = `${missionId}`;
+    const current = gridFound[key] || [];
+    let updated = [...current];
+
+    if (current.includes(itemId)) {
+      updated = updated.filter(id => id !== itemId);
+      soundManager.playTapSound();
+    } else {
+      updated.push(itemId);
+      (isTarget ? soundManager.playCorrectAnswer() : soundManager.playWrongAnswer());
+    }
+
+    setGridFound(prev => ({
+      ...prev,
+      [key]: updated
+    }));
+
+    // Auto congrats if found all targets
+    if (isTarget && updated.filter(id => id.startsWith(`${missionId}`)).length === maxTargets) {
+      soundManager.playCorrectAnswer();
+    }
+  };
+
+  // Handle Matching pair linking
+  const handleMatchClick = (missionId: number, index: number, side: "left" | "right", correctIndex: number) => {
+    if (side === "left") {
+      setActiveMatch({ missionId, leftIndex: index });
+      soundManager.playTapSound();
+    } else if (side === "right" && activeMatch && activeMatch.missionId === missionId) {
+      const leftIdx = activeMatch.leftIndex;
+      const isCorrectMatch = leftIdx === index; // In our layout, correct pairs share same indices
+
+      if (isCorrectMatch) {
+        setMatches(prev => ({
+          ...prev,
+          [missionId]: {
+            ...(prev[missionId] || {}),
+            [leftIdx]: index
+          }
+        }));
+        soundManager.playCorrectAnswer();
+      } else {
+        soundManager.playWrongAnswer();
+      }
+      setActiveMatch(null);
+    }
+  };
+
+  const renderDifficultyStars = (difficulty: number = 1) => {
+    const stars = [];
+    for (let i = 0; i < 3; i++) {
+      stars.push(
+        <span 
+          key={i} 
+          className={`text-sm sm:text-base transition-all duration-300 ${i < difficulty ? "text-yellow-500 font-bold" : "text-gray-300 opacity-40"}`}
+        >
+          ★
+        </span>
+      );
+    }
+    return (
+      <div className="flex items-center gap-0.5" title={`Difficulty: ${difficulty}/3`}>
+        {stars}
+      </div>
+    );
+  };
+
+  const isMatched = (missionId: number, leftIdx: number) => {
+    return matches[missionId] && matches[missionId][leftIdx] !== undefined;
+  };
+
+  // Find current chapter or stage for the progress bar
+  let progressText = "";
+  let progressPercentage = 0;
+
+  if (currentPage === 1) {
+    progressText = lang === "fr" ? "Couverture 📖" : "Cover 📖";
+    progressPercentage = 2.5;
+  } else if (currentPage === 2) {
+    progressText = lang === "fr" ? "Présentation de l'Atelier" : "Workshop Introduction";
+    progressPercentage = 5;
+  } else if (currentPage === 40) {
+    progressText = lang === "fr" ? "Diplôme d'Honneur ! 🎓" : "Honorary Diploma! 🎓";
+    progressPercentage = 100;
+  } else if (pageConfig.chapter) {
+    const chapNum = pageConfig.chapter.id; // 1 to 5
+    progressText = lang === "fr" 
+      ? `Chapitre ${chapNum}/5 : ${pageConfig.chapter.titleFr}` 
+      : `Chapter ${chapNum}/5: ${pageConfig.chapter.titleEn}`;
+    progressPercentage = Math.round(5 + ((currentPage - 2) / 38) * 95);
+  }
+
+  return (
+    <div className="min-h-screen warm-organic-dots py-2 sm:py-4 px-1 sm:px-4 md:px-8 pb-24 font-sans select-none relative">
+      
+      {/* Top Header controls */}
+      <header className="no-print max-w-5xl mx-auto flex items-center justify-between mb-4 bg-white/90 backdrop-blur-sm p-3 sm:p-4 rounded-2xl border-2 border-warm-border shadow-md">
+        <button 
+          onClick={onExit}
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition border border-red-200 cursor-pointer min-h-[44px]"
+        >
+          <ArrowLeft size={18} />
+          <span>
+            {lang === "fr" ? "Quitter" : "Leave"}
+            <span className="hidden xs:inline">{lang === "fr" ? " l'Atelier" : " Workshop"}</span>
+          </span>
+        </button>
+
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          {onToggleDarkMode && (
+            <button
+              onClick={onToggleDarkMode}
+              className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title={isDarkMode ? "Mode jour" : "Mode nuit"}
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
+
+          {/* Sound toggle */}
+          <button
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              soundManager.setMuted(!next);
+            }}
+            className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title={soundEnabled ? "Couper le son" : "Activer le son"}
+          >
+            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </button>
+
+          {/* Book & Name Info */}
+          <div className="text-right hidden sm:block">
+            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider flex items-center gap-1 justify-end">
+              {progress.isPremium && <Sparkles size={12} className="text-amber-500 animate-pulse" />}
+              {lang === "fr" ? "Copain actif" : "Active friend"}
+            </p>
+            <p className="font-fun text-forest font-bold flex items-center gap-1 justify-end">
+              {childName}
+              {progress.isPremium && <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full shadow-sm">🌟 Premium</span>}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {/* Chapter Progress Bar */}
+      <div className="max-w-4xl mx-auto mb-4 bg-white/90 backdrop-blur-sm p-3 rounded-2xl border-2 border-warm-border shadow-md no-print">
+        <div className="flex items-center justify-between gap-2 mb-1.5 px-1 flex-wrap">
+          <span className="text-xs sm:text-sm font-bold text-forest flex items-center gap-1.5">
+            <span>🎨</span> {progressText}
+          </span>
+          <span className="text-xs font-mono font-bold text-gray-500 bg-warm-cream px-2 py-0.5 rounded-full border border-warm-border">
+            {lang === "fr" ? "Progression : " : "Progress: "}{progressPercentage}%
+          </span>
+        </div>
+        <div className="w-full bg-warm-linen rounded-full h-3.5 overflow-hidden border border-warm-border p-0.5">
+          <div 
+            className="bg-forest h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Main Book Viewer */}
+      <main className="max-w-4xl mx-auto flex flex-col items-center w-full">
+        
+        {/* Printable/Interactive Book Spreads */}
+        <div 
+          className="book-print-page w-full max-w-[210mm] min-h-0 sm:min-h-[296mm] bg-white rounded-2xl shadow-2xl border-2 sm:border-8 md:border-12 border-wood-brown p-3 sm:p-8 md:p-12 flex flex-col justify-between relative overflow-hidden transition-all duration-300 transform-gpu"
+          style={{ 
+            color: "var(--color-text-charcoal)",
+            boxShadow: "0 25px 50px -12px rgba(139, 94, 60, 0.35)",
+            background: "radial-gradient(circle, #ffffff 0%, #F7F3E9 100%)"
+          }}
+        >
+          {/* Realistic book crease effect */}
+          <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
+
+          {/* Render Placed Stickers */}
+          {placedStickers
+            .filter((st) => st.page === currentPage)
+            .map((st) => {
+              const meta = STICKERS_LIST.find((s) => s.id === st.type);
+              if (!meta) return null;
+              const isDragging = activeDragId === st.id;
+              return (
+                <div
+                  key={st.id}
+                  onPointerDown={(e) => handleStickerPointerDown(e, st.id)}
+                  onPointerMove={(e) => handleStickerPointerMove(e, st.id)}
+                  onPointerUp={(e) => handleStickerPointerUp(e, st.id)}
+                  className={`absolute z-30 select-none cursor-grab active:cursor-grabbing p-1 group touch-none ${
+                    isDragging ? "scale-110 rotate-3" : "hover:scale-105"
+                  } transition-transform duration-100`}
+                  style={{
+                    left: `${st.x}%`,
+                    top: `${st.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  {/* Sticker Graphic */}
+                  {meta.symbolId ? (
+                    <svg className="w-16 h-16 pointer-events-none filter drop-shadow-md">
+                      <use href={`#${meta.symbolId}`} />
+                    </svg>
+                  ) : (
+                    <span className="text-5xl pointer-events-none select-none filter drop-shadow-md">
+                      {meta.emoji}
+                    </span>
+                  )}
+
+                  {/* Tiny delete button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSticker(st.id);
+                    }}
+                    className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black border border-white shadow-md transition opacity-0 group-hover:opacity-100 active:opacity-100 cursor-pointer"
+                    title={lang === "fr" ? "Enlever" : "Delete"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+
+          {/* PAGE RENDER CONTROLLER */}
+          <div className="flex-1 flex flex-col justify-between">
+            
+            {/* 1. COVER PAGE */}
+            {pageConfig.type === "cover" && (
+              <div className="flex flex-col items-center justify-between h-full text-center py-2 sm:py-6">
+                <div>
+                  <p className="text-xs tracking-widest text-[#8c7b60] font-bold uppercase mb-1">
+                    {lang === "fr" ? "🌟 CAHIER D'ACTIVITÉS ÉDUCATIF 🌟" : "🌟 EDUCATIONAL ACTIVITY BOOK 🌟"}
+                  </p>
+                  <p className="text-sm font-bold text-forest-light">
+                    {lang === "fr" ? "Pour les enfants de 5 à 7 ans" : "For children aged 5 to 7"}
+                  </p>
+                </div>
+
+                {/* Real physical high-quality notebook cover */}
+                <div className="w-full max-w-[360px] my-4 bg-white rounded-3xl shadow-2xl relative overflow-hidden aspect-[1/1.5] border-4 border-wood-brown self-center">
+                  {/* Real-book spine & gradient shadow effects */}
+                  <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/25 via-black/5 to-transparent z-10" />
+                  <div className="absolute inset-y-0 left-3 w-1 bg-white/15 z-10" />
+                  
+                  {/* Cover Image based on current language */}
+                  <img
+                    src={lang === "fr" ? coverFr : coverEn}
+                    alt="Cahier de la Forêt"
+                    className="w-full h-full object-cover select-none pointer-events-none"
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Kids Name overlay on the underline */}
+                  <div
+                    className="absolute text-center select-none pointer-events-none font-handwriting text-[#1d4ed8] font-black drop-shadow-sm leading-none flex items-center justify-center text-ellipsis overflow-hidden whitespace-nowrap"
+                    style={{
+                      bottom: "4.8%",
+                      left: lang === "fr" ? "35%" : "44%",
+                      right: "8%",
+                      height: "6%",
+                      fontSize: "clamp(12px, 3.5vw, 19px)",
+                      fontFamily: '"Short Stack", cursive, sans-serif'
+                    }}
+                  >
+                    {childName || "______"}
+                  </div>
+                </div>
+
+                <div className="text-center text-sm text-gray-500 max-w-sm leading-relaxed">
+                  <p className="font-bold">© TechSen for Kids 2026</p>
+                  <p className="text-xs mt-1">
+                    {lang === "fr" 
+                      ? "Tous droits réservés. Ne peut être vendu séparément du pack d'apprentissage forestier." 
+                      : "All rights reserved. Not to be sold separately from the forest learning pack."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 2. CHARACTERS PRESENTATION PAGE */}
+            {pageConfig.type === "presentation" && (
+              <div className="py-2">
+                <h2 className="text-3xl font-serif italic font-medium text-forest mb-2">
+                  {lang === "fr" ? "Bonjour, toi ! 👋" : "Hello, you! 👋"}
+                </h2>
+                <p className="text-center text-lg text-gray-600 mb-6 font-medium">
+                  {lang === "fr" 
+                    ? "Nous sommes les Copains de la Forêt. Viens, on se présente !" 
+                    : "We are the Forest Friends. Come, let's meet each other!"}
+                </p>
+
+                {/* Grid of characters */}
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-center bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
+                    <div className="w-16 h-16 bg-white border-2 border-orange-300 rounded-full flex items-center justify-center shrink-0">
+                      <svg className="w-12 h-12" viewBox="0 0 120 150">
+                        <use href="#c-leo" xlinkHref="#c-leo" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-orange-800 text-lg">
+                        {lang === "fr" ? "Léo le renard" : "Leo the Fox"}
+                      </h4>
+                      <p className="text-sm text-gray-600 leading-tight">
+                        {lang === "fr"
+                          ? "« Salut ! Je suis roux et très malin. J'adore les devinettes… et les pommes ! »"
+                          : "'Hi! I'm orange and very clever. I love riddles... and apples!'"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <div className="w-16 h-16 bg-white border-2 border-slate-300 rounded-full flex items-center justify-center shrink-0">
+                      <svg className="w-12 h-12" viewBox="0 0 120 150">
+                        <use href="#c-nina" xlinkHref="#c-nina" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-lg">
+                        {lang === "fr" ? "Nina la souris" : "Nina the Mouse"}
+                      </h4>
+                      <p className="text-sm text-gray-600 leading-tight">
+                        {lang === "fr"
+                          ? "« Coucou ! Je suis petite mais super rapide. Je connais tous les chemins de la forêt. »"
+                          : "'Hi! I am small but super fast. I know all the paths in the forest.'"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
+                    <div className="w-16 h-16 bg-white border-2 border-amber-400 rounded-full flex items-center justify-center shrink-0">
+                      <svg className="w-12 h-12" viewBox="0 0 130 145">
+                        <use href="#c-tom" xlinkHref="#c-tom" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-amber-900 text-lg">
+                        {lang === "fr" ? "Darina la hérissonne" : "Darina the Hedgehog"}
+                      </h4>
+                      <p className="text-sm text-gray-600 leading-tight">
+                        {lang === "fr"
+                          ? "« Bonjour… Je suis piquante dehors, mais toute douce dedans. J'aime compter les noisettes. »"
+                          : "'Hello... I am prickly outside, but very soft inside. I love counting hazelnuts.'"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center bg-sky-50 p-3 rounded-2xl border border-sky-100">
+                    <div className="w-16 h-16 bg-white border-2 border-sky-300 rounded-full flex items-center justify-center shrink-0">
+                      <svg className="w-12 h-12" viewBox="0 0 110 145">
+                        <use href="#c-zaza" xlinkHref="#c-zaza" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sky-800 text-lg">
+                        {lang === "fr" ? "Lana l'oiseau" : "Lana the Bird"}
+                      </h4>
+                      <p className="text-sm text-gray-600 leading-tight">
+                        {lang === "fr"
+                          ? "« Cui-cui ! Je chante, je vole, je vois tout d'en haut. Bienvenue ! »"
+                          : "'Tweet-tweet! I sing, I fly, I see everything from above. Welcome!'"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-forest/10 border-2 border-forest rounded-2xl p-4 text-center">
+                  <p className="text-xl font-bold text-forest">
+                    {lang === "fr" ? `🌟 Et toi, ${childName}, tu es notre 5ᵉ Copain ! 🌟` : `🌟 And you, ${childName}, are our 5th Friend! 🌟`}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {lang === "fr"
+                      ? "Dans ce cahier, les Copains ont besoin de ton aide pour vivre une grande aventure. À chaque page, une mission t'attend !"
+                      : "In this book, the Friends need your help to live a great adventure. On each page, a mission awaits you!"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 3. CHAPTER COVER PAGE */}
+            {pageConfig.type === "chap-cover" && pageConfig.chapter && (
+              <div className="flex flex-col justify-between h-full py-4 text-center">
+                {/* Chapter Banner */}
+                <div className="bg-forest text-white rounded-3xl p-4 flex items-center gap-4 shadow-md text-left border-2 border-dashed border-white/40">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0">
+                    <svg 
+                      className="w-12 h-12" 
+                      viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                    >
+                      <use 
+                        href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                        xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-xs uppercase font-black tracking-widest text-yellow-300">
+                      {lang === "fr" ? `Chapitre ${pageConfig.chapter.id}` : `Chapter ${pageConfig.chapter.id}`}
+                    </span>
+                    <h2 className="text-2xl font-serif italic font-medium">
+                      {lang === "fr" ? pageConfig.chapter.titleFr : pageConfig.chapter.titleEn}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Beautiful custom vector illustrations for Chapter Covers */}
+                <div className="my-6 relative border-4 border-dashed border-forest-light rounded-3xl overflow-hidden aspect-[4/3] bg-white shadow-inner flex flex-col justify-between p-4">
+                  {/* Floating elements */}
+                  <div className="absolute top-4 left-4">
+                    <svg className="w-12 h-12 text-yellow-400 filter drop-shadow" fill="currentColor" viewBox="0 0 100 100">
+                      <use href="#d-soleil" />
+                    </svg>
+                  </div>
+                  <div className="absolute top-6 right-12 opacity-60">
+                    <svg className="w-16 h-8 text-white" fill="currentColor" viewBox="0 0 120 60">
+                      <use href="#d-nuage" />
+                    </svg>
+                  </div>
+
+                  {/* Main scenic render depending on chapter */}
+                  <div className="flex-1 flex items-center justify-center">
+                    {renderChapterCoverIllustration(book.id, pageConfig.chapter.id)}
+                  </div>
+
+                  <p className="text-xl font-fun text-forest">
+                    {lang === "fr" ? "Prêt à relever les défis ?" : "Ready to take on the challenges?"}
+                  </p>
+                </div>
+
+                {/* Warm Invitation Bubble */}
+                <div className="bubble max-w-xl mx-auto">
+                  <svg 
+                    className="w-16 h-20 shrink-0" 
+                    viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                  >
+                    <use 
+                      href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                    />
+                  </svg>
+                  <p className="text-left leading-snug">
+                    <b>{pageConfig.chapter.missions[0]?.character === "leo" ? "Léo" : pageConfig.chapter.missions[0]?.character === "nina" ? "Nina" : pageConfig.chapter.missions[0]?.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : "Lana"} :</b>{" "}
+                    {lang === "fr" 
+                      ? `« Tourne vite la page, ${childName} ! L'aventure commence ici ! »` 
+                      : `\"Turn the page quickly, ${childName}! The adventure starts here!\"`}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 4. STORY (HISTORY) PAGE */}
+            {pageConfig.type === "story" && pageConfig.chapter && (
+              <div className="py-2 flex flex-col justify-between h-full">
+                <div>
+                  <div className="flex items-center gap-3 border-b-2 border-forest-light pb-2 mb-4">
+                    <span className="text-sm font-black uppercase text-forest tracking-widest">
+                      {lang === "fr" ? `Chapitre ${pageConfig.chapter.id}` : `Chapter ${pageConfig.chapter.id}`}
+                    </span>
+                    <span className="text-xs text-gray-400">•</span>
+                    <span className="text-sm text-gray-500 font-bold">
+                      {lang === "fr" ? "L'histoire de la forêt" : "The Forest Story"}
+                    </span>
+                  </div>
+
+                  {/* Story Text paragraphs */}
+                  <div className="space-y-4 text-lg leading-relaxed text-[#4e3a2c]">
+                    {(lang === "fr" ? pageConfig.chapter.storyFr : pageConfig.chapter.storyEn).map((paragraph, index) => (
+                      <p key={index} className="indent-4 font-sans">
+                        {/* Bold names and terms dynamically */}
+                        {paragraph.split(/(Léo|Nina|Darina|Lana|cabane|champignons|rivière|pont|labyrinthe|secret|Copains|treehouse|friends|mushrooms|bridge|ladder|rope)/g).map((part, i) => {
+                          const isSpecial = ["Léo", "Nina", "Darina", "Lana", "cabane", "champignons", "rivière", "pont", "labyrinthe", "secret", "Copains", "treehouse", "friends", "mushrooms", "bridge", "ladder", "rope"].includes(part);
+                          return isSpecial ? <strong key={i} className="text-forest font-bold">{part}</strong> : part;
+                        })}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Chapter Story Illustration Scene */}
+                <div className="my-4 bg-gradient-to-r from-sky-50 to-green-50 rounded-2xl p-4 border border-green-200">
+                  <svg className="w-full h-32" viewBox="0 0 600 150">
+                    <rect width="600" height="110" fill="#daf0fd" rx="8"/>
+                    <rect y="95" width="600" height="55" fill="#c3e8b0" rx="8"/>
+                    <use href="#d-nuage" x="50" y="15" width="60" height="30"/>
+                    <use href="#d-tree" x="480" y="20" width="70" height="90"/>
+                    
+                    {renderStorySceneIllustration(book.id, pageConfig.chapter.id)}
+                  </svg>
+                </div>
+
+                <div className="note-histoire text-left">
+                  <p className="font-bold mb-1">🧭 {lang === "fr" ? "La mission de l'histoire :" : "The story mission:"}</p>
+                  <p className="text-sm">
+                    {getStoryInstructionText(book.id, pageConfig.chapter.id, lang)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 5. INTERACTIVE EXERCISES / MISSIONS PAGE */}
+            {pageConfig.type === "exercises" && pageConfig.missions && (
+              <div className="space-y-4 py-2 flex-1 flex flex-col justify-between">
+                {pageConfig.missions.map((mission, idx) => {
+                  const mKey = `${mission.id}`;
+                  return (
+                    <div key={mission.id} className="exo flex-1 flex flex-col justify-between p-4">
+                      
+                      {/* Header */}
+                      <div className="exo-head flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="exo-num">{lang === "fr" ? `Mission ${mission.num}` : `Mission ${mission.num}`}</span>
+                          {renderDifficultyStars(mission.difficulty)}
+                        </div>
+                        <span className="exo-type">
+                          {lang === "fr" ? mission.typeFr : mission.typeEn}
+                        </span>
+                      </div>
+
+                      {/* Character Bubble speech */}
+                      <div className="bubble my-1 py-1">
+                        <svg 
+                          className="w-12 h-16 shrink-0" 
+                          viewBox={getCharacterViewBox(mission.character)}
+                        >
+                          <use 
+                            href={`#c-${mission.character}`} 
+                            xlinkHref={`#c-${mission.character}`} 
+                          />
+                        </svg>
+                        <p className="text-left text-sm leading-snug">
+                          <b className="capitalize">{mission.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : mission.character === "zaza" ? "Lana" : mission.character} :</b>{" "}
+                          {lang === "fr" ? mission.bubbleFr : mission.bubbleEn}
+                        </p>
+                      </div>
+
+                      {/* Instruction */}
+                      <p className="consigne text-base text-left text-forest mb-2">
+                        {lang === "fr" ? mission.consigneFr : mission.consigneEn}
+                      </p>
+
+                      {/* Interactive Apple Counter helper for math counting missions */}
+                      {((mission.id === 3) || (mission.id === 10)) && (
+                        <AppleCounter 
+                          targetCount={mission.id === 3 ? 5 : 7} 
+                          lang={lang} 
+                        />
+                      )}
+
+                      {/* Exercise controls based on type */}
+                      <div className="flex-1 flex flex-col justify-center">
+                        
+                        {/* QCM Type */}
+                        {mission.exerciseType === "qcm" && mission.choices && (
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-3 justify-center">
+                              {mission.choices.map((choice) => {
+                                const isSelected = selectedOptions[mKey] === choice.id;
+                                const buttonStyle = isSelected
+                                  ? choice.isCorrect
+                                    ? "bg-green-100 border-green-500 text-green-800 scale-105"
+                                    : "bg-red-100 border-red-500 text-red-800"
+                                  : "bg-white border-blue-400 text-gray-700 hover:border-blue-600";
+
+                                return (
+                                  <button
+                                    key={choice.id}
+                                    type="button"
+                                    onClick={() => handleQcmClick(mission.id, choice.id, choice.isCorrect)}
+                                    className={`choice font-medium px-4 py-2.5 sm:py-2 border-2 rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px] ${buttonStyle}`}
+                                  >
+                                    {lang === "fr" ? choice.textFr : choice.textEn}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Validation feedback text */}
+                            {selectedOptions[mKey] && (
+                              <div className="text-center font-bold text-sm mt-1 animate-pulse">
+                                {mission.choices.find(c => c.id === selectedOptions[mKey])?.isCorrect ? (
+                                  <span className="text-green-600">
+                                    ✨ {lang === "fr" ? "Bravo, c'est exact !" : "Hooray, that's correct!"}
+                                  </span>
+                                ) : (
+                                  <span className="text-red-500">
+                                    ❌ {lang === "fr" ? "Oups, réessaie !" : "Oops, try again!"}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Grid-find Type */}
+                        {mission.exerciseType === "grid-find" && mission.gridItems && (
+                          <div className="flex flex-col items-center">
+                            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                              {mission.gridItems.map((item) => {
+                                const isFound = (gridFound[mKey] || []).includes(item.id);
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => handleGridClick(
+                                      mission.id, 
+                                      item.id, 
+                                      item.isTarget, 
+                                      mission.gridItems!.filter(x => x.isTarget).length
+                                    )}
+                                    className={`pick w-12 h-12 flex items-center justify-center font-bold text-xl rounded-xl border-2 transition ${
+                                      isFound 
+                                        ? item.isTarget 
+                                          ? "bg-yellow-300 border-yellow-500 scale-105" 
+                                          : "bg-red-200 border-red-400"
+                                        : "bg-white border-gray-300 hover:border-green-300"
+                                    }`}
+                                  >
+                                    {item.text}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Matching Type */}
+                        {mission.exerciseType === "matching" && mission.matches && (
+                          <div className="space-y-2 select-none w-full max-w-sm mx-auto">
+                            <p className="text-xs text-center text-gray-400 font-bold mb-1">
+                              {lang === "fr" ? "👉 Clique un mot puis sa cible !" : "👉 Click a word then its target!"}
+                            </p>
+                            <div className="flex justify-between gap-4">
+                              {/* Left column (Source words) */}
+                              <div className="flex flex-col gap-2 flex-1">
+                                {mission.matches.map((match, i) => {
+                                  const done = isMatched(mission.id, i);
+                                  const active = activeMatch && activeMatch.missionId === mission.id && activeMatch.leftIndex === i;
+                                  return (
+                                    <button
+                                      key={`left-${i}`}
+                                      type="button"
+                                      onClick={() => handleMatchClick(mission.id, i, "left", match.correctPairIndex)}
+                                      disabled={done}
+                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-between min-h-[44px] cursor-pointer ${
+                                        done
+                                          ? "bg-green-100 border-green-400 text-green-800 opacity-60"
+                                          : active
+                                            ? "bg-yellow-100 border-yellow-500 text-yellow-800 scale-102"
+                                            : "bg-white border-blue-200 text-gray-700 hover:border-blue-400"
+                                      }`}
+                                    >
+                                      <span>{lang === "fr" ? match.leftFr : match.leftEn}</span>
+                                      <span className={`w-3 h-3 rounded-full border-2 ${done ? "bg-green-600 border-green-800" : "bg-blue-400 border-blue-600"}`} />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Right column (Target illustrations or endpoints) */}
+                              <div className="flex flex-col gap-2 flex-1">
+                                {mission.matches.map((match, i) => {
+                                  // Find if any left index is connected to this right index
+                                  const leftConnectedIdx = Object.keys(matches[mission.id] || {}).find(
+                                    key => (matches[mission.id] as any)[key] === i
+                                  );
+                                  const done = leftConnectedIdx !== undefined;
+
+                                  return (
+                                    <button
+                                      key={`right-${i}`}
+                                      type="button"
+                                      onClick={() => handleMatchClick(mission.id, i, "right", match.correctPairIndex)}
+                                      disabled={done}
+                                      className={`px-3 py-1.5 text-sm font-bold border-2 rounded-xl transition text-left flex items-center justify-start gap-2 min-h-[44px] cursor-pointer ${
+                                        done
+                                          ? "bg-green-100 border-green-400 text-green-800 opacity-60"
+                                          : "bg-white border-blue-200 text-gray-700 hover:border-blue-400"
+                                      }`}
+                                    >
+                                      <span className={`w-3 h-3 rounded-full border-2 ${done ? "bg-green-600 border-green-800" : "bg-blue-400 border-blue-600"}`} />
+                                      {match.rightIcon && (
+                                        <svg className="w-6 h-6"><use href={`#${match.rightIcon}`} /></svg>
+                                      )}
+                                      <span>{lang === "fr" ? match.rightFr : match.rightEn}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Interactive Drawing Board & Tracing Canvases */}
+                        {(mission.exerciseType === "drawing" || mission.exerciseType === "tracing-letter" || mission.exerciseType === "symmetry") && (
+                          <DrawingCanvas
+                            width={320}
+                            height={150}
+                            onSave={(url) => setDrawings(prev => ({ ...prev, [mKey]: url }))}
+                            savedDataUrl={drawings[mKey]}
+                            lang={lang}
+                          />
+                        )}
+
+                        {/* Input Text / Handwritten Type */}
+                        {mission.exerciseType === "input-text" && (
+                          <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <input
+                              type="text"
+                              value={textInputs[mKey] || ""}
+                              onChange={(e) => setTextInputs(prev => ({ ...prev, [mKey]: e.target.value }))}
+                              placeholder={lang === "fr" ? mission.inputPlaceholderFr : mission.inputPlaceholderEn}
+                              className="case-ecrire w-full max-w-[280px] sm:max-w-md h-12 text-center text-xl sm:text-2xl font-handwriting border-b-4 border-dashed border-orange-friend focus:outline-none focus:border-green-600 bg-transparent"
+                            />
+                            {textInputs[mKey] && (
+                              <button 
+                                type="button"
+                                onClick={() => soundManager.playCorrectAnswer()}
+                                className="px-4 py-2 bg-green-50 border border-green-200 rounded-xl text-xs font-bold text-forest no-print min-h-[44px] cursor-pointer animate-pulse"
+                              >
+                                ✔ {lang === "fr" ? "Valider" : "Check"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Order/Sequence Numbers validation */}
+                        {mission.exerciseType === "order-numbers" && mission.choices && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-400 font-bold mb-1 text-center">
+                              {lang === "fr" ? "👉 Coche les affirmations correctes :" : "👉 Check the correct statements:"}
+                            </p>
+                            <div className="flex flex-col gap-2 max-w-sm mx-auto">
+                              {mission.choices.map((choice) => {
+                                const isChecked = selectedOptions[`${mission.id}-${choice.id}`] === "checked";
+                                return (
+                                  <button
+                                    key={choice.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedOptions(prev => ({
+                                        ...prev,
+                                        [`${mission.id}-${choice.id}`]: isChecked ? "unchecked" : "checked"
+                                      }));
+                                      soundManager.playCorrectAnswer();
+                                    }}
+                                    className={`px-4 py-2 border-2 rounded-xl text-sm font-bold flex items-center gap-3 transition cursor-pointer min-h-[44px] ${
+                                      isChecked
+                                        ? "bg-green-50 border-green-500 text-green-800"
+                                        : "bg-white border-gray-200 text-gray-700 hover:border-green-300"
+                                    }`}
+                                  >
+                                    <span className={`w-5 h-5 rounded flex items-center justify-center border-2 ${isChecked ? "bg-green-500 border-green-600 text-white" : "border-gray-300"}`}>
+                                      {isChecked && "✔"}
+                                    </span>
+                                    <span>{lang === "fr" ? choice.textFr : choice.textEn}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 6. BADGE PAGE */}
+            {pageConfig.type === "badge" && pageConfig.chapter && (
+              <div className="badge-page flex flex-col justify-between h-full py-4 text-center">
+                {/* Header Band */}
+                <div className="bg-gradient-to-r from-forest to-forest-light text-white rounded-3xl p-4 flex items-center gap-4 shadow-md text-left">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0">
+                    <svg 
+                      className="w-12 h-12" 
+                      viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                    >
+                      <use 
+                        href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                        xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-xs uppercase font-black tracking-widest text-yellow-300">
+                      {lang === "fr" ? "Chapitre Terminé !" : "Chapter Completed!"}
+                    </span>
+                    <h2 className="text-2xl font-fun">
+                      {lang === "fr" ? "Ta récompense !" : "Your Reward!"}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Badge medal seal */}
+                <div className="my-6">
+                  <p className="text-2xl font-fun text-yellow-600 uppercase tracking-widest animate-bounce mb-3">
+                    {lang === "fr" ? "🎉 FÉLICITATIONS ! 🎉" : "🎉 CONGRATULATIONS! 🎉"}
+                  </p>
+                  
+                  {/* Glowing circular seal wrapper */}
+                  <div 
+                    onClick={() => soundManager.playFanfare()}
+                    className="badge-cercle cursor-pointer group transform hover:scale-105 active:scale-95 transition"
+                    style={{
+                      borderColor: pageConfig.chapter.badgeColor,
+                      background: "radial-gradient(#fff8dd, #ffe9a3)"
+                    }}
+                  >
+                    <svg className="w-24 h-24 text-forest transition group-hover:rotate-12">
+                      <use href={pageConfig.chapter.badgeIconId} />
+                    </svg>
+                  </div>
+
+                  <p className="badge-nom mt-4" style={{ color: pageConfig.chapter.badgeColor }}>
+                    {lang === "fr" ? pageConfig.chapter.badgeNameFr : pageConfig.chapter.badgeNameEn}
+                  </p>
+                </div>
+
+                {/* Speech info */}
+                <div className="bubble max-w-xl mx-auto">
+                  <svg 
+                    className="w-16 h-20 shrink-0" 
+                    viewBox={getCharacterViewBox(pageConfig.chapter.missions[0]?.character || "leo")}
+                  >
+                    <use 
+                      href={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                      xlinkHref={`#c-${pageConfig.chapter.missions[0]?.character || "leo"}`} 
+                    />
+                  </svg>
+                  <p className="text-left text-sm leading-snug">
+                    <b>{pageConfig.chapter.missions[0]?.character === "leo" ? "Léo" : pageConfig.chapter.missions[0]?.character === "nina" ? "Nina" : pageConfig.chapter.missions[0]?.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : "Lana"} :</b>{" "}
+                    {lang === "fr" ? pageConfig.chapter.badgeDescFr : pageConfig.chapter.badgeDescEn}
+                  </p>
+                </div>
+
+                {/* Printable Date Form */}
+                <div className="note-histoire max-w-md mx-auto w-full">
+                  <p className="text-sm">
+                    🎨 <b>{lang === "fr" ? "Colorie ton badge" : "Color your badge"}</b>,{" "}
+                    {lang === "fr" ? "et écris la date de ta victoire :" : "and write down the date of your victory:"}
+                  </p>
+                  <input
+                    type="text"
+                    placeholder={lang === "fr" ? "Exemple: 24 Juin..." : "Example: June 24..."}
+                    className="case-ecrire min-w-[40mm] text-center font-handwriting bg-transparent border-b-2 border-dashed border-orange-friend focus:outline-none focus:border-green-600 mt-2"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 7. DIPLOMA / CERTIFICATE PAGE */}
+            {pageConfig.type === "diploma" && (
+              <div 
+                className="border-8 border-double p-6 rounded-3xl h-full flex flex-col justify-between items-center text-center relative"
+                style={{ borderColor: "var(--color-yellow-friend)", background: "#fffdf0" }}
+              >
+                {/* Seal graphics */}
+                <div className="absolute top-2 left-2 opacity-20 pointer-events-none">
+                  <svg className="w-16 h-16 text-yellow-500" fill="currentColor" viewBox="0 0 100 100"><use href="#d-etoile" /></svg>
+                </div>
+                <div className="absolute top-2 right-2 opacity-20 pointer-events-none">
+                  <svg className="w-16 h-16 text-yellow-500" fill="currentColor" viewBox="0 0 100 100"><use href="#d-etoile" /></svg>
+                </div>
+
+                <div className="w-full">
+                  <p className="text-xs tracking-widest text-[#a88a44] font-black uppercase mb-1">
+                    TECHSEN FOR KIDS PRESENTS
+                  </p>
+                  <h1 className="text-3xl md:text-4xl font-fun text-yellow-600 drop-shadow mb-1">
+                    🏆 {lang === "fr" ? "Diplôme Officiel" : "Official Certificate"} 🏆
+                  </h1>
+                  <p className="text-base text-gray-500 font-bold">
+                    {lang === "fr" ? "des Copains de la Forêt" : "of the Forest Friends"}
+                  </p>
+                </div>
+
+                {/* Team Scene under certificate */}
+                <div className="w-full max-w-sm my-4 bg-green-50 border-2 border-green-200 rounded-2xl p-2 relative">
+                  <svg className="w-full h-24 filter drop-shadow-sm" viewBox="0 0 400 120">
+                    <rect width="400" height="100" fill="#daf0fd" rx="6"/>
+                    <rect y="80" width="400" height="40" fill="#c3e8b0" rx="6"/>
+                    <use href="#c-leo" x="50" y="20" width="60" height="75"/>
+                    <use href="#c-nina" x="130" y="30" width="50" height="62"/>
+                    <use href="#c-tom" x="200" y="35" width="55" height="55"/>
+                    <use href="#c-zaza" x="280" y="25" width="55" height="70"/>
+                  </svg>
+                </div>
+
+                <div className="space-y-4 w-full">
+                  <p className="text-lg text-gray-700 font-medium">
+                    {lang === "fr" ? "Ce diplôme est fièrement décerné à :" : "This certificate is proudly awarded to:"}
+                  </p>
+                  <p className="text-3xl md:text-4xl font-handwriting text-forest font-black border-b-2 border-dashed border-orange-friend inline-block px-8 py-1 max-w-md w-full">
+                    {childName}
+                  </p>
+                  <p className="text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+                    {lang === "fr"
+                      ? `pour avoir accompli avec succès les 44 missions du livre "${book.titleFr}", collecté les badges et être devenu(e) pour toujours le 5ᵉ Copain de la Forêt !`
+                      : `for successfully completing all 44 missions of the book "${book.titleEn}", earning all badges, and becoming forever the 5th Forest Friend!`}
+                  </p>
+                </div>
+
+                {/* Hand-signed fields and date */}
+                <div className="w-full border-t border-yellow-200 pt-4 flex flex-col items-center">
+                  <p className="text-sm font-medium text-gray-700">
+                    {lang === "fr" ? "Fait dans la Grande Clairière, le :" : "Done in the Grand Clearing, on:"}
+                  </p>
+                  <input
+                    type="text"
+                    placeholder={lang === "fr" ? "Date de réussite..." : "Completion date..."}
+                    className="case-ecrire min-w-[50mm] text-center font-handwriting bg-transparent border-b-2 border-dashed border-orange-friend focus:outline-none focus:border-green-600 mt-1"
+                  />
+                  
+                  {/* Signatures */}
+                  <div className="flex gap-4 md:gap-6 justify-center mt-4 text-xs font-bold text-[#8a7a4a]">
+                    <span>✍️ Léo 🦊</span>
+                    <span>✍️ Nina 🐭</span>
+                    <span>✍️ {lang === "fr" ? "Darina" : "Darina"} 🦔</span>
+                    <span>✍️ Lana 🐦</span>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+
+          {/* Page Footer Folio */}
+          <footer className="w-full flex items-center justify-between border-t border-green-100 pt-4 mt-4">
+            <span className="text-xs text-gray-400 font-bold">
+              {book.id === 1 ? "Tome 1 — La Rencontre" : "Tome 2 — La Cabane"}
+            </span>
+            <span className="text-sm font-handwriting text-forest-light font-bold">
+              — {currentPage} —
+            </span>
+            <span className="text-xs text-gray-400 font-bold">
+              {lang === "fr" ? "5-7 ans" : "Ages 5-7"}
+            </span>
+          </footer>
+
+        </div>
+
+        {/* Navigation & Toolbar */}
+        <div className="no-print mt-6 w-full max-w-4xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border-2 border-warm-border shadow-md">
+          {/* Previous Page */}
+          <button
+            onClick={() => navigateToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="w-full sm:w-auto px-6 py-3 bg-wood-brown text-white hover:bg-[#724a2c] rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#5c3e27] min-h-[44px] cursor-pointer"
+          >
+            <ArrowLeft size={20} />
+            {lang === "fr" ? "Précédent" : "Previous"}
+          </button>
+
+          {/* Current Page Folio Progress */}
+          <div className="flex items-center gap-2 font-bold text-gray-700">
+            <BookOpen className="text-forest" size={20} />
+            <span>
+              {lang === "fr" ? "Page" : "Page"} {currentPage} / {totalPages}
+            </span>
+          </div>
+
+          {/* Next Page */}
+          <button
+            onClick={() => navigateToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="w-full sm:w-auto px-6 py-3 bg-forest text-white hover:bg-green-700 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md border-b-4 border-[#415a3a] min-h-[44px] cursor-pointer"
+          >
+            {lang === "fr" ? "Suivant" : "Next"}
+            <ArrowRight size={20} />
+          </button>
+        </div>
+
+        {/* Digital Sticker Palette for Kids Customization */}
+        <StickerPalette
+          onSelectSticker={handleSelectSticker}
+          lang={lang}
+          onClearPageStickers={handleClearPageStickers}
+          hasStickersOnPage={placedStickers.some((st) => st.page === currentPage)}
+        />
+
+      </main>
+    </div>
+  );
+};

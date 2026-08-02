@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Enfant } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
 import { UserPlus, Sparkles, Map, Trophy, Award, BookOpen } from "lucide-react";
+import { getMascot } from "../types/mascots";
+import { AnimatedMascot } from "./AnimatedMascot";
 
 interface ChildProfilesListProps {
   onNavigate: (path: string) => void;
@@ -46,7 +48,7 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
             {lang === "fr" ? "Espace Famille" : "Family Hub"}
           </span>
           <h1 className="text-2xl sm:text-4xl font-fun font-bold mt-2 mb-2">
-            {lang === "fr" ? "Profils de tes petits aventuriers" : "Your Little Adventurers"}
+            {lang === "fr" ? "Profils des aventuriers de la forêt" : "Your Forest Adventurers"}
           </h1>
           <p className="text-sm sm:text-base text-white/90 max-w-xl">
             {lang === "fr"
@@ -112,16 +114,8 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-2xl bg-warm-cream dark:bg-gray-700 border-2 border-warm-border flex items-center justify-center text-3xl shadow-inner">
-                        {enfant.avatar === "leo"
-                          ? "🦊"
-                          : enfant.avatar === "nina"
-                          ? "🐭"
-                          : enfant.avatar === "darina"
-                          ? "🦔"
-                          : enfant.avatar === "lana"
-                          ? "🐦"
-                          : "🌟"}
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-100 to-amber-50 dark:from-gray-700 dark:to-gray-800 border-2 border-amber-300 dark:border-gray-600 flex items-center justify-center overflow-visible relative shadow-inner">
+                        <AnimatedMascot avatarId={enfant.avatar} size="md" popOutOfFrame={true} animateType={isActive ? "bounce" : "float"} />
                       </div>
                       <div className="text-left">
                         <h3 className="text-xl font-bold text-forest dark:text-forest-light">
@@ -139,8 +133,9 @@ export const ChildProfilesList: React.FC<ChildProfilesListProps> = ({
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400 text-left mb-4">
-                    {AVATAR_EMOJIS[enfant.avatar] || "Mascotte de la forêt"}
+                  <p className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 text-left mb-4 flex items-center gap-1">
+                    <span>✨</span>
+                    <span>{getMascot(enfant.avatar).name} - {getMascot(enfant.avatar).species}</span>
                   </p>
                 </div>
 

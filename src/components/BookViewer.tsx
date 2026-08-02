@@ -11,6 +11,7 @@ import { StickerPalette, STICKERS_LIST } from "./StickerPalette";
 import { soundManager } from "../utils/audioCelebration";
 import coverEn from "../assets/images/forest_friends_pwa_icon_1784212488830.jpg";
 import coverFr from "../assets/images/forest_friends_pwa_icon_1784283197982.jpg";
+import { AnimatedMascot } from "./AnimatedMascot";
 import { 
   CheckCircle, 
   HelpCircle, 
@@ -1523,16 +1524,16 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                       </div>
 
                       {/* Character Bubble speech */}
-                      <div className="bubble my-1 py-1">
-                        <svg 
-                          className="w-12 h-16 shrink-0" 
-                          viewBox={getCharacterViewBox(mission.character)}
-                        >
-                          <use 
-                            href={`#c-${mission.character}`} 
-                            xlinkHref={`#c-${mission.character}`} 
+                      <div className="bubble my-1 py-1 flex items-center gap-2">
+                        <div className="w-12 h-12 shrink-0 flex items-center justify-center overflow-visible relative">
+                          <AnimatedMascot
+                            avatarId={mission.character === "darina" ? "tom" : mission.character === "lana" ? "zaza" : mission.character}
+                            size="sm"
+                            popOutOfFrame={true}
+                            animateType="float"
+                            showQuoteOnClick={false}
                           />
-                        </svg>
+                        </div>
                         <p className="text-left text-sm leading-snug">
                           <b className="capitalize">{mission.character === "tom" ? (lang === "fr" ? "Darina" : "Darina") : mission.character === "zaza" ? "Lana" : mission.character} :</b>{" "}
                           {lang === "fr" ? mission.bubbleFr : mission.bubbleEn}

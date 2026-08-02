@@ -104,14 +104,14 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
 
   // Map world themes per tome
   const getWorldTheme = () => {
-    if (!selectedTome) return { bg: "from-emerald-400 via-emerald-500 to-teal-600", border: "border-emerald-600", path: "#34d399", name: "Forêt Enchantée" };
+    if (!selectedTome) return { bg: "from-emerald-400 via-emerald-500 to-teal-700", border: "border-amber-300 dark:border-amber-700", path: "#fef08a", name: "Forêt Enchantée 🌲" };
     if (selectedTome.slug === "tome-2") {
-      return { bg: "from-amber-400 via-orange-500 to-amber-700", border: "border-amber-600", path: "#fbbf24", name: "Vallée d'Automne" };
+      return { bg: "from-amber-400 via-orange-500 to-amber-800", border: "border-orange-300 dark:border-orange-700", path: "#fed7aa", name: "Vallée d'Automne 🍁" };
     }
     if (selectedTome.slug === "tome-3") {
-      return { bg: "from-indigo-500 via-purple-600 to-sky-700", border: "border-indigo-600", path: "#a78bfa", name: "Royaume des Étoiles" };
+      return { bg: "from-indigo-600 via-purple-700 to-sky-900", border: "border-purple-300 dark:border-purple-700", path: "#e0e7ff", name: "Royaume des Étoiles ⭐" };
     }
-    return { bg: "from-emerald-400 via-emerald-500 to-teal-600", border: "border-emerald-600", path: "#34d399", name: "Forêt Enchantée" };
+    return { bg: "from-emerald-400 via-emerald-500 to-teal-700", border: "border-amber-300 dark:border-amber-700", path: "#fef08a", name: "Forêt Enchantée 🌲" };
   };
 
   const worldTheme = getWorldTheme();
@@ -134,141 +134,153 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
   const progressPercent = Math.round(((currentUnlockedStep - 1) / totalSteps) * 100);
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6 pb-40 space-y-4 animate-fade-in">
+    <div className="max-w-md mx-auto p-4 sm:p-6 pb-40 space-y-4 animate-fade-in select-none">
       {/* TOP HEADER */}
       <div className="flex items-center justify-between pt-1">
         <button
           onClick={() => onNavigate("/")}
-          className="p-2.5 rounded-2xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-xs hover:scale-105 transition-transform cursor-pointer"
+          className="p-2.5 rounded-2xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-2 border-amber-200 dark:border-gray-700 shadow-[0_4px_0_#d97706] hover:scale-105 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
 
         <div className="text-center">
-          <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mb-0.5">
-            <Compass className="w-3 h-3 text-amber-600" />
-            <span>Monde Interactif</span>
+          <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-md mb-0.5 border border-white/50">
+            <Compass className="w-3.5 h-3.5 text-amber-950 animate-spin" />
+            <span>Carte d'Aventure 3D</span>
           </div>
-          <h1 className="text-base font-black font-fun text-gray-800 dark:text-gray-100 leading-tight">
+          <h1 className="text-base font-black font-fun text-gray-900 dark:text-gray-100 leading-tight">
             {selectedTome ? selectedTome.titre.split("-")[0].trim() : "Tome 1"} - {worldTheme.name}
           </h1>
         </div>
 
         <span
-          className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 px-2.5 py-1.5 rounded-2xl text-xs font-bold shadow-xs"
+          className="flex items-center gap-1 bg-white dark:bg-gray-800 border-2 border-amber-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded-2xl text-xs font-black shadow-xs"
         >
           <Globe className="w-3.5 h-3.5 text-emerald-600" />
           <span className="uppercase">{lang}</span>
         </span>
       </div>
 
-      {/* TOME / WORLD SELECTOR TABS */}
-      <div className="flex gap-1.5 bg-gray-100 dark:bg-gray-800/80 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-inner">
+      {/* TOME / WORLD SELECTOR 3D TABS */}
+      <div className="flex gap-2 bg-gradient-to-b from-amber-100 to-amber-200 dark:from-gray-800 dark:to-gray-900 p-2 rounded-3xl border-2 border-amber-300 dark:border-gray-700 shadow-lg">
         {tomes.map((t, idx) => {
           const isSelected = selectedTome?.id === t.id;
-          const icons = ["🌲", "🏡", "🐾"];
+          const icons = ["🌲", "🍂", "✨"];
           return (
             <button
               key={t.id}
+              type="button"
               onClick={() => handleSelectTome(t)}
-              className={`flex-1 py-2 px-1 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              className={`flex-1 py-2.5 px-2 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
                 isSelected
-                  ? "bg-white dark:bg-gray-700 text-emerald-900 dark:text-white shadow-md border border-emerald-300 scale-102"
-                  : "text-gray-500 hover:text-gray-800 dark:text-gray-400"
+                  ? "bg-gradient-to-b from-emerald-400 to-emerald-600 text-white shadow-[0_4px_0_#047857] border-2 border-white scale-102"
+                  : "bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-200 hover:bg-white border border-amber-200/50 shadow-sm"
               }`}
             >
-              <span className="text-sm">{icons[idx] || "📖"}</span>
-              <span className="truncate max-w-[80px]">Tome {idx + 1}</span>
+              <span className="text-base filter drop-shadow">{icons[idx] || "📖"}</span>
+              <span className="truncate max-w-[85px] font-fun">Tome {idx + 1}</span>
             </button>
           );
         })}
       </div>
 
-      {/* WORLD MAP CANVAS CONTAINER — hauteur dynamique selon le nombre réel de missions */}
+      {/* WORLD MAP CANVAS CONTAINER — 3D REALISTIC KIDS ADVENTURE MAP */}
       <div
         style={{ minHeight: `${mapHeight}px` }}
-        className={`bg-gradient-to-b ${worldTheme.bg} rounded-3xl p-4 sm:p-6 border-4 ${worldTheme.border} shadow-2xl relative overflow-hidden`}
+        className={`bg-gradient-to-b ${worldTheme.bg} rounded-[2.5rem] p-4 sm:p-6 border-8 ${worldTheme.border} shadow-[0_16px_35px_rgba(0,0,0,0.35)] relative overflow-hidden ring-4 ring-black/10`}
       >
-        {/* PARCHMENT TEXTURE OVERLAY */}
-        <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+        {/* PARCHMENT / DIRT TEXTURE OVERLAY */}
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
 
-        {/* FLOATING CLOUDS / PARTICLES DECORATION */}
-        <div className="absolute top-4 left-3 text-3xl opacity-85 animate-pulse pointer-events-none">☁️</div>
-        <div className="absolute top-12 right-6 text-3xl opacity-80 pointer-events-none">🌲</div>
-        {mapHeight > 250 && <div className="absolute top-52 left-2 text-2xl opacity-80 pointer-events-none">🦋</div>}
-        {mapHeight > 350 && <div className="absolute top-80 right-4 text-3xl opacity-80 pointer-events-none">🍄</div>}
-        {mapHeight > 480 && <div className="absolute top-[430px] left-5 text-2xl opacity-80 pointer-events-none">🌸</div>}
-        {mapHeight > 620 && <div className="absolute top-[580px] right-8 text-3xl opacity-85 pointer-events-none">✨</div>}
-        <div className="absolute bottom-16 left-4 text-3xl opacity-80 pointer-events-none">🌳</div>
+        {/* 3D FLOATING BIOME DECORATIONS & STICKERS */}
+        <div className="absolute top-4 left-3 text-4xl filter drop-shadow-[0_8px_10px_rgba(0,0,0,0.3)] animate-pulse pointer-events-none z-10">☁️</div>
+        <div className="absolute top-10 right-4 text-4xl filter drop-shadow-[0_8px_10px_rgba(0,0,0,0.3)] pointer-events-none z-10">🌲</div>
+        {mapHeight > 250 && <div className="absolute top-48 left-2 text-3xl filter drop-shadow-[0_6px_8px_rgba(0,0,0,0.25)] pointer-events-none z-10">🦋</div>}
+        {mapHeight > 350 && <div className="absolute top-80 right-3 text-4xl filter drop-shadow-[0_8px_10px_rgba(0,0,0,0.3)] pointer-events-none z-10">🍄</div>}
+        {mapHeight > 480 && <div className="absolute top-[430px] left-4 text-3xl filter drop-shadow-[0_6px_8px_rgba(0,0,0,0.25)] pointer-events-none z-10">🌸</div>}
+        {mapHeight > 620 && <div className="absolute top-[580px] right-6 text-4xl filter drop-shadow-[0_8px_10px_rgba(0,0,0,0.3)] pointer-events-none z-10">🏰</div>}
+        <div className="absolute bottom-12 left-3 text-4xl filter drop-shadow-[0_8px_10px_rgba(0,0,0,0.3)] pointer-events-none z-10">🌳</div>
 
-        {/* SVG SMOOTH WINDING ROAD PATH — tracé calculé pour N missions réelles */}
+        {/* SVG SMOOTH WINDING ROAD PATH WITH 3D DEPTH */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 100 ${mapHeight}`} preserveAspectRatio="none">
-          {/* Path Shadow / Outer Border */}
+          {/* Path Deep Shadow */}
           <path
             d={roadPathD}
             fill="none"
-            stroke="rgba(0, 0, 0, 0.25)"
+            stroke="rgba(0, 0, 0, 0.4)"
+            strokeWidth="24"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Path Outer 3D Stone/Dirt Border */}
+          <path
+            d={roadPathD}
+            fill="none"
+            stroke="#78350f"
             strokeWidth="18"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Outer Road Base */}
+          {/* Path Golden Cobblestone Surface */}
           <path
             d={roadPathD}
             fill="none"
-            stroke="#fef3c7"
-            strokeWidth="14"
+            stroke="#fef08a"
+            strokeWidth="12"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Inner Golden Dashed Line */}
+          {/* Inner Golden Dashed Center Line */}
           <path
             d={roadPathD}
             fill="none"
-            stroke="#f59e0b"
-            strokeWidth="6"
-            strokeDasharray="4,6"
+            stroke="#d97706"
+            strokeWidth="4"
+            strokeDasharray="3,5"
             strokeLinecap="round"
           />
         </svg>
 
-        {/* BIOME LANDMARKS ALONG ROAD */}
+        {/* 3D BIOME LANDMARKS ALONG ROAD */}
         {nodePositions.map((node, i) => (
           <div
             key={`landmark-${i}`}
-            style={{ left: `${node.x}%`, top: `${node.y - 32}px` }}
-            className="absolute -translate-x-1/2 pointer-events-none z-10 flex items-center gap-1 bg-black/40 backdrop-blur-xs text-white px-2 py-0.5 rounded-full text-[10px] font-black border border-white/20 shadow-md"
+            style={{ left: `${node.x}%`, top: `${node.y - 34}px` }}
+            className="absolute -translate-x-1/2 pointer-events-none z-10 flex items-center gap-1.5 bg-amber-950/80 backdrop-blur-sm text-amber-100 px-2.5 py-1 rounded-full text-[10px] font-black border border-amber-400/50 shadow-[0_4px_10px_rgba(0,0,0,0.4)]"
           >
-            <span>{node.emoji}</span>
-            <span className="hidden sm:inline">{node.label}</span>
+            <span className="text-sm filter drop-shadow">{node.emoji}</span>
+            <span className="hidden sm:inline font-fun tracking-wide">{node.label}</span>
           </div>
         ))}
 
-        {/* PLAYER MASCOT AVATAR STANDING ON ACTIVE LEVEL */}
+        {/* PLAYER MASCOT AVATAR STANDING ON ACTIVE LEVEL WITH 3D SHADOW */}
         {(() => {
           const activePos = nodePositions[currentUnlockedStep - 1] || nodePositions[0];
           return (
             <div
-              style={{ left: `${activePos.x}%`, top: `${activePos.y - 55}px` }}
+              style={{ left: `${activePos.x}%`, top: `${activePos.y - 62}px` }}
               className="absolute -translate-x-1/2 z-30 transition-all duration-700 ease-out flex flex-col items-center pointer-events-none"
             >
               {/* SPEECH BUBBLE */}
-              <div className="bg-amber-300 text-amber-950 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-lg border-2 border-white animate-bounce whitespace-nowrap mb-1 flex items-center gap-1">
-                <span>En avant ! Chapitre {currentUnlockedStep}</span>
-                <Sparkles className="w-3 h-3 text-amber-700" />
+              <div className="bg-gradient-to-r from-amber-300 to-amber-400 text-amber-950 font-black text-[11px] font-fun px-3 py-1 rounded-2xl shadow-[0_6px_15px_rgba(0,0,0,0.3)] border-2 border-white animate-bounce whitespace-nowrap mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-700 fill-amber-400" />
+                <span>Chapitre {currentUnlockedStep} !</span>
               </div>
-              {/* MASCOT ICON */}
-              <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md p-1 border-2 border-white shadow-2xl relative pointer-events-auto flex items-center justify-center">
-                <AnimatedMascot mascot={mascot} size="lg" animateType="bounce" customQuote={`En avant pour le chapitre ${currentUnlockedStep} !`} />
-                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full border border-white">
-                  <Check className="w-3 h-3" />
+              {/* 3D MASCOT AVATAR STANDEE */}
+              <div className="w-20 h-20 rounded-full bg-gradient-to-b from-white/90 to-amber-100/90 backdrop-blur-md p-1 border-4 border-amber-400 shadow-[0_12px_25px_rgba(0,0,0,0.4)] relative pointer-events-auto flex items-center justify-center ring-4 ring-amber-300/50">
+                <AnimatedMascot avatarId={enfant.avatar} mascot={mascot} size="lg" animateType="bounce" customQuote={`En avant pour le chapitre ${currentUnlockedStep} !`} />
+                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-white shadow-md">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
                 </div>
               </div>
+              {/* 3D Ground Shadow */}
+              <div className="w-14 h-3 bg-black/30 rounded-full blur-[2px] mt-0.5" />
             </div>
           );
         })()}
 
-        {/* STEP NODES (Interactive 1..8) */}
+        {/* STEP NODES (Interactive 3D Buttons 1..N) */}
         {Array.from({ length: totalSteps }).map((_, idx) => {
           const stepNum = idx + 1;
           const pos = nodePositions[idx] || { x: 50, y: 100 * idx };
@@ -279,34 +291,35 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
           return (
             <button
               key={stepNum}
+              type="button"
               onClick={() => setActiveNodeModal(stepNum)}
               style={{ left: `${pos.x}%`, top: `${pos.y}px` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 sm:w-16 sm:h-16 rounded-full font-black text-lg flex flex-col items-center justify-center border-4 shadow-2xl z-20 transition-all cursor-pointer active:scale-90 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 sm:w-18 sm:h-18 rounded-3xl font-black font-fun text-xl flex flex-col items-center justify-center border-4 z-20 transition-all cursor-pointer ${
                 isCurrent
-                  ? "bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-200 text-amber-950 border-white ring-4 ring-amber-300/60 animate-pulse scale-110"
+                  ? "bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 text-amber-950 border-white shadow-[0_8px_0_#b45309,0_15px_20px_rgba(0,0,0,0.4)] ring-4 ring-amber-300/80 animate-pulse scale-110 active:translate-y-1 active:shadow-[0_2px_0_#b45309]"
                   : isCompleted
-                  ? "bg-gradient-to-tr from-emerald-500 to-teal-400 text-white border-white hover:scale-110"
-                  : "bg-slate-800/80 text-gray-400 border-slate-600/80 backdrop-blur-xs"
+                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-teal-600 text-white border-white shadow-[0_6px_0_#047857,0_10px_15px_rgba(0,0,0,0.3)] hover:scale-110 active:translate-y-1 active:shadow-[0_2px_0_#047857]"
+                  : "bg-gradient-to-b from-slate-700 to-slate-800 text-gray-400 border-slate-600/90 shadow-[0_5px_0_#334155,0_8px_12px_rgba(0,0,0,0.3)]"
               }`}
             >
               {isCompleted && (
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-black leading-none">{stepNum}</span>
+                <div className="flex flex-col items-center drop-shadow">
+                  <span className="text-base font-black leading-none">{stepNum}</span>
                   <div className="flex gap-0.5 text-amber-300 mt-0.5">
-                    <Star className="w-2.5 h-2.5 fill-amber-300" />
-                    <Star className="w-2.5 h-2.5 fill-amber-300" />
-                    <Star className="w-2.5 h-2.5 fill-amber-300" />
+                    <Star className="w-3 h-3 fill-amber-300 stroke-amber-500" />
+                    <Star className="w-3 h-3 fill-amber-300 stroke-amber-500" />
+                    <Star className="w-3 h-3 fill-amber-300 stroke-amber-500" />
                   </div>
                 </div>
               )}
 
               {isCurrent && (
-                <div className="flex flex-col items-center">
-                  <Play className="w-6 h-6 fill-amber-950 ml-0.5" />
+                <div className="flex flex-col items-center drop-shadow-md">
+                  <Play className="w-7 h-7 fill-amber-950 stroke-amber-950 ml-0.5" />
                 </div>
               )}
 
-              {isLocked && <Lock className="w-5 h-5 text-gray-400" />}
+              {isLocked && <Lock className="w-6 h-6 text-gray-400/80 filter drop-shadow" />}
             </button>
           );
         })}
@@ -402,14 +415,15 @@ export const ChildParcours: React.FC<ChildParcoursProps> = ({
             {/* ACTION BUTTON */}
             {activeNodeModal <= currentUnlockedStep ? (
               <button
+                type="button"
                 onClick={() => {
                   onNavigate(`/defi/${selectedTome?.slug || "tome-1"}/chapitre-${activeNodeModal}`);
                 }}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-base cursor-pointer active:scale-95 transition-all"
+                className="w-full bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-800 text-white font-black font-fun py-3.5 px-6 rounded-2xl shadow-[0_6px_0_#047857,0_10px_20px_rgba(0,0,0,0.25)] border-2 border-white flex items-center justify-center gap-2 text-base cursor-pointer active:translate-y-1 active:shadow-[0_2px_0_#047857] transition-all"
               >
-                <Play className="w-5 h-5 fill-white" />
+                <Play className="w-5 h-5 fill-white stroke-white" />
                 <span>
-                  {activeNodeModal < currentUnlockedStep ? "Rejouer ce chapitre" : "Lancer le Défi !"}
+                  {activeNodeModal < currentUnlockedStep ? "Rejouer ce chapitre !" : "Lancer le Défi !"}
                 </span>
               </button>
             ) : (

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Lock, Download, Loader2, UserPlus, Sparkles, ArrowRight } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
+import { AnimatedMascot } from "./AnimatedMascot";
 import { multiTomeService } from "../services/multiTomeService";
 import { Enfant } from "../types/multiTome";
 import { soundManager } from "../utils/audioCelebration";
@@ -26,7 +27,7 @@ const SIGNATURE_TEXT = "K.Hermann Lana";
 const LAYOUT = {
   name: { xCenter: 0.5, yBaseline: 0.503, maxWidth: 0.49 },
   date: { x: 0.238, yBaseline: 0.902 },
-  signature: { x: 0.804, yBaseline: 0.967, eraseBox: { x: 0.816, y: 0.927, w: 0.102, h: 0.048 } }
+  signature: { x: 0.61, yBaseline: 0.898, maxWidth: 0.15, eraseBox: { x: 0.61, y: 0.868, w: 0.14, h: 0.028 } }
 };
 const TEXT_COLOR = "#3B2414";
 
@@ -188,11 +189,13 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
     ctx.fillStyle = `rgb(${sample[0]}, ${sample[1]}, ${sample[2]})`;
     ctx.fillRect(eraseX, eraseY, eraseW, eraseH);
 
-    const sigFontSize = W * 0.028;
-    ctx.font = `700 ${sigFontSize}px "Dancing Script"`;
+    const sigMaxWidthPx = W * sigCfg.maxWidth;
+    const sigFontSize = fitFontSize(ctx, SIGNATURE_TEXT, "Dancing Script", W * 0.026, W * 0.011, sigMaxWidthPx);
+    ctx.font = `700 ${sigFontSize}px "Dancing Script", cursive, sans-serif`;
     ctx.fillStyle = TEXT_COLOR;
     ctx.textAlign = "left";
-    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline);
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline, sigMaxWidthPx);
 
     return canvas;
   };
@@ -319,9 +322,9 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
           <Sparkles className="w-5 h-5 text-amber-500 absolute top-3 right-3 animate-spin drop-shadow" />
         </div>
       ) : (
-        <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-8 text-center space-y-3 shadow-xl">
-          <div className="w-16 h-16 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-lg overflow-hidden">
-            <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
+        <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-8 text-center space-y-3 shadow-xl overflow-visible">
+          <div className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-lg relative overflow-visible">
+            <AnimatedMascot avatarId={activeEnfant.avatar} size="md" popOutOfFrame={true} animateType="bounce" />
           </div>
           <h3 className="text-lg font-black font-fun text-emerald-900">{activeEnfant.pseudo}</h3>
           <p className="text-xs font-semibold text-amber-900">

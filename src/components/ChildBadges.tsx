@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Enfant, Progression, Chapitre, Tome } from "../types/multiTome";
 import { multiTomeService } from "../services/multiTomeService";
 import { Award, ArrowLeft, Lock, Sparkles } from "lucide-react";
+import { AnimatedMascot } from "./AnimatedMascot";
 
 interface ChildBadgesProps {
   enfant: Enfant;
@@ -69,8 +70,8 @@ export const ChildBadges: React.FC<ChildBadgesProps> = ({
               : "Each completed chapter unlocks an honor badge!"}
           </p>
         </div>
-        <div className="text-5xl sm:text-6xl select-none">
-          🎖️
+        <div className="w-16 h-18 relative overflow-visible shrink-0">
+          <AnimatedMascot avatarId={enfant.avatar} size="md" popOutOfFrame={true} animateType="bounce" />
         </div>
       </div>
 

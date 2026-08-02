@@ -35,19 +35,66 @@ function setLocalStorageItem<T>(key: string, value: T): void {
   }
 }
 
-// --- Mapping des avatars (table `avatars`, seedée avec ces 7 clés stables) ---
+// --- Mapping des avatars (table `avatars`, seedée avec ces clés stables) ---
+import { parseAvatarConfig } from "../types/mascots";
+
 const AVATAR_NAME_TO_ID: Record<string, number> = {
   leo: 1,
   nina: 2,
   darina: 3,
+  tom: 3,
   lana: 4,
+  zaza: 4,
   squirrel: 5,
+  samy: 5,
   chouette: 6,
-  ourson: 7
+  chloe: 6,
+  ourson: 7,
+  barnabe: 7,
+  luna: 8,
+  rabbit: 8,
+  felix: 9,
+  raccoon: 9,
+  panda: 10,
+  bao: 10,
+  koala: 11,
+  koko: 11,
+  mimi: 12,
+  cat: 12,
+  max: 13,
+  puppy: 13
 };
-const AVATAR_ID_TO_NAME: Record<number, string> = Object.fromEntries(
-  Object.entries(AVATAR_NAME_TO_ID).map(([name, id]) => [id, name])
-);
+
+const AVATAR_ID_TO_NAME: Record<number, string> = {
+  1: "leo",
+  2: "nina",
+  3: "tom",
+  4: "zaza",
+  5: "samy",
+  6: "chloe",
+  7: "barnabe",
+  8: "luna",
+  9: "felix",
+  10: "panda",
+  11: "koala",
+  12: "mimi",
+  13: "max"
+};
+
+function extractAvatarKey(row: any): string {
+  if (row.photo_data_url && typeof row.photo_data_url === "string") {
+    if (row.photo_data_url.startsWith("avatar:")) {
+      return row.photo_data_url.substring(7);
+    }
+    if (!row.photo_data_url.startsWith("data:")) {
+      return row.photo_data_url;
+    }
+  }
+  if (row.avatar_id && AVATAR_ID_TO_NAME[row.avatar_id]) {
+    return AVATAR_ID_TO_NAME[row.avatar_id];
+  }
+  return "leo";
+}
 
 // --- Mappers DB -> App ---
 function rowToTome(row: any): Tome {
@@ -81,12 +128,13 @@ function rowToChapitre(row: any): Chapitre {
 }
 
 function rowToEnfant(row: any): Enfant {
+  const avatarKey = extractAvatarKey(row);
   return {
     id: row.id,
     parent_id: row.profile_id || undefined,
     pseudo: row.pseudo || row.name,
-    avatar: (row.avatar_id && AVATAR_ID_TO_NAME[row.avatar_id]) || "leo",
-    photo: row.photo_data_url || undefined,
+    avatar: avatarKey,
+    photo: (row.photo_data_url && row.photo_data_url.startsWith("data:")) ? row.photo_data_url : undefined,
     tranche_age: (row.age_band || "5-6") as TrancheAge,
     code_livre: row.code_livre || undefined,
     total_points: row.total_points ?? undefined,
@@ -308,79 +356,125 @@ class MultiTomeService {
   // "children" filtre déjà sur profile_id = auth.uid(), donc parentId n'a plus
   // besoin d'être passé manuellement — il est dérivé de la session active.
   async getEnfantsByParent(): Promise<Enfant[]> {
-    if (!isSupabaseConfigured() || !supabase) {
-      console.warn("Supabase non configuré (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquants).");
-      return [];
+    const localChildren = getLocalStorageItem<Enfant[]>("local_children", []);
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await ensureSession();
+        const { data, error } = await supabase
+          .from("children")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (!error && data) {
+          const mapped = data.map(rowToEnfant);
+          setLocalStorageItem("local_children", mapped);
+          return mapped;
+        }
+      } catch (err) {
+        console.warn("Supabase getEnfantsByParent indisponible, utilisation du cache local:", err);
+      }
     }
-    await ensureSession();
-    const { data, error } = await supabase
-      .from("children")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Erreur lecture des profils enfants:", error.message);
-      return [];
-    }
-    return (data || []).map(rowToEnfant);
+    return localChildren;
   }
 
   async getEnfantById(id: string): Promise<Enfant | null> {
-    if (!isSupabaseConfigured() || !supabase) return null;
-    await ensureSession();
-    const { data, error } = await supabase.from("children").select("*").eq("id", id).maybeSingle();
-    if (error) {
-      console.error("Erreur lecture du profil enfant:", error.message);
-      return null;
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await ensureSession();
+        const { data, error } = await supabase.from("children").select("*").eq("id", id).maybeSingle();
+        if (!error && data) {
+          return rowToEnfant(data);
+        }
+      } catch (err) {
+        console.warn("Supabase getEnfantById indisponible:", err);
+      }
     }
-    return data ? rowToEnfant(data) : null;
+    const localChildren = getLocalStorageItem<Enfant[]>("local_children", []);
+    return localChildren.find(e => e.id === id) || null;
   }
 
   async saveEnfant(enfant: Partial<Enfant>): Promise<Enfant | null> {
-    if (!isSupabaseConfigured() || !supabase) {
-      console.error("Supabase non configuré : impossible d'enregistrer le profil enfant.");
-      return null;
-    }
-
-    const userId = await ensureSession();
-    if (!userId) {
-      console.error(
-        "Aucune session Supabase active — vérifie que les connexions anonymes sont activées " +
-        "(Dashboard > Authentication > Sign In / Providers > Anonymous)."
-      );
-      return null;
-    }
-
-    const payload: any = {
-      profile_id: userId,
-      pseudo: enfant.pseudo || "PetitCopain",
-      name: enfant.pseudo || "PetitCopain",
-      avatar_id: AVATAR_NAME_TO_ID[enfant.avatar || "leo"] || 1,
-      age_band: enfant.tranche_age || "5-6",
-      photo_data_url: enfant.photo ?? null
+    const localResult: Enfant = {
+      id: enfant.id || `child-${Date.now()}`,
+      pseudo: enfant.pseudo || "Copain",
+      avatar: enfant.avatar || "leo",
+      photo: enfant.photo,
+      tranche_age: enfant.tranche_age || "5-6",
+      code_livre: enfant.code_livre,
+      total_points: enfant.total_points || 0
     };
-    // Un id venant de la vraie table children est un uuid ; sinon on laisse Postgres le générer.
-    if (enfant.id && /^[0-9a-f-]{8}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{12}$/i.test(enfant.id)) {
-      payload.id = enfant.id;
+
+    const updateLocalEnfants = (item: Enfant) => {
+      const currentLocals = getLocalStorageItem<Enfant[]>("local_children", []);
+      const idx = currentLocals.findIndex(e => e.id === item.id || (item.pseudo && e.pseudo === item.pseudo));
+      let updated: Enfant[];
+      if (idx >= 0) {
+        updated = [...currentLocals];
+        updated[idx] = { ...updated[idx], ...item };
+      } else {
+        updated = [item, ...currentLocals];
+      }
+      setLocalStorageItem("local_children", updated);
+      return item;
+    };
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const userId = await ensureSession();
+        if (userId) {
+          const avatarConfig = enfant.avatar || "leo";
+          const mascotKey = parseAvatarConfig(avatarConfig).mascotId;
+          const avatarId = AVATAR_NAME_TO_ID[mascotKey] || 1;
+
+          const photoDataUrl = (enfant.photo && enfant.photo.startsWith("data:"))
+            ? enfant.photo
+            : `avatar:${avatarConfig}`;
+
+          const payload: any = {
+            profile_id: userId,
+            pseudo: enfant.pseudo || "Copain",
+            name: enfant.pseudo || "Copain",
+            avatar_id: avatarId,
+            age_band: enfant.tranche_age || "5-6",
+            photo_data_url: photoDataUrl
+          };
+          if (enfant.id && /^[0-9a-f-]{8}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{4}-[0-9a-f-]{12}$/i.test(enfant.id)) {
+            payload.id = enfant.id;
+          }
+
+          const { data, error } = await supabase.from("children").upsert(payload).select().single();
+          if (!error && data) {
+            const saved = rowToEnfant(data);
+            updateLocalEnfants(saved);
+            return saved;
+          } else if (error) {
+            console.warn("Notice enregistrement profil enfant (Supabase):", error.message);
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase saveEnfant indisponible, utilisation du stockage local:", err);
+      }
     }
 
-    const { data, error } = await supabase.from("children").upsert(payload).select().single();
-    if (error) {
-      console.error("Erreur enregistrement du profil enfant (Supabase):", error.message);
-      return null;
-    }
-    return rowToEnfant(data);
+    return updateLocalEnfants(localResult);
   }
 
   // --- PROGRESSIONS (table réelle: chapter_progress) ---
   async getProgressionsByEnfant(enfantId: string): Promise<Progression[]> {
-    if (!isSupabaseConfigured() || !supabase) return [];
-    await ensureSession();
-    const { data, error } = await supabase.from("chapter_progress").select("*").eq("child_id", enfantId);
-    if (error) {
-      console.error("Erreur lecture progression:", error.message);
-      return [];
+    const localProgress = getLocalStorageItem<Progression[]>(`progress_${enfantId}`, []);
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await ensureSession();
+        const { data, error } = await supabase.from("chapter_progress").select("*").eq("child_id", enfantId);
+        if (!error && data) {
+          const mapped = data.map(rowToProgression);
+          setLocalStorageItem(`progress_${enfantId}`, mapped);
+          return mapped;
+        }
+      } catch (err) {
+        console.warn("Supabase getProgressionsByEnfant indisponible:", err);
+      }
     }
-    return (data || []).map(rowToProgression);
+    return localProgress;
   }
 
   async validerProgression(
@@ -390,41 +484,64 @@ class MultiTomeService {
     isFirstAttempt: boolean,
     responseTimeMs?: number
   ): Promise<Progression | null> {
-    if (!isSupabaseConfigured() || !supabase) return null;
-    if (Number.isNaN(Number(chapitreId))) {
-      console.error(`chapitreId "${chapitreId}" n'est pas un id réel de la table "chapters" — progression non enregistrée.`);
-      return null;
-    }
-    await ensureSession();
-
     const pointsGagnes = points + (isFirstAttempt ? 5 : 0);
+    const localProg: Progression = {
+      id: `prog-${enfantId}-${chapitreId}`,
+      enfant_id: enfantId,
+      chapitre_id: chapitreId,
+      points_gagnes: pointsGagnes,
+      premiere_tentative: isFirstAttempt,
+      temps_reponse_ms: responseTimeMs,
+      valide_le: new Date().toISOString()
+    };
 
-    const { data: existing } = await supabase
-      .from("chapter_progress")
-      .select("*")
-      .eq("child_id", enfantId)
-      .eq("chapter_id", Number(chapitreId))
-      .maybeSingle();
-    if (existing) return rowToProgression(existing);
+    const saveLocal = (item: Progression) => {
+      const current = getLocalStorageItem<Progression[]>(`progress_${enfantId}`, []);
+      const idx = current.findIndex(p => p.chapitre_id === chapitreId);
+      const updated = idx >= 0 ? current : [...current, item];
+      setLocalStorageItem(`progress_${enfantId}`, updated);
+      return item;
+    };
 
-    const { data, error } = await supabase
-      .from("chapter_progress")
-      .insert({
-        child_id: enfantId,
-        chapter_id: Number(chapitreId),
-        points_earned: pointsGagnes,
-        first_attempt: isFirstAttempt,
-        response_time_ms: typeof responseTimeMs === "number" && Number.isFinite(responseTimeMs)
-          ? Math.round(responseTimeMs)
-          : null
-      })
-      .select()
-      .single();
-    if (error) {
-      console.error("Erreur enregistrement progression (Supabase):", error.message);
-      return null;
+    if (isSupabaseConfigured() && supabase && !Number.isNaN(Number(chapitreId))) {
+      try {
+        await ensureSession();
+        const { data: existing } = await supabase
+          .from("chapter_progress")
+          .select("*")
+          .eq("child_id", enfantId)
+          .eq("chapter_id", Number(chapitreId))
+          .maybeSingle();
+        if (existing) {
+          const mapped = rowToProgression(existing);
+          saveLocal(mapped);
+          return mapped;
+        }
+
+        const { data, error } = await supabase
+          .from("chapter_progress")
+          .insert({
+            child_id: enfantId,
+            chapter_id: Number(chapitreId),
+            points_earned: pointsGagnes,
+            first_attempt: isFirstAttempt,
+            response_time_ms: typeof responseTimeMs === "number" && Number.isFinite(responseTimeMs)
+              ? Math.round(responseTimeMs)
+              : null
+          })
+          .select()
+          .single();
+        if (!error && data) {
+          const mapped = rowToProgression(data);
+          saveLocal(mapped);
+          return mapped;
+        }
+      } catch (err) {
+        console.warn("Supabase validerProgression indisponible:", err);
+      }
     }
-    return rowToProgression(data);
+
+    return saveLocal(localProg);
   }
 
   // --- CLASSEMENT (LEADERBOARD) ---
@@ -433,60 +550,66 @@ class MultiTomeService {
   // les enfants (la RLS de "children" limite sinon chaque parent à ses propres
   // enfants, ce qui rendait le classement global impossible à calculer côté front).
   async getLeaderboard(trancheAge: TrancheAge | "toutes"): Promise<LeaderboardEntry[]> {
-    if (!isSupabaseConfigured() || !supabase) return [];
-    await ensureSession();
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await ensureSession();
 
-    const { data, error } = await supabase.rpc("get_leaderboard", {
-      p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
-    });
-    if (error) {
-      console.error("Erreur lecture classement (RPC get_leaderboard):", error.message);
-      return [];
+        const { data, error } = await supabase.rpc("get_leaderboard", {
+          p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
+        });
+        if (!error && data) {
+          return data.map((row: any, idx: number) => ({
+            enfant: {
+              id: row.child_id,
+              pseudo: row.pseudo,
+              avatar: extractAvatarKey(row),
+              photo: (row.photo_data_url && row.photo_data_url.startsWith("data:")) ? row.photo_data_url : undefined,
+              tranche_age: row.age_band as TrancheAge
+            },
+            total_points: Number(row.total_points) || 0,
+            chapitres_valides: Number(row.chapitres_valides) || 0,
+            rang: idx + 1
+          }));
+        }
+      } catch (err) {
+        console.warn("Supabase getLeaderboard indisponible:", err);
+      }
     }
-
-    return (data || []).map((row: any, idx: number) => ({
-      enfant: {
-        id: row.child_id,
-        pseudo: row.pseudo,
-        avatar: AVATAR_ID_TO_NAME[row.avatar_id] || "leo",
-        photo: row.photo_data_url || undefined,
-        tranche_age: row.age_band as TrancheAge
-      },
-      total_points: Number(row.total_points) || 0,
-      chapitres_valides: Number(row.chapitres_valides) || 0,
-      rang: idx + 1
-    }));
+    return [];
   }
 
   // --- CLASSEMENT VITESSE (temps moyen de réponse, le plus rapide en tête) ---
   // Utilise get_leaderboard_vitesse (RPC dédiée, même principe que get_leaderboard) :
   // ne classe que les enfants ayant au moins un défi chronométré.
   async getLeaderboardVitesse(trancheAge: TrancheAge | "toutes"): Promise<LeaderboardEntry[]> {
-    if (!isSupabaseConfigured() || !supabase) return [];
-    await ensureSession();
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await ensureSession();
 
-    const { data, error } = await supabase.rpc("get_leaderboard_vitesse", {
-      p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
-    });
-    if (error) {
-      console.error("Erreur lecture classement vitesse (RPC get_leaderboard_vitesse):", error.message);
-      return [];
+        const { data, error } = await supabase.rpc("get_leaderboard_vitesse", {
+          p_age_band: trancheAge && trancheAge !== "toutes" ? trancheAge : null
+        });
+        if (!error && data) {
+          return data.map((row: any, idx: number) => ({
+            enfant: {
+              id: row.child_id,
+              pseudo: row.pseudo,
+              avatar: extractAvatarKey(row),
+              photo: (row.photo_data_url && row.photo_data_url.startsWith("data:")) ? row.photo_data_url : undefined,
+              tranche_age: row.age_band as TrancheAge
+            },
+            total_points: Number(row.total_points) || 0,
+            chapitres_valides: Number(row.chapitres_valides) || 0,
+            chapitres_chronometres: Number(row.chapitres_chronometres) || 0,
+            temps_moyen_ms: row.temps_moyen_ms != null ? Number(row.temps_moyen_ms) : undefined,
+            rang: idx + 1
+          }));
+        }
+      } catch (err) {
+        console.warn("Supabase getLeaderboardVitesse indisponible:", err);
+      }
     }
-
-    return (data || []).map((row: any, idx: number) => ({
-      enfant: {
-        id: row.child_id,
-        pseudo: row.pseudo,
-        avatar: AVATAR_ID_TO_NAME[row.avatar_id] || "leo",
-        photo: row.photo_data_url || undefined,
-        tranche_age: row.age_band as TrancheAge
-      },
-      total_points: Number(row.total_points) || 0,
-      chapitres_valides: Number(row.chapitres_valides) || 0,
-      chapitres_chronometres: Number(row.chapitres_chronometres) || 0,
-      temps_moyen_ms: row.temps_moyen_ms != null ? Number(row.temps_moyen_ms) : undefined,
-      rang: idx + 1
-    }));
+    return [];
   }
 
   // --- DEFI BY SCAN TOKEN ---

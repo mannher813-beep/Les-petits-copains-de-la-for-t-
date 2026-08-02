@@ -79,9 +79,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   return (
     <div className="max-w-md mx-auto p-4 sm:p-6 pb-28 space-y-6">
       {/* CHILD GREETING BANNER */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 rounded-3xl p-6 text-white shadow-xl relative overflow-visible">
         {/* Background Sparkles */}
-        <div className="absolute top-0 right-0 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none rounded-3xl" />
         
         <div className="relative z-10 flex items-center justify-between gap-4">
           <div>
@@ -90,20 +90,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               {getTranslation(lang, "welcomeMessage")}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black font-fun tracking-wide">
-              {activeEnfant ? activeEnfant.pseudo : "Petit Copain"} !
+              {activeEnfant ? activeEnfant.pseudo : "Copain"} !
             </h1>
             <p className="text-emerald-100 text-xs mt-1 font-medium italic">
               "{mascot.quoteFr}"
             </p>
           </div>
 
-          {/* Avatar Companion */}
-          <div className="w-20 h-20 shrink-0 rounded-3xl bg-white/20 backdrop-blur-md p-1.5 border-2 border-amber-300 shadow-lg flex items-center justify-center relative overflow-hidden">
-            {activeEnfant?.photo ? (
-              <img src={activeEnfant.photo} alt={activeEnfant.pseudo} className="w-full h-full object-cover rounded-2xl" />
-            ) : (
-              <AnimatedMascot mascot={mascot} size="lg" animateType="celebrate" />
-            )}
+          {/* Avatar Companion with Pop-Out 3D Effect */}
+          <div className="w-20 h-20 shrink-0 rounded-full bg-gradient-to-tr from-amber-300/40 via-white/20 to-amber-100/10 backdrop-blur-md border-2 border-amber-300/80 shadow-2xl flex items-center justify-center relative overflow-visible z-30 mt-1">
+            <AnimatedMascot
+              avatarId={activeEnfant?.avatar}
+              mascot={mascot}
+              size="lg"
+              popOutOfFrame={true}
+              animateType="celebrate"
+            />
           </div>
         </div>
 
