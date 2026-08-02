@@ -5,6 +5,7 @@ import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
 import { Enfant } from "../types/multiTome";
 import { jsPDF } from "jspdf";
+import { soundManager } from "../utils/audioCelebration";
 
 interface DiplomeVerificationViewProps {
   // Slug du tome encodé dans le QR imprimé (ex: "tome-1"). Ce QR est le même
@@ -41,6 +42,13 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
   const [completedMissions, setCompletedMissions] = useState(0);
   const [tomeTitre, setTomeTitre] = useState<string>("");
   const isComplete = totalMissions > 0 && completedMissions >= totalMissions;
+
+  useEffect(() => {
+    if (isComplete) {
+      soundManager.playDiplomeVictoire();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete]);
 
   const mascot = getMascot(activeEnfant?.avatar);
 

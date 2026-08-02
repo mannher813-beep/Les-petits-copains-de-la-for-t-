@@ -147,7 +147,6 @@ export const DefiChapterView: React.FC<DefiChapterViewProps> = ({
       soundManager.playCorrectAnswer();
       setTimeout(() => {
         soundManager.playFanfare();
-        soundManager.playCheersAndApplause();
       }, 300);
       triggerConfetti();
       if (activeEnfant) {

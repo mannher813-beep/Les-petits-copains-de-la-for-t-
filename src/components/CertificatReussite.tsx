@@ -4,6 +4,7 @@ import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
 import { jsPDF } from "jspdf";
+import { soundManager } from "../utils/audioCelebration";
 
 interface CertificatReussiteProps {
   tomeSlug: string;
@@ -30,6 +31,15 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
   const [totalMissions, setTotalMissions] = useState(0);
   const [completedMissions, setCompletedMissions] = useState(0);
   const isComplete = totalMissions > 0 && completedMissions >= totalMissions;
+
+  useEffect(() => {
+    if (isComplete) {
+      soundManager.playDiplomeVictoire();
+    }
+    // Ne se déclenche qu'au moment où isComplete devient vrai, pas à chaque
+    // reprise du composant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete]);
 
   useEffect(() => {
     let cancelled = false;

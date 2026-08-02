@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, Compass, QrCode, Trophy, User, Moon, Sun, Globe, Settings, ShieldCheck, Volume2, VolumeX, Music } from "lucide-react";
+import { Home, Compass, QrCode, Trophy, User, Moon, Sun, Globe, Settings, ShieldCheck, Volume2, VolumeX } from "lucide-react";
 import { Enfant } from "../types/multiTome";
 import { Language, getTranslation } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
@@ -28,55 +28,13 @@ export const Navigation: React.FC<NavigationProps> = ({
   isAdminLoggedIn
 }) => {
   const [showLangPicker, setShowLangPicker] = useState(false);
-  const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [isMuted, setIsMuted] = useState(soundManager.isMuted);
-  const [isBGMOn, setIsBGMOn] = useState(soundManager.isBGMPlaying);
-  const [bgmVolume, setBgmVolume] = useState(soundManager.bgmVolume);
   const mascot = activeEnfant ? getMascot(activeEnfant.avatar) : getMascot("leo");
 
   const toggleSound = () => {
     const nextMute = !isMuted;
     setIsMuted(nextMute);
     soundManager.setMuted(nextMute);
-  };
-
-  const toggleBGM = () => {
-    soundManager.toggleAmbientBGM();
-    setIsBGMOn(soundManager.isBGMPlaying);
-    setShowVolumePanel(true);
-  };
-
-  // Par défaut, l'app doit s'ouvrir avec un fond sonore audible. Les
-  // navigateurs bloquant l'audio avant toute interaction, on démarre la
-  // musique d'ambiance dès le tout premier geste de l'utilisateur (tap,
-  // clic ou touche), sauf s'il a explicitement coupé le son au préalable.
-  React.useEffect(() => {
-    if (soundManager.isMuted || soundManager.isBGMPlaying) return;
-
-    const startOnFirstInteraction = () => {
-      soundManager.startAmbientBGM();
-      setIsBGMOn(soundManager.isBGMPlaying);
-      window.removeEventListener("pointerdown", startOnFirstInteraction);
-      window.removeEventListener("keydown", startOnFirstInteraction);
-    };
-
-    window.addEventListener("pointerdown", startOnFirstInteraction, { once: true });
-    window.addEventListener("keydown", startOnFirstInteraction, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", startOnFirstInteraction);
-      window.removeEventListener("keydown", startOnFirstInteraction);
-    };
-  }, []);
-
-  const handleVolumeChange = (value: number) => {
-    setBgmVolume(value);
-    soundManager.setBGMVolume(value);
-    // Si on remonte le son alors qu'il était coupé, on relance la musique.
-    if (value > 0 && !soundManager.isBGMPlaying && !isMuted) {
-      soundManager.startAmbientBGM();
-      setIsBGMOn(true);
-    }
   };
 
   const handleNavClick = (path: string) => {
@@ -129,49 +87,6 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-1.5">
-            {/* Ambient BGM Music Toggle + Volume */}
-            <div className="relative">
-              <button
-                onClick={toggleBGM}
-                onDoubleClick={() => setShowVolumePanel((v) => !v)}
-                className={`p-2 rounded-full border transition-transform cursor-pointer hover:scale-105 ${
-                  isBGMOn
-                    ? "bg-amber-300 text-amber-950 border-amber-400 animate-pulse shadow-xs"
-                    : "bg-amber-50 dark:bg-gray-800 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-gray-700"
-                }`}
-                title={isBGMOn ? "Couper la musique de fond" : "Activer la musique de fond"}
-              >
-                <Music className="w-4 h-4" />
-              </button>
-
-              {showVolumePanel && (
-                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200">
-                      Volume musique
-                    </span>
-                    <button
-                      onClick={() => setShowVolumePanel(false)}
-                      className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(bgmVolume * 100)}
-                    onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
-                    className="w-full accent-amber-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-gray-400 text-right mt-0.5">
-                    {Math.round(bgmVolume * 100)}%
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Sound Effects Toggle */}
             <button
               onClick={toggleSound}

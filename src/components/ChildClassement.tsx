@@ -46,11 +46,10 @@ export const ChildClassement: React.FC<ChildClassementProps> = ({
       soundManager.playPopSound(2);
     }, 800);
 
-    // Step 3: Reveal Champion Rank 1 (1.4s) - Confetti, Fanfare & Cheers!
+    // Step 3: Reveal Champion Rank 1 (1.4s) - Confetti & Fanfare !
     setTimeout(() => {
       setAnimStep(3);
       soundManager.playFanfare();
-      soundManager.playCheersAndApplause();
 
       // Launch Confetti Explosions
       confetti({

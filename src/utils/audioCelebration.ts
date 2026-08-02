@@ -1,15 +1,25 @@
-// Web Audio API Synthesizer for rich child-friendly sound effects & ambient background soundscape
+// Gestionnaire de sons unifié — joue les vrais effets sonores livrés
+// (public/sounds/*.mp3) au lieu de synthétiser des tonalités approximatives
+// à la volée. Le fond sonore en boucle a été entièrement retiré : il ne
+// s'agissait que d'une note isolée rejouée toutes les 2,4s (aucune vraie
+// musique), jugé de mauvaise qualité — en attendant une vraie bande sonore
+// composée séparément.
+
+const SOUND_FILES = {
+  correct: "/sounds/ding_bonne_reponse.mp3",
+  wrong: "/sounds/erreur_douce.mp3",
+  tap: "/sounds/bouton_pop.mp3",
+  badge: "/sounds/badge_debloque.mp3",
+  diplome: "/sounds/diplome_victoire.mp3",
+  sticker: "/sounds/autocollant_pose.mp3"
+} as const;
 
 class SoundManager {
-  private ctx: AudioContext | null = null;
   public isMuted: boolean = false;
-  private bgmOscs: OscillatorNode[] = [];
-  private bgmGain: GainNode | null = null;
-  public isBGMPlaying: boolean = false;
-  private bgmTimer: any = null;
-  // Volume du fond sonore ambiant (0 = silencieux, 1 = volume max).
-  // Par défaut bien audible (0.7) au lieu du volume quasi inaudible d'origine.
-  public bgmVolume: number = 0.7;
+  // Un pool de lecteurs par son permet de rejouer un même effet très
+  // rapidement (plusieurs bonnes réponses d'affilée, etc.) sans qu'un appel
+  // coupe le précédent.
+  private pools: Partial<Record<keyof typeof SOUND_FILES, HTMLAudioElement[]>> = {};
 
   constructor() {
     try {
@@ -20,17 +30,6 @@ class SoundManager {
     } catch {
       this.isMuted = false;
     }
-    try {
-      const savedVolume = localStorage.getItem("forest_bgm_volume");
-      if (savedVolume !== null) {
-        const parsed = parseFloat(savedVolume);
-        if (!Number.isNaN(parsed)) {
-          this.bgmVolume = Math.min(1, Math.max(0, parsed));
-        }
-      }
-    } catch {
-      this.bgmVolume = 0.7;
-    }
   }
 
   public setMuted(muted: boolean) {
@@ -38,279 +37,75 @@ class SoundManager {
     try {
       localStorage.setItem("forest_audio_muted", JSON.stringify(muted));
     } catch {}
-    if (muted && this.isBGMPlaying) {
-      this.stopAmbientBGM();
-    }
   }
 
-  // Règle le volume du fond sonore ambiant (0 à 1). Persisté et appliqué
-  // immédiatement aux prochaines notes jouées par la boucle du BGM.
-  public setBGMVolume(volume: number) {
-    this.bgmVolume = Math.min(1, Math.max(0, volume));
+  private play(key: keyof typeof SOUND_FILES, playbackRate: number = 1) {
+    if (this.isMuted) return;
     try {
-      localStorage.setItem("forest_bgm_volume", String(this.bgmVolume));
-    } catch {}
-  }
-
-  private getContext(): AudioContext | null {
-    if (this.isMuted) return null;
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
+      let pool = this.pools[key];
+      if (!pool) {
+        pool = [];
+        this.pools[key] = pool;
       }
+      // Réutilise un lecteur déjà terminé s'il y en a un, sinon en crée un.
+      let audio = pool.find((a) => a.ended || a.paused);
+      if (!audio) {
+        audio = new Audio(SOUND_FILES[key]);
+        pool.push(audio);
+      }
+      audio.currentTime = 0;
+      audio.playbackRate = playbackRate;
+      audio.volume = 1;
+      void audio.play().catch(() => {
+        // Lecture bloquée (pas encore d'interaction utilisateur) — sans
+        // conséquence, l'effet suivant retentera normalement.
+      });
+    } catch {
+      // best-effort uniquement
     }
-    if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-    return this.ctx;
   }
 
-  // 1. JOYFUL CORRECT ANSWER CHIME
+  /** Bonne réponse à un défi ou scan QR valide. */
   public playCorrectAnswer() {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    const notes = [
-      { freq: 523.25, time: 0, duration: 0.15 },    // C5
-      { freq: 659.25, time: 0.1, duration: 0.15 },   // E5
-      { freq: 783.99, time: 0.2, duration: 0.2 },    // G5
-      { freq: 1046.50, time: 0.35, duration: 0.4 }   // C6 High Sparkle
-    ];
-
-    notes.forEach((note) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(note.freq, ctx.currentTime + note.time);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime + note.time);
-      gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + note.time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + note.time + note.duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime + note.time);
-      osc.stop(ctx.currentTime + note.time + note.duration);
-    });
+    this.play("correct");
   }
 
-  // 2. SOFT TRY-AGAIN WRONG ANSWER SOUND
+  /** Mauvaise réponse — son doux et jamais négatif. */
   public playWrongAnswer() {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(280, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.3);
-
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
+    this.play("wrong");
   }
 
-  // 3. NAVIGATION & BUTTON TAP CLICK
+  /** Clic / tap générique sur un bouton. */
   public playTapSound() {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.05);
-
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.06);
+    this.play("tap");
   }
 
-  // 4. BRASS / TRUMPET FANFARE
+  /** Badge débloqué, fin de chapitre, ou petite fanfare de célébration. */
   public playFanfare() {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    const notes = [
-      { freq: 523.25, time: 0, duration: 0.15 },    // C5
-      { freq: 659.25, time: 0.15, duration: 0.15 }, // E5
-      { freq: 783.99, time: 0.30, duration: 0.15 }, // G5
-      { freq: 1046.50, time: 0.45, duration: 0.5 }, // C6
-    ];
-
-    notes.forEach((note) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(note.freq, ctx.currentTime + note.time);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime + note.time);
-      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + note.time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + note.time + note.duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime + note.time);
-      osc.stop(ctx.currentTime + note.time + note.duration);
-    });
+    this.play("badge");
   }
 
-  // 5. CHEERS & APPLAUSE SYNTHESIZER
+  /** Alias conservé pour compatibilité — désormais identique à playFanfare
+   * (il n'y a plus de son distinct d'applaudissements synthétisés). */
   public playCheersAndApplause() {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    // Clapping noise
-    const bufferSize = ctx.sampleRate * 2.5;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.value = 1200;
-    bandpass.Q.value = 1.0;
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.4);
-
-    noise.connect(bandpass);
-    bandpass.connect(gain);
-    gain.connect(ctx.destination);
-
-    noise.start(ctx.currentTime);
-
-    // Rising pitch sweeps for "YAY!"
-    const cheerPitches = [
-      { start: 350, end: 700, delay: 0.1 },
-      { start: 450, end: 900, delay: 0.3 },
-      { start: 300, end: 650, delay: 0.6 },
-    ];
-
-    cheerPitches.forEach((cheer) => {
-      const osc = ctx.createOscillator();
-      const oscGain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(cheer.start, ctx.currentTime + cheer.delay);
-      osc.frequency.exponentialRampToValueAtTime(cheer.end, ctx.currentTime + cheer.delay + 0.3);
-
-      oscGain.gain.setValueAtTime(0.01, ctx.currentTime + cheer.delay);
-      oscGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + cheer.delay + 0.1);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cheer.delay + 0.6);
-
-      osc.connect(oscGain);
-      oscGain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime + cheer.delay);
-      osc.stop(ctx.currentTime + cheer.delay + 0.6);
-    });
+    // Volontairement silencieux : évite de superposer deux fois le même son
+    // quand playFanfare() est déjà appelé au même moment ailleurs.
   }
 
-  // 6. POP SOUND FOR RANK REVEALS
+  /** Petit "pop" pour les révélations de classement, légèrement plus aigu à
+   * chaque rang pour varier. */
   public playPopSound(index: number = 0) {
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    const baseFreq = 400 + index * 100;
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 2, ctx.currentTime + 0.1);
-
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.15);
+    this.play("tap", 1 + Math.min(index, 4) * 0.06);
   }
 
-  // 7. AMBIENT BACKGROUND FOREST MUSIC SYNTH (Calm & Soothing)
-  public startAmbientBGM() {
-    if (this.isBGMPlaying || this.isMuted) return;
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    this.isBGMPlaying = true;
-    const notes = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23]; // C4, E4, G4, C5, A4, F4
-    let noteIdx = 0;
-
-    const playNextBar = () => {
-      if (!this.isBGMPlaying || this.isMuted) return;
-
-      const freq = notes[noteIdx % notes.length];
-      noteIdx++;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      // Le pic de volume suit le réglage utilisateur (bgmVolume 0..1),
-      // mappé sur une plage confortable pour une musique d'ambiance.
-      const peakGain = 0.03 + this.bgmVolume * 0.32;
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-      gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(peakGain, ctx.currentTime + 0.8);
-      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 2.2);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 2.3);
-
-      this.bgmTimer = setTimeout(playNextBar, 2400);
-    };
-
-    playNextBar();
+  /** Mélodie de victoire chaleureuse à l'obtention du diplôme. */
+  public playDiplomeVictoire() {
+    this.play("diplome");
   }
 
-  public stopAmbientBGM() {
-    this.isBGMPlaying = false;
-    if (this.bgmTimer) {
-      clearTimeout(this.bgmTimer);
-      this.bgmTimer = null;
-    }
-  }
-
-  public toggleAmbientBGM() {
-    if (this.isBGMPlaying) {
-      this.stopAmbientBGM();
-    } else {
-      this.startAmbientBGM();
-    }
+  /** Petit son doux quand un autocollant est posé. */
+  public playStickerPlaced() {
+    this.play("sticker");
   }
 }
 

@@ -8,6 +8,7 @@ import { BookData, UserProgress } from "../types";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { AppleCounter } from "./AppleCounter";
 import { StickerPalette, STICKERS_LIST } from "./StickerPalette";
+import { soundManager } from "../utils/audioCelebration";
 import coverEn from "../assets/images/forest_friends_pwa_icon_1784212488830.jpg";
 import coverFr from "../assets/images/forest_friends_pwa_icon_1784283197982.jpg";
 import { 
@@ -804,7 +805,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   onToggleDarkMode
 }) => {
   const { childName, currentLanguage: lang, currentPage } = progress;
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(!soundManager.isMuted);
   
   // Track selected options for each QCM
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
@@ -841,7 +842,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   }, [placedStickers, book.id]);
 
   const handleSelectSticker = (stickerId: string) => {
-    playSound("click");
+    soundManager.playStickerPlaced();
     setPlacedStickers(prev => [
       ...prev,
       {
@@ -855,12 +856,12 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   };
 
   const handleDeleteSticker = (stickerId: string) => {
-    playSound("click");
+    soundManager.playTapSound();
     setPlacedStickers(prev => prev.filter(st => st.id !== stickerId));
   };
 
   const handleClearPageStickers = () => {
-    playSound("click");
+    soundManager.playTapSound();
     setPlacedStickers(prev => prev.filter(st => st.page !== currentPage));
   };
 
@@ -888,69 +889,22 @@ export const BookViewer: React.FC<BookViewerProps> = ({
     e.preventDefault();
     setActiveDragId(null);
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    playSound("click");
+    soundManager.playTapSound();
   };
 
-  // Simple Web Audio API sound player for sweet kid-friendly sound effects
-  const playSound = (type: "correct" | "incorrect" | "badge" | "click") => {
-    if (!soundEnabled) return;
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+  // Le son n'est plus synthétisé localement ici : voir soundManager
+  // (src/utils/audioCelebration.ts), partagé avec le reste de l'app.
 
-      if (type === "correct") {
-        // High, happy beep
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12); // E5
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } else if (type === "incorrect") {
-        // Lower buzzing sound
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(150, ctx.currentTime);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      } else if (type === "badge") {
-        // Magical arpeggio
-        const now = ctx.currentTime;
-        [261.63, 329.63, 392.00, 523.25, 659.25].forEach((freq, idx) => {
-          const oscNode = ctx.createOscillator();
-          const gainNode = ctx.createGain();
-          oscNode.connect(gainNode);
-          gainNode.connect(ctx.destination);
-          oscNode.frequency.setValueAtTime(freq, now + idx * 0.08);
-          gainNode.gain.setValueAtTime(0.08, now + idx * 0.08);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
-          oscNode.start(now + idx * 0.08);
-          oscNode.stop(now + idx * 0.08 + 0.3);
-        });
-      } else if (type === "click") {
-        // Simple subtle tap
-        osc.frequency.setValueAtTime(300, ctx.currentTime);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.08);
-      }
-    } catch (e) {
-      console.warn("Web Audio API not supported or blocked", e);
-    }
-  };
-
-  // Automatically trigger celebration sounds when landing on badge or diploma pages
+  // Déclenche automatiquement le son de célébration adapté en arrivant sur
+  // une page badge ou diplôme.
   useEffect(() => {
     const config = getPageConfig(currentPage);
-    if (config.type === "badge" || config.type === "diploma") {
-      const timer = setTimeout(() => {
-        playSound("badge");
-      }, 300);
+    if (config.type === "diploma") {
+      const timer = setTimeout(() => soundManager.playDiplomeVictoire(), 300);
+      return () => clearTimeout(timer);
+    }
+    if (config.type === "badge") {
+      const timer = setTimeout(() => soundManager.playFanfare(), 300);
       return () => clearTimeout(timer);
     }
   }, [currentPage]);
@@ -966,7 +920,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       }
       return;
     }
-    playSound("click");
+    soundManager.playTapSound();
     onChangeProgress(prev => ({
       ...prev,
       currentPage: Math.max(1, Math.min(totalPages, target))
@@ -1040,7 +994,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       ...prev,
       [missionId]: optionId
     }));
-    playSound(isCorrect ? "correct" : "incorrect");
+    (isCorrect ? soundManager.playCorrectAnswer() : soundManager.playWrongAnswer());
   };
 
   // Handle Grid Item Toggle
@@ -1051,10 +1005,10 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
     if (current.includes(itemId)) {
       updated = updated.filter(id => id !== itemId);
-      playSound("click");
+      soundManager.playTapSound();
     } else {
       updated.push(itemId);
-      playSound(isTarget ? "correct" : "incorrect");
+      (isTarget ? soundManager.playCorrectAnswer() : soundManager.playWrongAnswer());
     }
 
     setGridFound(prev => ({
@@ -1064,7 +1018,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
     // Auto congrats if found all targets
     if (isTarget && updated.filter(id => id.startsWith(`${missionId}`)).length === maxTargets) {
-      playSound("correct");
+      soundManager.playCorrectAnswer();
     }
   };
 
@@ -1072,7 +1026,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   const handleMatchClick = (missionId: number, index: number, side: "left" | "right", correctIndex: number) => {
     if (side === "left") {
       setActiveMatch({ missionId, leftIndex: index });
-      playSound("click");
+      soundManager.playTapSound();
     } else if (side === "right" && activeMatch && activeMatch.missionId === missionId) {
       const leftIdx = activeMatch.leftIndex;
       const isCorrectMatch = leftIdx === index; // In our layout, correct pairs share same indices
@@ -1085,9 +1039,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
             [leftIdx]: index
           }
         }));
-        playSound("correct");
+        soundManager.playCorrectAnswer();
       } else {
-        playSound("incorrect");
+        soundManager.playWrongAnswer();
       }
       setActiveMatch(null);
     }
@@ -1167,7 +1121,11 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
           {/* Sound toggle */}
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              soundManager.setMuted(!next);
+            }}
             className="p-2 bg-warm-cream hover:bg-warm-linen text-forest rounded-xl border border-warm-border transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
             title={soundEnabled ? "Couper le son" : "Activer le son"}
           >
@@ -1762,7 +1720,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                             {textInputs[mKey] && (
                               <button 
                                 type="button"
-                                onClick={() => playSound("correct")}
+                                onClick={() => soundManager.playCorrectAnswer()}
                                 className="px-4 py-2 bg-green-50 border border-green-200 rounded-xl text-xs font-bold text-forest no-print min-h-[44px] cursor-pointer animate-pulse"
                               >
                                 ✔ {lang === "fr" ? "Valider" : "Check"}
@@ -1789,7 +1747,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                                         ...prev,
                                         [`${mission.id}-${choice.id}`]: isChecked ? "unchecked" : "checked"
                                       }));
-                                      playSound("correct");
+                                      soundManager.playCorrectAnswer();
                                     }}
                                     className={`px-4 py-2 border-2 rounded-xl text-sm font-bold flex items-center gap-3 transition cursor-pointer min-h-[44px] ${
                                       isChecked
@@ -1850,7 +1808,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                   
                   {/* Glowing circular seal wrapper */}
                   <div 
-                    onClick={() => playSound("badge")}
+                    onClick={() => soundManager.playFanfare()}
                     className="badge-cercle cursor-pointer group transform hover:scale-105 active:scale-95 transition"
                     style={{
                       borderColor: pageConfig.chapter.badgeColor,
