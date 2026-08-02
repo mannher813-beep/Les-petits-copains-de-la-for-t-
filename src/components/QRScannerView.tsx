@@ -115,10 +115,32 @@ export const QRScannerView: React.FC<QRScannerViewProps> = ({ onNavigate, lang }
     };
   }, [isScanning]);
 
+  // QR "VALIDATION FINALE" imprimé sur le diplôme : pointe vers la page
+  // publique https://lescopainsdelaforet.pages.dev/verification/tome-1 (ou tout
+  // autre tome). On reconnaît ce lien précis et on navigue directement dessus,
+  // sans le faire passer par le blocage "lien externe" ni par la recherche de défi.
+  const VERIFICATION_URL_REGEX = /(?:https?:\/\/[^/\s]+)?\/verification\/([a-z0-9-]+)/i;
+
   const handleProcessToken = async (rawToken: string) => {
     if (!rawToken || loading) return;
     setLoading(true);
     setErrorMessage(null);
+
+    const verifMatch = rawToken.trim().match(VERIFICATION_URL_REGEX);
+    if (verifMatch) {
+      soundManager.playCorrectAnswer();
+      if (scannerRef.current && isScanning) {
+        try {
+          await scannerRef.current.stop();
+        } catch (e) {
+          console.warn("Scanner stop notice", e);
+        }
+        setIsScanning(false);
+      }
+      onNavigate(`/verification/${verifMatch[1]}`);
+      setLoading(false);
+      return;
+    }
 
     try {
       const defi = await multiTomeService.getDefiByToken(rawToken);

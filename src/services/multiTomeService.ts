@@ -505,7 +505,7 @@ class MultiTomeService {
 
     // Detect external URLs (http://, https://, www.)
     const isUrl = /^https?:\/\//i.test(raw) || /^www\./i.test(raw);
-    const isInternalAppUrl = raw.includes("/defi/") || raw.includes("ais-dev") || raw.includes("ais-pre") || raw.includes("localhost");
+    const isInternalAppUrl = raw.includes("/defi/") || raw.includes("/verification/") || raw.includes("ais-dev") || raw.includes("ais-pre") || raw.includes("localhost");
 
     if (isUrl && !isInternalAppUrl) {
       return {
