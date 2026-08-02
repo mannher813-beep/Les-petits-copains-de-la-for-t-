@@ -125,47 +125,68 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
       const W = 480;
       const H = 640;
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [W, H] });
+      const corner = 28;
 
-      pdf.setFillColor(254, 243, 199);
-      pdf.roundedRect(0, 0, W, H, 28, 28, "F");
+      // Fond crème pour le corps de la carte
+      pdf.setFillColor(255, 253, 245);
+      pdf.roundedRect(0, 0, W, H, corner, corner, "F");
+
+      // Panneau vert forêt en haut (zone titre), façon bandeau/plaque
+      const panelH = 190;
+      pdf.setFillColor(4, 120, 87); // emerald-700
+      pdf.roundedRect(16, 16, W - 32, panelH, 20, 20, "F");
+
+      // Double bordure : vert forêt à l'extérieur, or fin à l'intérieur
+      pdf.setDrawColor(21, 94, 60);
+      pdf.setLineWidth(8);
+      pdf.roundedRect(5, 5, W - 10, H - 10, corner - 4, corner - 4, "S");
       pdf.setDrawColor(251, 191, 36);
-      pdf.setLineWidth(7);
-      pdf.roundedRect(6, 6, W - 12, H - 12, 24, 24, "S");
+      pdf.setLineWidth(2);
+      pdf.roundedRect(14, 14, W - 28, H - 28, corner - 10, corner - 10, "S");
 
-      pdf.setFillColor(245, 158, 11);
-      [[26, 26], [W - 26, 26], [26, H - 26], [W - 26, H - 26]].forEach(([cx, cy]) => {
-        pdf.circle(cx, cy, 5, "F");
-      });
+      // Feuilles décoratives dans les 4 coins
+      const drawLeaf = (x: number, y: number) => {
+        pdf.setFillColor(16, 122, 74);
+        pdf.circle(x, y, 8, "F");
+        pdf.setFillColor(74, 222, 128);
+        pdf.circle(x - 2, y - 2, 4, "F");
+      };
+      [[30, 30], [W - 30, 30], [30, H - 30], [W - 30, H - 30]].forEach(([cx0, cy0]) => drawLeaf(cx0, cy0));
 
+      // Ruban doré, posé sur le panneau vert
       const ribbonLabel = `DIPLÔME ${(tomeTitre || tomeSlug).toUpperCase()}`;
-      const ribbonW = Math.min(360, Math.max(220, ribbonLabel.length * 6.5));
-      const ribbonY = 44;
-      pdf.setFillColor(245, 158, 11);
-      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 30, 15, 15, "F");
+      const ribbonW = Math.min(400, Math.max(220, ribbonLabel.length * 6.5));
+      const ribbonY = 40;
+      pdf.setFillColor(251, 191, 36);
+      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 32, 16, 16, "F");
       pdf.setTextColor(120, 53, 15);
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
-      pdf.text(ribbonLabel, W / 2, ribbonY + 20, { align: "center" });
+      pdf.text(ribbonLabel, W / 2, ribbonY + 21, { align: "center" });
 
-      pdf.setFontSize(30);
-      pdf.setTextColor(120, 53, 15);
-      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 78, { align: "center" });
+      // FÉLICITATIONS ! en blanc, sur le panneau vert
+      pdf.setFontSize(32);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 84, { align: "center" });
       pdf.setFillColor(251, 191, 36);
-      pdf.rect(W / 2 - 44, ribbonY + 90, 88, 3, "F");
+      pdf.roundedRect(W / 2 - 50, ribbonY + 96, 100, 4, 2, 2, "F");
 
-      const imgSize = 110;
+      // Portrait de la mascotte, à cheval sur le panneau vert et le corps crème
+      const imgSize = 116;
       const imgX = W / 2 - imgSize / 2;
-      const imgY = ribbonY + 112;
+      const imgY = 16 + panelH - imgSize / 2 - 8;
       try {
         const img = await loadImage(mascot.image);
         const cx = W / 2;
         const cy = imgY + imgSize / 2;
-        const outerR = imgSize / 2 + 6;
         pdf.setFillColor(255, 255, 255);
-        pdf.circle(cx, cy, outerR, "F");
+        pdf.circle(cx, cy, imgSize / 2 + 10, "F");
+        pdf.setDrawColor(21, 94, 60);
+        pdf.setLineWidth(5);
+        pdf.circle(cx, cy, imgSize / 2 + 10, "S");
         pdf.setDrawColor(251, 191, 36);
-        pdf.setLineWidth(4);
-        pdf.circle(cx, cy, outerR, "S");
+        pdf.setLineWidth(3);
+        pdf.circle(cx, cy, imgSize / 2 + 3, "S");
 
         const circularDataUrl = renderCircularMascot(img, imgSize * 2);
         pdf.addImage(circularDataUrl, "PNG", imgX, imgY, imgSize, imgSize);
@@ -173,22 +194,31 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
         console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
       }
 
-      pdf.setFontSize(24);
+      // Prénom de l'enfant
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(26);
       pdf.setTextColor(6, 78, 59);
-      pdf.text(activeEnfant?.pseudo || "", W / 2, imgY + imgSize + 46, { align: "center" });
+      pdf.text(activeEnfant?.pseudo || "", W / 2, imgY + imgSize + 50, { align: "center" });
 
+      // Texte de certification
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
-      pdf.setTextColor(120, 53, 15);
-      pdf.text("Tu as terminé avec succès tous les défis du", W / 2, imgY + imgSize + 78, { align: "center" });
+      pdf.setTextColor(87, 60, 20);
+      pdf.text("Tu as terminé avec succès tous les défis du", W / 2, imgY + imgSize + 82, { align: "center" });
       pdf.setFont("helvetica", "bold");
-      pdf.text(tomeTitre || tomeSlug, W / 2, imgY + imgSize + 96, { align: "center" });
+      pdf.setTextColor(21, 94, 60);
+      pdf.text(tomeTitre || tomeSlug, W / 2, imgY + imgSize + 100, { align: "center" });
 
-      const medalY = imgY + imgSize + 140;
+      // Médaille avec ruban à deux pans (vert + or)
+      const medalY = imgY + imgSize + 148;
+      pdf.setFillColor(5, 122, 85);
+      pdf.triangle(W / 2 - 18, medalY - 8, W / 2 - 2, medalY - 8, W / 2 - 14, medalY + 26, "F");
+      pdf.setFillColor(251, 191, 36);
+      pdf.triangle(W / 2 + 2, medalY - 8, W / 2 + 18, medalY - 8, W / 2 + 14, medalY + 26, "F");
       pdf.setFillColor(217, 119, 6);
-      pdf.circle(W / 2, medalY, 26, "F");
+      pdf.circle(W / 2, medalY, 27, "F");
       pdf.setFillColor(252, 211, 77);
-      pdf.circle(W / 2, medalY, 20, "F");
+      pdf.circle(W / 2, medalY, 21, "F");
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(20);
       pdf.setTextColor(120, 53, 15);
