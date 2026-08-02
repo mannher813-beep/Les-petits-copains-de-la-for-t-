@@ -35,7 +35,7 @@ const LAYOUT = {
   // Ligne "Signature : ..." en bas à droite. On efface d'abord le paraphe
   // décoratif imprimé dans le template à cet endroit, avant d'écrire la
   // vraie signature par-dessus.
-  signature: { x: 0.804, yBaseline: 0.967, eraseBox: { x: 0.816, y: 0.927, w: 0.102, h: 0.048 } }
+  signature: { x: 0.804, yBaseline: 0.967, maxWidth: 0.166, eraseBox: { x: 0.816, y: 0.927, w: 0.102, h: 0.048 } }
 };
 
 const TEXT_COLOR = "#3B2414";
@@ -199,11 +199,12 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
     ctx.fillStyle = `rgb(${sample[0]}, ${sample[1]}, ${sample[2]})`;
     ctx.fillRect(eraseX, eraseY, eraseW, eraseH);
 
-    const sigFontSize = W * 0.028;
+    const sigMaxWidthPx = W * sigCfg.maxWidth;
+    const sigFontSize = fitFontSize(ctx, SIGNATURE_TEXT, "Dancing Script", W * 0.028, W * 0.012, sigMaxWidthPx);
     ctx.font = `700 ${sigFontSize}px "Dancing Script"`;
     ctx.fillStyle = TEXT_COLOR;
     ctx.textAlign = "left";
-    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline);
+    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline, sigMaxWidthPx);
 
     return canvas;
   };
