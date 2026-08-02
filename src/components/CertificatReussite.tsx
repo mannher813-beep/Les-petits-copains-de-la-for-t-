@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, Sparkles, Lock, Loader2 } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
-import { jsPDF } from "jspdf";
 import { soundManager } from "../utils/audioCelebration";
 
 interface CertificatReussiteProps {
@@ -14,6 +13,32 @@ interface CertificatReussiteProps {
   onNavigate: (path: string) => void;
   lang: Language;
 }
+
+// Chemin du nouveau modèle PNG du diplôme (remplace l'ancien PDF généré par
+// primitives vectorielles). Toute la mise en page graphique — cadre, rubans,
+// mascottes, badges, médaille — vient de ce fichier ; seuls le nom, la date
+// et la signature sont dessinés par-dessus, dynamiquement.
+const DIPLOME_TEMPLATE_SRC = "/assets/diplome-tome-1.png";
+
+// Signataire officiel du diplôme, fixe pour tous les enfants.
+const SIGNATURE_TEXT = "K.Hermann Lana";
+
+// Emplacements des champs texte, exprimés en fraction (0 à 1) de la largeur
+// et de la hauteur du template. Comme le PNG est dessiné à sa résolution
+// native puis mis à l'échelle pour l'export haute résolution, ces fractions
+// restent valables quelle que soit la taille de sortie choisie.
+const LAYOUT = {
+  // Ligne pointillée sous "FÉLICITATIONS !" — accueille le nom de l'enfant.
+  name: { xCenter: 0.5, yBaseline: 0.503, maxWidth: 0.49 },
+  // Ligne "Date : ..." en bas à gauche.
+  date: { x: 0.238, yBaseline: 0.902 },
+  // Ligne "Signature : ..." en bas à droite. On efface d'abord le paraphe
+  // décoratif imprimé dans le template à cet endroit, avant d'écrire la
+  // vraie signature par-dessus.
+  signature: { x: 0.804, yBaseline: 0.967, eraseBox: { x: 0.816, y: 0.927, w: 0.102, h: 0.048 } }
+};
+
+const TEXT_COLOR = "#3B2414";
 
 export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
   tomeSlug,
@@ -71,13 +96,12 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
     };
   }, [tomeSlug, enfantId]);
 
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfFileName, setPdfFileName] = useState<string>("");
-  const [pdfError, setPdfError] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pngUrl, setPngUrl] = useState<string | null>(null);
+  const [pngFileName, setPngFileName] = useState<string>("");
+  const [genError, setGenError] = useState(false);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Charge l'image de la mascotte en mémoire (nécessaire pour jsPDF.addImage,
-  // qui a besoin d'un HTMLImageElement déjà chargé, pas juste d'une URL).
   const loadImage = (src: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
       const img = new Image();
@@ -87,155 +111,154 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
       img.src = src;
     });
 
-  // Découpe l'image en cercle nous-mêmes via un <canvas> (technique standard
-  // et fiable), au lieu de compter sur pdf.clip() qui s'est révélé imprévisible
-  // pour ce cas précis. Le cadrage imite "object-contain" : l'image entière
-  // reste visible, centrée, sans être étirée ni recadrée n'importe comment.
-  const renderCircularMascot = (img: HTMLImageElement, size: number): string => {
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, size, size);
-    const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-    return canvas.toDataURL("image/png");
+  // S'assure que la police (avec le bon poids) est bien chargée avant de
+  // dessiner sur le canvas — sinon le premier rendu peut retomber sur une
+  // police système par défaut.
+  const ensureFontsReady = async () => {
+    try {
+      await Promise.all([
+        document.fonts.load('700 60px "Playfair Display"'),
+        document.fonts.load('700 60px "Dancing Script"')
+      ]);
+      await document.fonts.ready;
+    } catch (e) {
+      console.info("Chargement des polices du diplôme : notice", e);
+    }
   };
 
-  // On dessine le diplôme directement avec les primitives de jsPDF (formes,
-  // couleurs, texte vectoriel) plutôt que de "photographier" le HTML avec
-  // html2canvas : cette dernière approche ne restituait ni les dégradés, ni
-  // les bordures, ni la police, ni même le cadrage de l'image (Tailwind v4
-  // n'est pas fiablement interprété par html2canvas). Dessiner nous-mêmes
-  // élimine ce problème à la racine et produit un PDF plus net et plus léger.
+  // Réduit la taille de police jusqu'à ce que le texte tienne dans la
+  // largeur disponible (le nom de l'enfant peut être arbitrairement long).
+  const fitFontSize = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    fontFamily: string,
+    startSize: number,
+    minSize: number,
+    maxWidthPx: number
+  ): number => {
+    let size = startSize;
+    while (size > minSize) {
+      ctx.font = `700 ${size}px "${fontFamily}"`;
+      if (ctx.measureText(text).width <= maxWidthPx) break;
+      size -= 2;
+    }
+    return size;
+  };
+
+  // Dessine le diplôme complet (template + champs dynamiques) sur un canvas
+  // à la résolution demandée, et retourne son URL de données PNG.
+  const renderDiplomaToCanvas = async (targetWidth: number): Promise<HTMLCanvasElement> => {
+    const template = await loadImage(DIPLOME_TEMPLATE_SRC);
+    await ensureFontsReady();
+
+    const scale = targetWidth / template.naturalWidth;
+    const W = targetWidth;
+    const H = Math.round(template.naturalHeight * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    // 1. Le template, tel quel, mis à l'échelle — aucun élément graphique
+    // n'est déplacé, seuls les champs texte ci-dessous sont ajoutés.
+    ctx.drawImage(template, 0, 0, W, H);
+
+    // 2. Nom de l'enfant, centré sous "FÉLICITATIONS !"
+    const nameCfg = LAYOUT.name;
+    const nameMaxWidthPx = W * nameCfg.maxWidth;
+    const nameFontSize = fitFontSize(ctx, enfantName, "Playfair Display", W * 0.033, W * 0.013, nameMaxWidthPx);
+    ctx.font = `700 ${nameFontSize}px "Playfair Display"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(enfantName, W * nameCfg.xCenter, H * nameCfg.yBaseline, nameMaxWidthPx);
+
+    // 3. Date du jour, format JJ/MM/AAAA
+    const dateStr = new Date().toLocaleDateString("fr-FR");
+    const dateCfg = LAYOUT.date;
+    const dateFontSize = W * 0.019;
+    ctx.font = `600 ${dateFontSize}px "Playfair Display"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "left";
+    ctx.fillText(dateStr, W * dateCfg.x, H * dateCfg.yBaseline);
+
+    // 4. Signature — on efface d'abord le paraphe décoratif imprimé dans le
+    // template à cet endroit précis, en réutilisant la vraie couleur du
+    // parchemin prélevée juste au-dessus (zone propre, sans texte), puis on
+    // écrit la vraie signature en police manuscrite par-dessus.
+    const sigCfg = LAYOUT.signature;
+    const erase = sigCfg.eraseBox;
+    const eraseX = erase.x * W;
+    const eraseY = erase.y * H;
+    const eraseW = erase.w * W;
+    const eraseH = erase.h * H;
+    const sample = ctx.getImageData(Math.round(eraseX + eraseW / 2), Math.max(0, Math.round(eraseY - 14)), 1, 1).data;
+    ctx.fillStyle = `rgb(${sample[0]}, ${sample[1]}, ${sample[2]})`;
+    ctx.fillRect(eraseX, eraseY, eraseW, eraseH);
+
+    const sigFontSize = W * 0.028;
+    ctx.font = `700 ${sigFontSize}px "Dancing Script"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "left";
+    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline);
+
+    return canvas;
+  };
+
+  // Aperçu rapide (résolution d'écran) affiché directement dans la page, dès
+  // que les missions sont validées — pas besoin d'attendre un clic pour que
+  // l'enfant voie son diplôme personnalisé.
+  useEffect(() => {
+    if (!isComplete) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const canvas = await renderDiplomaToCanvas(900);
+        if (cancelled) return;
+        const target = previewCanvasRef.current;
+        if (target) {
+          target.width = canvas.width;
+          target.height = canvas.height;
+          const tctx = target.getContext("2d")!;
+          tctx.clearRect(0, 0, target.width, target.height);
+          tctx.drawImage(canvas, 0, 0);
+        }
+      } catch (e) {
+        console.info("Aperçu du diplôme non disponible", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete, enfantName]);
+
+  // Génère le fichier PNG final en haute résolution (3840px de large, soit
+  // l'équivalent 4K — le template source ne dépasse pas cette qualité, donc
+  // exporter davantage n'ajouterait aucun détail réel).
   const handleGenerate = async () => {
     if (!isComplete) return;
-    setIsGeneratingPdf(true);
-    setPdfError(false);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
+    setIsGenerating(true);
+    setGenError(false);
+    if (pngUrl) {
+      URL.revokeObjectURL(pngUrl);
+      setPngUrl(null);
     }
     try {
-      const W = 480;
-      const H = 640;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [W, H] });
-      const corner = 28;
-
-      // Fond crème pour le corps de la carte
-      pdf.setFillColor(255, 253, 245);
-      pdf.roundedRect(0, 0, W, H, corner, corner, "F");
-
-      // Panneau vert forêt en haut (zone titre), façon bandeau/plaque —
-      // apporte de la couleur sans dépendre d'un dégradé ou d'un clip fragile.
-      const panelH = 190;
-      pdf.setFillColor(4, 120, 87); // emerald-700
-      pdf.roundedRect(16, 16, W - 32, panelH, 20, 20, "F");
-
-      // Double bordure : vert forêt à l'extérieur, or fin à l'intérieur
-      pdf.setDrawColor(21, 94, 60); // emerald-800
-      pdf.setLineWidth(8);
-      pdf.roundedRect(5, 5, W - 10, H - 10, corner - 4, corner - 4, "S");
-      pdf.setDrawColor(251, 191, 36); // amber-400
-      pdf.setLineWidth(2);
-      pdf.roundedRect(14, 14, W - 28, H - 28, corner - 10, corner - 10, "S");
-
-      // Feuilles décoratives dans les 4 coins (deux tons, plus "vivant" qu'un
-      // simple point plat)
-      const drawLeaf = (x: number, y: number) => {
-        pdf.setFillColor(16, 122, 74);
-        pdf.circle(x, y, 8, "F");
-        pdf.setFillColor(74, 222, 128);
-        pdf.circle(x - 2, y - 2, 4, "F");
-      };
-      [[30, 30], [W - 30, 30], [30, H - 30], [W - 30, H - 30]].forEach(([cx0, cy0]) => drawLeaf(cx0, cy0));
-
-      // Ruban "DIPLÔME DU TOME 1" doré, posé sur le panneau vert
-      const ribbonW = 250;
-      const ribbonY = 40;
-      pdf.setFillColor(251, 191, 36); // amber-400
-      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 32, 16, 16, "F");
-      pdf.setTextColor(120, 53, 15); // amber-950
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.text("DIPLÔME DU TOME 1", W / 2, ribbonY + 21, { align: "center" });
-
-      // FÉLICITATIONS ! en blanc, bien contrasté sur le panneau vert
-      pdf.setFontSize(32);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 84, { align: "center" });
-      pdf.setFillColor(251, 191, 36);
-      pdf.roundedRect(W / 2 - 50, ribbonY + 96, 100, 4, 2, 2, "F");
-
-      // Portrait de la mascotte, à cheval sur le panneau vert et le corps
-      // crème (effet "sceau de diplôme" classique) — double cadre vert + or
-      const imgSize = 116;
-      const imgX = W / 2 - imgSize / 2;
-      const imgY = 16 + panelH - imgSize / 2 - 8;
-      try {
-        const img = await loadImage(mascot.image);
-        const cx = W / 2;
-        const cy = imgY + imgSize / 2;
-        pdf.setFillColor(255, 255, 255);
-        pdf.circle(cx, cy, imgSize / 2 + 10, "F");
-        pdf.setDrawColor(21, 94, 60);
-        pdf.setLineWidth(5);
-        pdf.circle(cx, cy, imgSize / 2 + 10, "S");
-        pdf.setDrawColor(251, 191, 36);
-        pdf.setLineWidth(3);
-        pdf.circle(cx, cy, imgSize / 2 + 3, "S");
-
-        const circularDataUrl = renderCircularMascot(img, imgSize * 2);
-        pdf.addImage(circularDataUrl, "PNG", imgX, imgY, imgSize, imgSize);
-      } catch (imgErr) {
-        console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
-      }
-
-      // Prénom de l'enfant
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(26);
-      pdf.setTextColor(6, 78, 59); // emerald-900
-      pdf.text(enfantName, W / 2, imgY + imgSize + 50, { align: "center" });
-
-      // Texte de certification
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(12);
-      pdf.setTextColor(87, 60, 20);
-      pdf.text("Tu as terminé avec succès tous les défis du", W / 2, imgY + imgSize + 82, { align: "center" });
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(21, 94, 60);
-      pdf.text("Tome 1 : La découverte de la forêt !", W / 2, imgY + imgSize + 100, { align: "center" });
-
-      // Médaille avec ruban à deux pans (vert + or)
-      const medalY = imgY + imgSize + 148;
-      pdf.setFillColor(5, 122, 85);
-      pdf.triangle(W / 2 - 18, medalY - 8, W / 2 - 2, medalY - 8, W / 2 - 14, medalY + 26, "F");
-      pdf.setFillColor(251, 191, 36);
-      pdf.triangle(W / 2 + 2, medalY - 8, W / 2 + 18, medalY - 8, W / 2 + 14, medalY + 26, "F");
-      pdf.setFillColor(217, 119, 6);
-      pdf.circle(W / 2, medalY, 27, "F");
-      pdf.setFillColor(252, 211, 77);
-      pdf.circle(W / 2, medalY, 21, "F");
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(20);
-      pdf.setTextColor(120, 53, 15);
-      pdf.text("1", W / 2, medalY + 7, { align: "center" });
-
-      const blob = pdf.output("blob");
-      setPdfUrl(URL.createObjectURL(blob));
-      setPdfFileName(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.pdf`);
+      const canvas = await renderDiplomaToCanvas(3840);
+      const blob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob a échoué"))), "image/png", 1)
+      );
+      setPngUrl(URL.createObjectURL(blob));
+      setPngFileName(`diplome-${enfantName.replace(/\s+/g, "-").toLowerCase()}-tome-1.png`);
     } catch (e) {
-      console.error("Erreur lors de la génération du PDF du diplôme", e);
-      setPdfError(true);
+      console.error("Erreur lors de la génération du PNG du diplôme", e);
+      setGenError(true);
     } finally {
-      setIsGeneratingPdf(false);
+      setIsGenerating(false);
     }
   };
 
@@ -257,84 +280,46 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
         <div className="w-9" />
       </div>
 
-      {/* GOLDEN DIPLOMA CERTIFICATE (Matching Screen 9) */}
-      <div
-        className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden"
-      >
-        {/* Decorative Corner Ornaments */}
-        <div className="absolute top-2 left-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute top-2 right-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute bottom-2 left-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute bottom-2 right-2 text-2xl text-amber-500">⚜️</div>
-
-        {/* HEADER RIBBON */}
-        <div className="inline-block bg-amber-500 text-amber-950 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md border border-amber-300">
-          Diplôme du Tome 1
+      {/* APERÇU DU DIPLÔME (rendu du template PNG + textes dynamiques) */}
+      {isComplete ? (
+        <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300 relative">
+          <canvas ref={previewCanvasRef} className="w-full h-auto block" />
+          <Sparkles className="w-5 h-5 text-amber-500 absolute top-3 right-3 animate-spin drop-shadow" />
         </div>
-
-        {/* FÉLICITATIONS BANNER */}
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black font-fun text-amber-900 tracking-wide drop-shadow-xs">
-            FÉLICITATIONS !
-          </h2>
-          <div className="w-24 h-1 bg-amber-400 mx-auto rounded-full" />
-        </div>
-
-        {/* MASCOT & CHILD NAME */}
-        <div className="space-y-2 py-2">
+      ) : (
+        <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-8 text-center space-y-3 shadow-xl">
           <div
-            className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-xl relative overflow-hidden"
-            style={{ width: 80, height: 80 }}
+            className="w-16 h-16 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-lg overflow-hidden"
           >
-            <Sparkles className="w-5 h-5 text-amber-500 absolute -top-1 -right-1 animate-spin" />
-            <img
-              src={mascot.image}
-              alt={mascot.name}
-              className="w-full h-full object-contain"
-              style={{ width: "100%", height: "100%" }}
-            />
+            <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
           </div>
-
-          <h3 className="text-2xl font-black font-fun text-emerald-900">
-            {enfantName}
-          </h3>
+          <h3 className="text-lg font-black font-fun text-emerald-900">{enfantName}</h3>
+          <p className="text-xs font-semibold text-amber-900">
+            Termine toutes les missions du Tome 1 pour débloquer ton diplôme personnalisé !
+          </p>
         </div>
-
-        {/* CERTIFICATION TEXT */}
-        <p className="text-xs font-semibold text-amber-900 leading-relaxed max-w-xs mx-auto">
-          Tu as terminé avec succès tous les défis du <br />
-          <strong className="text-emerald-950 font-extrabold">Tome 1: La découverte de la forêt</strong> !
-        </p>
-
-        {/* GOLD MEDAL WAX SEAL BADGE */}
-        <div className="pt-2">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 border-4 border-amber-600 mx-auto flex items-center justify-center text-3xl shadow-xl">
-            🏅
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* ACTION BUTTONS (Télécharger) */}
       <div className="space-y-2.5 pt-2">
-        {pdfUrl ? (
-          // Le PDF est prêt en mémoire (Blob). Ce lien natif <a download>,
+        {pngUrl ? (
+          // Le PNG est prêt en mémoire (Blob). Ce lien natif <a download>,
           // tapé directement par la personne, est un vrai geste utilisateur :
-          // il ne sera jamais bloqué par le navigateur, contrairement à un
-          // pdf.save() déclenché en fin de fonction async.
+          // il ne sera jamais bloqué par le navigateur.
           <a
-            href={pdfUrl}
-            download={pdfFileName}
+            href={pngUrl}
+            download={pngFileName}
             className="w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform"
           >
             <Download className="w-4 h-4" />
-            <span>Appuie ici pour télécharger le PDF</span>
+            <span>Appuie ici pour télécharger le diplôme (PNG)</span>
           </a>
         ) : (
           <button
             onClick={handleGenerate}
-            disabled={!isComplete || checking || isGeneratingPdf}
+            disabled={!isComplete || checking || isGenerating}
             className={`w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
-              isComplete && !checking && !isGeneratingPdf
+              isComplete && !checking && !isGenerating
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-95 transition-transform"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700 cursor-not-allowed"
             }`}
@@ -344,15 +329,15 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Vérification des missions...</span>
               </>
-            ) : isGeneratingPdf ? (
+            ) : isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Génération du PDF...</span>
+                <span>Génération du diplôme...</span>
               </>
             ) : isComplete ? (
               <>
                 <Download className="w-4 h-4" />
-                <span>Préparer le PDF</span>
+                <span>Préparer le diplôme en haute résolution</span>
               </>
             ) : (
               <>
@@ -363,9 +348,9 @@ export const CertificatReussite: React.FC<CertificatReussiteProps> = ({
           </button>
         )}
 
-        {pdfError && (
+        {genError && (
           <p className="text-center text-[11px] font-bold text-red-500 px-2">
-            La génération du PDF a échoué. Réessaie, ou vérifie ta connexion.
+            La génération du diplôme a échoué. Réessaie, ou vérifie ta connexion.
           </p>
         )}
 

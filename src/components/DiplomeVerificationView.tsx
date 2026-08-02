@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Lock, Download, Loader2, UserPlus, Sparkles, ArrowRight } from "lucide-react";
 import { Language } from "../i18n/translations";
 import { getMascot } from "../types/mascots";
 import { multiTomeService } from "../services/multiTomeService";
 import { Enfant } from "../types/multiTome";
-import { jsPDF } from "jspdf";
 import { soundManager } from "../utils/audioCelebration";
 
 interface DiplomeVerificationViewProps {
@@ -20,12 +19,23 @@ interface DiplomeVerificationViewProps {
   lang: Language;
 }
 
+// Même modèle PNG et même mise en page de champs texte que
+// CertificatReussite.tsx — voir ce fichier pour le détail des coordonnées.
+const DIPLOME_TEMPLATE_SRC = "/assets/diplome-tome-1.png";
+const SIGNATURE_TEXT = "K.Hermann Lana";
+const LAYOUT = {
+  name: { xCenter: 0.5, yBaseline: 0.503, maxWidth: 0.49 },
+  date: { x: 0.238, yBaseline: 0.902 },
+  signature: { x: 0.804, yBaseline: 0.967, eraseBox: { x: 0.816, y: 0.927, w: 0.102, h: 0.048 } }
+};
+const TEXT_COLOR = "#3B2414";
+
 /**
  * Écran affiché quand on scanne le QR "VALIDATION FINALE" imprimé en bas du
  * diplôme (page 40 du livret). Comportement en 3 cas, tel que défini :
  *
  * 1. Le compte qui scanne a terminé tous les défis du tome
- *    -> diplôme affiché + bouton "Télécharger le PDF" actif.
+ *    -> diplôme affiché + bouton "Télécharger le diplôme" actif.
  * 2. Le compte existe mais les défis ne sont pas tous complétés
  *    -> diplôme affiché mais téléchargement verrouillé.
  * 3. Le téléphone qui scanne n'a aucun compte/profil enfant
@@ -87,10 +97,11 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
     };
   }, [tomeSlug, activeEnfant?.id]);
 
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfFileName, setPdfFileName] = useState<string>("");
-  const [pdfError, setPdfError] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pngUrl, setPngUrl] = useState<string | null>(null);
+  const [pngFileName, setPngFileName] = useState<string>("");
+  const [genError, setGenError] = useState(false);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const loadImage = (src: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
@@ -101,146 +112,138 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
       img.src = src;
     });
 
-  const renderCircularMascot = (img: HTMLImageElement, size: number): string => {
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, size, size);
-    const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-    return canvas.toDataURL("image/png");
+  const ensureFontsReady = async () => {
+    try {
+      await Promise.all([
+        document.fonts.load('700 60px "Playfair Display"'),
+        document.fonts.load('700 60px "Dancing Script"')
+      ]);
+      await document.fonts.ready;
+    } catch (e) {
+      console.info("Chargement des polices du diplôme : notice", e);
+    }
   };
 
-  // Dessin direct du diplôme dans le PDF (voir CertificatReussite.tsx pour le
-  // détail de pourquoi on n'utilise plus html2canvas ici).
+  const fitFontSize = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    fontFamily: string,
+    startSize: number,
+    minSize: number,
+    maxWidthPx: number
+  ): number => {
+    let size = startSize;
+    while (size > minSize) {
+      ctx.font = `700 ${size}px "${fontFamily}"`;
+      if (ctx.measureText(text).width <= maxWidthPx) break;
+      size -= 2;
+    }
+    return size;
+  };
+
+  // Dessine le diplôme complet (template PNG + champs dynamiques) sur un
+  // canvas à la résolution demandée — voir CertificatReussite.tsx pour le
+  // détail de chaque étape, la logique est identique ici.
+  const renderDiplomaToCanvas = async (targetWidth: number, enfantName: string): Promise<HTMLCanvasElement> => {
+    const template = await loadImage(DIPLOME_TEMPLATE_SRC);
+    await ensureFontsReady();
+
+    const scale = targetWidth / template.naturalWidth;
+    const W = targetWidth;
+    const H = Math.round(template.naturalHeight * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.drawImage(template, 0, 0, W, H);
+
+    const nameCfg = LAYOUT.name;
+    const nameMaxWidthPx = W * nameCfg.maxWidth;
+    const nameFontSize = fitFontSize(ctx, enfantName, "Playfair Display", W * 0.033, W * 0.013, nameMaxWidthPx);
+    ctx.font = `700 ${nameFontSize}px "Playfair Display"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(enfantName, W * nameCfg.xCenter, H * nameCfg.yBaseline, nameMaxWidthPx);
+
+    const dateStr = new Date().toLocaleDateString("fr-FR");
+    const dateCfg = LAYOUT.date;
+    const dateFontSize = W * 0.019;
+    ctx.font = `600 ${dateFontSize}px "Playfair Display"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "left";
+    ctx.fillText(dateStr, W * dateCfg.x, H * dateCfg.yBaseline);
+
+    const sigCfg = LAYOUT.signature;
+    const erase = sigCfg.eraseBox;
+    const eraseX = erase.x * W;
+    const eraseY = erase.y * H;
+    const eraseW = erase.w * W;
+    const eraseH = erase.h * H;
+    const sample = ctx.getImageData(Math.round(eraseX + eraseW / 2), Math.max(0, Math.round(eraseY - 14)), 1, 1).data;
+    ctx.fillStyle = `rgb(${sample[0]}, ${sample[1]}, ${sample[2]})`;
+    ctx.fillRect(eraseX, eraseY, eraseW, eraseH);
+
+    const sigFontSize = W * 0.028;
+    ctx.font = `700 ${sigFontSize}px "Dancing Script"`;
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.textAlign = "left";
+    ctx.fillText(SIGNATURE_TEXT, W * sigCfg.x, H * sigCfg.yBaseline);
+
+    return canvas;
+  };
+
+  // Aperçu affiché dès que le diplôme est authentifié comme complet.
+  useEffect(() => {
+    if (!isComplete || !activeEnfant) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const canvas = await renderDiplomaToCanvas(900, activeEnfant.pseudo);
+        if (cancelled) return;
+        const target = previewCanvasRef.current;
+        if (target) {
+          target.width = canvas.width;
+          target.height = canvas.height;
+          const tctx = target.getContext("2d")!;
+          tctx.clearRect(0, 0, target.width, target.height);
+          tctx.drawImage(canvas, 0, 0);
+        }
+      } catch (e) {
+        console.info("Aperçu du diplôme non disponible", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete, activeEnfant?.pseudo]);
+
   const handleGenerate = async () => {
-    if (!isComplete) return;
-    setIsGeneratingPdf(true);
-    setPdfError(false);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
+    if (!isComplete || !activeEnfant) return;
+    setIsGenerating(true);
+    setGenError(false);
+    if (pngUrl) {
+      URL.revokeObjectURL(pngUrl);
+      setPngUrl(null);
     }
     try {
-      const W = 480;
-      const H = 640;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [W, H] });
-      const corner = 28;
-
-      // Fond crème pour le corps de la carte
-      pdf.setFillColor(255, 253, 245);
-      pdf.roundedRect(0, 0, W, H, corner, corner, "F");
-
-      // Panneau vert forêt en haut (zone titre), façon bandeau/plaque
-      const panelH = 190;
-      pdf.setFillColor(4, 120, 87); // emerald-700
-      pdf.roundedRect(16, 16, W - 32, panelH, 20, 20, "F");
-
-      // Double bordure : vert forêt à l'extérieur, or fin à l'intérieur
-      pdf.setDrawColor(21, 94, 60);
-      pdf.setLineWidth(8);
-      pdf.roundedRect(5, 5, W - 10, H - 10, corner - 4, corner - 4, "S");
-      pdf.setDrawColor(251, 191, 36);
-      pdf.setLineWidth(2);
-      pdf.roundedRect(14, 14, W - 28, H - 28, corner - 10, corner - 10, "S");
-
-      // Feuilles décoratives dans les 4 coins
-      const drawLeaf = (x: number, y: number) => {
-        pdf.setFillColor(16, 122, 74);
-        pdf.circle(x, y, 8, "F");
-        pdf.setFillColor(74, 222, 128);
-        pdf.circle(x - 2, y - 2, 4, "F");
-      };
-      [[30, 30], [W - 30, 30], [30, H - 30], [W - 30, H - 30]].forEach(([cx0, cy0]) => drawLeaf(cx0, cy0));
-
-      // Ruban doré, posé sur le panneau vert
-      const ribbonLabel = `DIPLÔME ${(tomeTitre || tomeSlug).toUpperCase()}`;
-      const ribbonW = Math.min(400, Math.max(220, ribbonLabel.length * 6.5));
-      const ribbonY = 40;
-      pdf.setFillColor(251, 191, 36);
-      pdf.roundedRect((W - ribbonW) / 2, ribbonY, ribbonW, 32, 16, 16, "F");
-      pdf.setTextColor(120, 53, 15);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.text(ribbonLabel, W / 2, ribbonY + 21, { align: "center" });
-
-      // FÉLICITATIONS ! en blanc, sur le panneau vert
-      pdf.setFontSize(32);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("FÉLICITATIONS !", W / 2, ribbonY + 84, { align: "center" });
-      pdf.setFillColor(251, 191, 36);
-      pdf.roundedRect(W / 2 - 50, ribbonY + 96, 100, 4, 2, 2, "F");
-
-      // Portrait de la mascotte, à cheval sur le panneau vert et le corps crème
-      const imgSize = 116;
-      const imgX = W / 2 - imgSize / 2;
-      const imgY = 16 + panelH - imgSize / 2 - 8;
-      try {
-        const img = await loadImage(mascot.image);
-        const cx = W / 2;
-        const cy = imgY + imgSize / 2;
-        pdf.setFillColor(255, 255, 255);
-        pdf.circle(cx, cy, imgSize / 2 + 10, "F");
-        pdf.setDrawColor(21, 94, 60);
-        pdf.setLineWidth(5);
-        pdf.circle(cx, cy, imgSize / 2 + 10, "S");
-        pdf.setDrawColor(251, 191, 36);
-        pdf.setLineWidth(3);
-        pdf.circle(cx, cy, imgSize / 2 + 3, "S");
-
-        const circularDataUrl = renderCircularMascot(img, imgSize * 2);
-        pdf.addImage(circularDataUrl, "PNG", imgX, imgY, imgSize, imgSize);
-      } catch (imgErr) {
-        console.info("Portrait de mascotte non disponible pour le PDF, on continue sans.", imgErr);
-      }
-
-      // Prénom de l'enfant
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(26);
-      pdf.setTextColor(6, 78, 59);
-      pdf.text(activeEnfant?.pseudo || "", W / 2, imgY + imgSize + 50, { align: "center" });
-
-      // Texte de certification
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(12);
-      pdf.setTextColor(87, 60, 20);
-      pdf.text("Tu as terminé avec succès tous les défis du", W / 2, imgY + imgSize + 82, { align: "center" });
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(21, 94, 60);
-      pdf.text(tomeTitre || tomeSlug, W / 2, imgY + imgSize + 100, { align: "center" });
-
-      // Médaille avec ruban à deux pans (vert + or)
-      const medalY = imgY + imgSize + 148;
-      pdf.setFillColor(5, 122, 85);
-      pdf.triangle(W / 2 - 18, medalY - 8, W / 2 - 2, medalY - 8, W / 2 - 14, medalY + 26, "F");
-      pdf.setFillColor(251, 191, 36);
-      pdf.triangle(W / 2 + 2, medalY - 8, W / 2 + 18, medalY - 8, W / 2 + 14, medalY + 26, "F");
-      pdf.setFillColor(217, 119, 6);
-      pdf.circle(W / 2, medalY, 27, "F");
-      pdf.setFillColor(252, 211, 77);
-      pdf.circle(W / 2, medalY, 21, "F");
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(20);
-      pdf.setTextColor(120, 53, 15);
-      pdf.text("1", W / 2, medalY + 7, { align: "center" });
-
-      const nom = (activeEnfant?.pseudo || "diplome").replace(/\s+/g, "-").toLowerCase();
-      const blob = pdf.output("blob");
-      setPdfUrl(URL.createObjectURL(blob));
-      setPdfFileName(`diplome-${nom}-${tomeSlug}.pdf`);
+      const canvas = await renderDiplomaToCanvas(3840, activeEnfant.pseudo);
+      const blob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob a échoué"))), "image/png", 1)
+      );
+      const nom = (activeEnfant.pseudo || "diplome").replace(/\s+/g, "-").toLowerCase();
+      setPngUrl(URL.createObjectURL(blob));
+      setPngFileName(`diplome-${nom}-${tomeSlug}.png`);
     } catch (e) {
-      console.error("Erreur lors de la génération du PDF du diplôme", e);
-      setPdfError(true);
+      console.error("Erreur lors de la génération du PNG du diplôme", e);
+      setGenError(true);
     } finally {
-      setIsGeneratingPdf(false);
+      setIsGenerating(false);
     }
   };
 
@@ -309,62 +312,43 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
         </h1>
       </div>
 
-      <div
-        className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden"
-      >
-        <div className="absolute top-2 left-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute top-2 right-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute bottom-2 left-2 text-2xl text-amber-500">⚜️</div>
-        <div className="absolute bottom-2 right-2 text-2xl text-amber-500">⚜️</div>
-
-        <div className="inline-block bg-amber-500 text-amber-950 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md border border-amber-300">
-          Diplôme {tomeTitre || tomeSlug}
+      {/* APERÇU DU DIPLÔME (rendu du template PNG + textes dynamiques) */}
+      {isComplete ? (
+        <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300 relative">
+          <canvas ref={previewCanvasRef} className="w-full h-auto block" />
+          <Sparkles className="w-5 h-5 text-amber-500 absolute top-3 right-3 animate-spin drop-shadow" />
         </div>
-
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black font-fun text-amber-900 tracking-wide drop-shadow-xs">
-            FÉLICITATIONS !
-          </h2>
-          <div className="w-24 h-1 bg-amber-400 mx-auto rounded-full" />
-        </div>
-
-        <div className="space-y-2 py-2">
-          <div className="w-20 h-20 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-xl relative">
-            <Sparkles className="w-5 h-5 text-amber-500 absolute -top-1 -right-1 animate-spin" />
+      ) : (
+        <div className="bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200 border-8 border-amber-400 rounded-3xl p-8 text-center space-y-3 shadow-xl">
+          <div className="w-16 h-16 rounded-full bg-white p-1 border-4 border-amber-400 mx-auto shadow-lg overflow-hidden">
             <img src={mascot.image} alt={mascot.name} className="w-full h-full object-contain" />
           </div>
-          <h3 className="text-2xl font-black font-fun text-emerald-900">
-            {activeEnfant.pseudo}
-          </h3>
+          <h3 className="text-lg font-black font-fun text-emerald-900">{activeEnfant.pseudo}</h3>
+          <p className="text-xs font-semibold text-amber-900">
+            Diplôme {tomeTitre || tomeSlug} — pas encore débloqué sur ce compte.
+          </p>
         </div>
-
-        <div className="pt-2">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 border-4 border-amber-600 mx-auto flex items-center justify-center text-3xl shadow-xl">
-            🏅
-          </div>
-        </div>
-      </div>
+      )}
 
       <div className="space-y-2.5 pt-2">
-        {pdfUrl ? (
-          // Le PDF est prêt en mémoire (Blob). Ce lien natif <a download>,
+        {pngUrl ? (
+          // Le PNG est prêt en mémoire (Blob). Ce lien natif <a download>,
           // tapé directement par la personne, est un vrai geste utilisateur :
-          // il ne sera jamais bloqué par le navigateur, contrairement à un
-          // pdf.save() déclenché en fin de fonction async.
+          // il ne sera jamais bloqué par le navigateur.
           <a
-            href={pdfUrl}
-            download={pdfFileName}
+            href={pngUrl}
+            download={pngFileName}
             className="w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform"
           >
             <Download className="w-4 h-4" />
-            <span>Appuie ici pour télécharger le PDF</span>
+            <span>Appuie ici pour télécharger le diplôme (PNG)</span>
           </a>
         ) : (
           <button
             onClick={handleGenerate}
-            disabled={!isComplete || checking || isGeneratingPdf}
+            disabled={!isComplete || checking || isGenerating}
             className={`w-full font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors ${
-              isComplete && !checking && !isGeneratingPdf
+              isComplete && !checking && !isGenerating
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-95 transition-transform"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700 cursor-not-allowed"
             }`}
@@ -374,15 +358,15 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Vérification des missions...</span>
               </>
-            ) : isGeneratingPdf ? (
+            ) : isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Génération du PDF...</span>
+                <span>Génération du diplôme...</span>
               </>
             ) : isComplete ? (
               <>
                 <Download className="w-4 h-4" />
-                <span>Préparer le PDF</span>
+                <span>Préparer le diplôme en haute résolution</span>
               </>
             ) : (
               <>
@@ -393,9 +377,9 @@ export const DiplomeVerificationView: React.FC<DiplomeVerificationViewProps> = (
           </button>
         )}
 
-        {pdfError && (
+        {genError && (
           <p className="text-center text-[11px] font-bold text-red-500 px-2">
-            La génération du PDF a échoué. Réessaie, ou vérifie ta connexion.
+            La génération du diplôme a échoué. Réessaie, ou vérifie ta connexion.
           </p>
         )}
 
